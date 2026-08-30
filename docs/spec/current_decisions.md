@@ -8,50 +8,40 @@
 
 # 1. 프로젝트 핵심 방향
 
-## 장르 / 플레이 판타지
-
-FCM은 지하 격투 세계에서 시작해 선수를 발굴하고 육성하여 정상에 올린 뒤, 장기적으로 국제 무대와 자체 격투 단체 운영까지 확장되는 격투 매니지먼트 게임이다.
-
-핵심 재미 우선순위:
+## 핵심 플레이 판타지
 1. 애정을 가지고 키운 선수가 전략과 성장을 거쳐 괴물급 선수로 성장하는 경험
 2. 숨겨진 유망주를 발굴하는 경험
-3. 실패한 격투기 선수가 제자를 키워 궁극적으로 격투기 단체의 회장이 되는 성장 서사
+3. 실패한 전직 MMA 선수가 제자를 키워 궁극적으로 격투 단체의 회장/프로모터가 되는 성장 서사
 
-## 게임 진행 큰 구조
-
+## 진행 구조
 - 1부: 지하 파이트클럽
-- 2부: 국제 리그
-- 3부: 직접 대회 / 격투 단체 운영
+- 2부: 국제 리그 / 공식 무대
+- 3부: 직접 대회 및 격투 단체 운영
 
 ## 플레이어 캐릭터
-
-- 전직 MMA 선수
-- 부상 이후 선수 커리어가 내리막
-- 파이트클럽 코치 활동 권유를 계기로 새로운 커리어 시작
+- 부상으로 커리어가 꺾인 전직 MMA 선수
 - 특정 파이트클럽 소속이 아닌 독립 코치/매니저
-- 직접 선수를 발굴해 여러 파이트클럽에 출전시킴
-- 장기적으로 코치 → 국제 무대 지도자 → 단체 회장/프로모터로 성장
+- 직접 선수를 발굴하고 여러 파이트클럽/대회에 출전시킴
+- 장기적으로 코치 → 국제 무대 지도자 → 프로모터/단체 회장으로 성장
 
 ## 세계관 톤
-
-- 조직범죄 중심 세계관 아님
+- 조직범죄 중심 아님
 - 성인들의 합의된 일탈성 격투 문화
-- 폭력, 비공식 경기, 배팅, 음지 문화는 존재 가능
+- 폭력, 배팅, 비공식 경기, 음지 문화는 존재 가능
 - 갱단/조폭/강제 범죄 가담은 중심 소재에서 제외
 
 ---
 
-# 2. 경기 규칙
+# 2. 경기 규칙 / 랭킹
 
-4개 Ruleset:
+Ruleset은 4개:
 - MMA
 - Boxing
 - Kickboxing
 - No Rules
 
-각 규칙은 독립 랭킹을 가진다.
-
-선수는 자유롭게 다른 규칙에 출전/전향할 수 있다.
+각 Ruleset은 독립 랭킹을 가진다.
+선수는 자유롭게 다른 Ruleset에 출전/전향할 수 있다.
 
 각 선수는 다음 Familiarity를 가진다.
 - MMA Familiarity
@@ -59,47 +49,40 @@ FCM은 지하 격투 세계에서 시작해 선수를 발굴하고 육성하여 
 - Kickboxing Familiarity
 - No Rules Familiarity
 
-Familiarity와 그 패널티는 내부적으로 수치화하며, 경기 규칙 적응, 행동 선택, Tactical Execution, 거리 감각 등에 영향을 줄 수 있다.
+Familiarity 및 패널티는 내부 수치화하며 행동 선택, Tactical Execution, 거리 감각, 규칙 적응 등에 영향을 준다.
 
 ---
 
 # 3. 경기 조작 방식
 
-- 라운드별로 상세 전략 지시
+- 라운드별 상세 전략 지시
 - 라운드 중에는 실제 코너에서 소리치는 수준의 제한적 개입
-- 직접 조작형 액션 게임이 아닌 감독/코치 중심 시뮬레이션
-- 최종 전투 화면은 3D 격투 시뮬레이션 예정
+- 직접 조작형 액션이 아닌 감독/코치 중심 시뮬레이션
+- 최종적으로 3D 전투 시뮬레이션 사용 예정
 - 3D 전투는 별도 프로젝트에서 개발 후 이식
-- 초기 FCM 개발에서는 임시 전투 화면을 사용하고 매니지먼트 시스템을 우선 구현
+- 초기 개발은 임시 전투 화면으로 진행하고 매니지먼트/엔진 로직을 우선
 
 ---
 
-# 4. 선수 데이터 표시 / 정보 비대칭
+# 4. 선수 정보 / 정보 비대칭
 
 ## Base Parameter 표시
-
-- 내부: 정밀한 실수값 등 세밀한 수치 허용
-- UI: 0~100 범위
+- 내부: 정밀 실수값 등 세밀한 수치
+- UI: 0~100
 
 ## Known Mechanic / Unknown Value
-
-- 시스템의 존재와 작동 원리는 플레이어에게 알려준다.
+- 시스템의 존재와 주요 작동 원리는 플레이어에게 공개한다.
 - 정확한 내부값은 숨길 수 있다.
-- 툴팁, 튜토리얼, 인게임 도움말, 관찰, 코치 리포트를 통해 시스템 존재를 설명한다.
+- 튜토리얼, 툴팁, 도움말, 관찰, 코치 리포트로 시스템을 설명한다.
 
 ## 소속 선수도 완전 공개되지 않음
-
 선수를 직접 키우고 있어도 능력치는 일정 범위의 추정값으로 유지될 수 있다.
+관련 훈련/경기/활동에서 반복적으로 능력을 증명하면 추정 범위가 좁아진다.
 
-해당 능력과 관련된 훈련/경기/활동에서 반복적으로 능력을 증명하면 추정 범위가 좁아진다.
-
-핵심 원칙:
-> 선수는 숫자를 공개해서 능력을 증명하는 것이 아니라 행동을 통해 자신의 능력을 증명한다.
+> 선수는 숫자를 공개해서 능력을 증명하는 것이 아니라 행동으로 자신의 능력을 증명한다.
 
 ## Evidence System
-
-행동은 능력치 추정에 대한 Evidence를 생성한다.
-
+행동은 능력치 추정을 위한 Evidence를 생성한다.
 예:
 - 반복 카운터 성공 → Reflex / Fight IQ / Punch Technique 정보 정밀화
 - 후반 라운드 안정적 경기력 → Cardio 정보 정밀화
@@ -107,7 +90,7 @@ Familiarity와 그 패널티는 내부적으로 수치화하며, 경기 규칙 �
 
 ---
 
-# 5. Base Parameter
+# 5. Base Parameter — 18개
 
 Base Parameter만 직접 훈련/성장한다.
 
@@ -120,16 +103,8 @@ Base Parameter만 직접 훈련/성장한다.
 - Reflex
 
 ### Reflex
-
-Agility와 별개다.
-
-신체 이동속도가 아니라 인지, 판별, 예측, 반응의 속도.
-
-주요 영향:
-- Counter
-- Feint Recognition
-- 갑작스러운 공격 대응
-- Takedown 반응
+신체 이동속도가 아니라 인지, 판별, 예측, 반응의 속도다.
+Counter, Feint Recognition, 갑작스러운 공격/태클 대응 등에 관여한다.
 
 ## Striking
 - Punch Technique
@@ -138,12 +113,9 @@ Agility와 별개다.
 - Footwork Technique
 
 `Punch Power`, `Punch Accuracy`, `Kick Accuracy`는 Base Parameter로 두지 않는다.
-
-Punch/Kick Accuracy는 각각 Technique에 포함하고 실제 명중은 Action Result 단계에서 Context와 함께 계산한다.
-
-Punch/Kick Defense는 `Guard Technique`으로 통합한다.
-
-Block과 Evasion은 별도 행동이지만 Guard Technique은 둘 모두에 긍정적인 영향을 줄 수 있다.
+정확도는 Technique에 포함하고 실제 명중은 Action Result 단계에서 Context와 함께 계산한다.
+Punch/Kick Defense는 Guard Technique으로 통합한다.
+Block과 Evasion은 별도 행동이지만 Guard Technique은 둘 다 긍정적 영향을 줄 수 있다.
 
 ## Grappling
 - Takedown Technique
@@ -154,31 +126,14 @@ Block과 Evasion은 별도 행동이지만 Guard Technique은 둘 모두에 긍�
 - Submission Technique
 
 Submission 공격/방어는 하나의 Submission Technique을 사용한다.
-
 Ground Striking은 별도 Base Parameter를 두지 않는다.
 
 ## Combat Intelligence
 - Fight IQ
 - Tactical Execution
 
-### Fight IQ
-
-FCM의 핵심 상위 중요 Parameter.
-
-주요 영향:
-- 상황 판단
-- 상대 패턴 학습
-- 자신의 패턴이 읽혔는지 인지
-- Feint / Counter / Setup 활용
-- 위험도 판단
-- 행동 선택 품질
-- 예측
-
-### Tactical Execution
-
-코치/플레이어가 준 전략과 시퀀스를 얼마나 충실하게 수행하는지 나타낸다.
-
-Fight IQ와 독립적으로 관리한다.
+Fight IQ는 상황 판단, 패턴 학습, 예측, Setup/Feint/Counter 활용, 위험 판단, 행동 선택 품질 등에 폭넓게 관여한다.
+Tactical Execution은 플레이어/코치가 준 전략과 시퀀스를 얼마나 충실하게 수행하는지 나타내며 Fight IQ와 독립적으로 관리한다.
 
 ---
 
@@ -189,20 +144,16 @@ Fight IQ와 독립적으로 관리한다.
 **Base Parameter → Derived Capability → Effective Performance → Action Result**
 
 ## Derived Capability
-
-- Base Parameter와 신체 데이터를 조합해 계산
+- Base Parameter와 신체조건의 조합으로 계산
 - 독립 성장값 아님
-- Base가 바뀌면 자동 재계산
-- 정확한 내부값은 숨길 수 있으나 시스템의 존재는 공개
+- Base가 바뀌면 재계산
+- 존재는 공개하되 정확한 내부값은 숨길 수 있음
 
 ## Effective Performance
-
-다음 Context를 반영한 현재 순간 성능:
+다음 Context가 반영된 순간 성능:
 - Cardio / Stamina
-- 부상
-- 부위 손상
-- 체중
-- 증량/감량
+- 부상 / 부위 손상
+- 체중 / 증량 / 감량
 - 거리
 - Setup
 - Ruleset Familiarity
@@ -210,8 +161,7 @@ Fight IQ와 독립적으로 관리한다.
 - 현재 상태
 
 ## Action Result
-
-특정 기술의 실제 시도/성공/실패/Impact/Position 변화/후속 상태.
+특정 기술의 실제 시도, 명중/실패, Impact, Position 변화, Damage, 후속 상태를 계산한다.
 
 ---
 
@@ -231,7 +181,7 @@ Fight IQ와 독립적으로 관리한다.
 - Feint Execution
 - Feint Recognition
 
-Counter 성공은 고정 스탯 하나가 아니라 Vulnerability / Setup / Range / Read Confidence 등을 함께 사용한다.
+실제 Counter/Feint 성공은 고정 스탯 하나가 아니라 Vulnerability, Setup, Range, Read Confidence, Opponent Expectation 등 Context와 함께 계산한다.
 
 ## Grappling
 - Takedown Capability
@@ -242,27 +192,20 @@ Counter 성공은 고정 스탯 하나가 아니라 Vulnerability / Setup / Rang
 - Submission Threat
 - Submission Defense
 
-Takedown Entry / Finish는 하나의 Takedown Capability로 통합한다.
+Takedown Entry와 Finish는 하나의 Takedown Capability로 통합한다.
 
 ## Grapple Advantage
-
-고정 선수 스탯이 아니라 순간 Context 값.
-
-좋은 그래플러는 Advantage를 자동 생성하는 것이 아니라 만들어진 Advantage를 더 잘 활용한다.
+고정 스탯이 아니라 순간 Context 값이다.
+좋은 그래플러는 Advantage를 자동으로 받는 게 아니라 만들어진 Advantage를 더 잘 활용한다.
 
 ---
 
 # 8. Range / Optimal Range
 
-Range Control은 단순히 멀리 떨어지는 능력이 아니라 **본인에게 유리한 거리를 만들고 유지하는 능력**이다.
-
-각 기술에는 Optimal Range를 둘 수 있다.
-
-Optimal Range에서 해당 Punch/Kick Impact를 최대한 발휘한다.
-
-너무 멀거나 가까우면 Impact Efficiency가 감소한다.
-
-Reach는 무조건적인 플러스 스탯이 아니라 Range 전략과 함께 작동한다.
+Range Control은 자신에게 유리한 거리를 만들고 유지하는 능력이다.
+각 Action에는 Optimal Range와 Range Tolerance를 둘 수 있다.
+Optimal Range에서 Punch/Kick Impact를 최대한 발휘하며 너무 멀거나 가까우면 효율이 감소한다.
+Reach는 무조건적인 플러스가 아니라 Range 전략과 함께 작동한다.
 
 ---
 
@@ -271,100 +214,57 @@ Reach는 무조건적인 플러스 스탯이 아니라 Range 전략과 함께 �
 Setup은 고정 스탯이 아니라 전투 History/Context 시스템이다.
 
 ## Pattern 단위
-
-단순 행동 빈도보다 콤보/시퀀스에 집중한다.
-
+단일 기술 빈도보다 Combo/Sequence에 집중한다.
 예:
 - Jab → Jab → Cross
 - Jab → 우측 이동
 - Body Straight → Low Kick
 - Punch Combo → Takedown
 
-## 경기 전체 기억
-
-선수는 현재 경기 전체의 패턴을 기억한다.
-
-오래된 패턴의 영향은 감소 가능하다.
-
-상대의 과거 경기 습관도 비디오 분석을 통해 사전 정보로 활용 가능하다.
+## Combat Memory
+- 선수는 현재 경기 전체 패턴을 기억한다.
+- 오래된 Pattern의 영향은 감소할 수 있다.
+- 상대의 과거 경기 습관도 사전 비디오 분석으로 활용 가능하다.
 
 ## Setup 흐름
+반복 행동 → Pattern Exposure → Opponent Expectation / Read Confidence → Pattern Break / Feint / Counter / Takedown Setup
 
-반복 행동 → Pattern Exposure → Opponent Expectation / Read Confidence 형성 → Pattern Break / Feint / Counter / Takedown Setup 활용
-
-Setup은 자동 수행과 플레이어 직접 지시 모두 가능하다.
-
+Setup은 선수의 자율 수행과 플레이어 직접 지시 모두 가능하다.
 Setup 성공/실패 판정이 존재한다.
 
-## Fight IQ 역할
+Fight IQ는 패턴 학습, 노출 인지, Setup 타이밍, Pattern Break 판단에 관여한다.
+Tactical Execution은 지시한 Setup Sequence와 전략 유지에 관여한다.
 
-- 패턴 학습 속도
-- 유효 패턴 판별
-- 자신의 패턴 노출 인지
-- Setup 타이밍 판단
-- Pattern Break 판단
-
-## Tactical Execution 역할
-
-- 플레이어가 지시한 Setup 시퀀스 수행
-- 전략 유지
-
-## Momentum / Flow State
-
-별도 게이지/버프 시스템은 넣지 않는다.
-
-경기 흐름은 Setup, Combat Memory, Skill Card, Cardio, Damage 등의 실제 시스템 상호작용으로 표현한다.
+별도의 Momentum / Flow State 게이지는 넣지 않는다.
 
 ---
 
-# 10. 상대 비디오 분석 / 코칭
+# 10. 상대 비디오 분석 / 코칭 / 경기 후 분석
 
-## 상대 경기 비디오 분석
-
-주간 활동으로 상대의 습관과 콤보/시퀀스를 조사할 수 있다.
-
-정보에는 다음 내부값을 둘 수 있다.
-- Confidence
-- Freshness
-- Evidence Amount
-
-정보는 오래됐거나 잘못됐거나 상대에게 속은 것일 수 있다.
-
-잘못된 정보를 선수에게 전략으로 전달하면 경기에서 고전할 수 있다.
+## 상대 비디오 분석
+주간 활동으로 상대 습관과 Combo/Sequence를 조사한다.
+정보에는 Confidence, Freshness, Evidence Amount를 둘 수 있다.
+정보는 오래됐거나 잘못 해석됐거나 상대가 만든 가짜 Pattern일 수 있다.
+잘못된 정보를 선수에게 전략으로 전달하면 실제 경기에서 고전할 수 있다.
 
 ## 코너 개입
+플레이어/코치진이 라운드 사이 Pattern 정보를 선수에게 전달해 Pattern Awareness를 높일 수 있다.
 
-플레이어/코치진이 라운드 사이 선수에게 패턴 정보를 전달할 수 있다.
+## 경기 후 리포트
+2종류 제공:
+1. 심판 점수 리포트
+2. 코치진 인과관계 분석 리포트
 
-코치의 분석 능력에 따라 선수가 혼자 발견하지 못한 Pattern Awareness를 높일 수 있다.
-
----
-
-# 11. 경기 후 리포트
-
-2종류를 제공한다.
-
-## 심판 점수 리포트
-
-공식 결과/점수 관점.
-
-## 코치진 분석 리포트
-
-경기의 인과관계를 분석한다.
-
-정확도/상세도는 플레이어와 코치진의 분석 능력, 데이터 양, 추가 비디오 분석에 영향을 받는다.
-
-지난 경기 비디오 분석에 시간을 쓰면 더 상세한 원인을 발견하고 Evidence를 추가 획득할 수 있다.
+분석 리포트 품질은 플레이어/코치진 분석 능력, 데이터량, 비디오 분석 활동 등에 영향을 받는다.
 
 ---
 
-# 12. Universal Judging Engine
+# 11. Universal Judging Engine
 
-규칙별로 별개의 채점 공식을 만들지 않는다.
+Ruleset마다 별도 채점 공식을 만들지 않는다.
+하나의 공통 Judging Core를 사용하고 해당 규칙에서 발생 불가능한 항목만 비활성화한다.
 
-하나의 공통 Judging Core를 사용한다.
-
-전체 평가 항목 후보:
+평가 후보:
 - Effective Striking
 - Damage Quality
 - Knockdown / Finish Threat
@@ -374,105 +274,66 @@ Setup 성공/실패 판정이 존재한다.
 - Clinch Control
 - Fight Control
 
-Ruleset에서 발생 불가능한 항목만 비활성화한다.
-
 예:
 - Boxing: Punch 활성 / Kick, Grappling 비활성
 - Kickboxing: Punch, Kick 활성 / Grappling 비활성
 - MMA: Punch, Kick, Grappling, Submission 활성
-- No Rules: 가장 넓은 Action 집합 허용
+- No Rules: 가장 넓은 Action 집합
 
 ---
 
-# 13. Cardio / Stamina
+# 12. Cardio / Stamina
 
-Base Parameter는 `Cardio` 하나.
-
-내부 파생 후보:
-- Energy Capacity
-- Energy Efficiency
-- Short Recovery
-- Between-Round Recovery
+Base Parameter는 Cardio 하나다.
+내부적으로 Energy Capacity, Energy Efficiency, Short Recovery, Between-Round Recovery 등을 파생할 수 있다.
 
 ## Stamina Curve
-
-0~100 총량 기준 설계 철학:
+0~100 기준:
 - 80 이상: 최상 상태, 페널티 거의 없음
 - 80 미만: 성능 저하 Curve 시작
 - 50 미만: 눈에 띄는 경기력 저하
 - 30 미만: 거의 좀비 상태
 
-연속 Curve를 사용하며 낮아질수록 감소 기울기가 커진다.
-
-정확한 함수는 Parameter화해 추후 밸런싱한다.
+연속 Curve로 설계하며 낮아질수록 감소 기울기가 급격해진다.
+정확한 함수는 Parameter화한다.
 
 ---
 
-# 14. Damage / Durability / Finish
+# 13. Damage / Durability / Finish
 
-전신 HP 없음.
-
-Base Parameter는 `Durability` 하나지만 실제 상태는 부위별로 관리한다.
+전신 HP는 없다.
+Base Parameter는 Durability 하나지만 실제 상태는 부위별로 관리한다.
 
 예시 부위:
 - Head
 - Body
-- Left Arm
-- Right Arm
-- Left Leg
-- Right Leg
+- Left Arm / Right Arm
+- Left Leg / Right Leg
 
-부위별 상태에는 훈련, 노화, 과거 KO, 부상, Permanent Damage, Skill Card 등이 따로 적용될 수 있다.
+부위별 상태에는 훈련, 노화, 과거 KO, Injury, Permanent Damage, Skill Card 등이 별도로 적용된다.
 
-예:
-- 다리 훈련 → Leg 내구 상승
-- 직전 KO 부상 → Head 내구 감소
-- 노화 → 내구 감소
-- 무쇠 팔 Skill Card → Arm 보정
+Finish는 HP 0이 아니라 부위 손상 + 순간 Impact + Cardio + Effective Durability + Vulnerability 등의 누적 결과다.
 
-## Finish
-
-HP가 0이 되어서 끝나는 구조가 아니다.
-
-부위 손상 + 순간 Impact + 현재 Cardio + Effective Durability + Vulnerability 등이 결합해 다음 상태가 발생할 수 있다.
-
+상태 예:
 정상 → Stagger → Groggy → Knockdown → KO / TKO
-
-Finish는 인과관계가 있는 조건 누적의 결과다.
 
 ---
 
-# 15. Randomness 철학
+# 14. Randomness 철학
 
 **Randomness creates variation, not causation.**
 
 난수는 작은 실행 편차를 만들 수 있지만 사건의 근본 원인이 되어서는 안 된다.
+강한 선수가 패배하는 경우에도 전략, 상성, 거리, Cardio, Injury, Damage, Setup, Counter, 체중, Ruleset Familiarity 등의 인과관계가 경기 로그로 설명되어야 한다.
 
-강한 선수가 약자에게 패배할 수 있으나 그 원인을 전투 로그에서 설명할 수 있어야 한다.
-
-원인 후보:
-- 잘못된 전략
-- 상성
-- 거리 실패
-- Cardio 고갈
-- 부상
-- 누적 Damage
-- Setup에 읽힘
-- Counter 허용
-- 과도한 공격
-- 체중 조절 실패
-- Ruleset Familiarity
-- Skill Card 상호작용
-
-플레이어 입장에서 사실상 100%에 가까운 우세는 존재할 수 있지만, 시스템적으로 절대 패배 불가능을 강제하지 않는다.
-
+사실상 매우 높은 승산은 존재할 수 있으나 시스템적으로 절대 패배 불가능을 강제하지 않는다.
 완전한 0% 승산도 지양한다.
 
 ---
 
-# 16. Action Data
+# 15. Action Data
 
-각 Action/Technique에는 선수 Base Parameter와 별도의 데이터가 존재한다.
+각 Action/Technique은 선수 Base Parameter와 별도의 Data를 가진다.
 
 후보:
 - ImpactCoefficient
@@ -486,221 +347,102 @@ Finish는 인과관계가 있는 조건 누적의 결과다.
 - TargetOptions
 - RuleAvailability
 
-특정 기술 밸런스는 선수 스탯을 건드리지 않고 Action Data로 조절 가능해야 한다.
+특정 Action의 밸런스는 선수 능력치를 직접 건드리지 않고 Action Data로 조절 가능해야 한다.
 
 ---
 
-# 17. Technique System
+# 16. Technique System
 
 Technique은 Skill Card와 분리한다.
 
-## Technique 내부 숙련도 / UI
-
-각 Technique은 독립적인 내부 숙련도 수치를 가진다.
-
-UI에서는 숙련도를 **별 1~5개**로 표시한다.
-
-실제 계산은 별 개수가 아니라 내부 정밀 수치를 사용한다.
-
-## 신규 Technique 시작 숙련도
+## 숙련도
+- 각 Technique은 내부 정밀 숙련도 수치를 가짐
+- UI는 별 1~5개로 표시
+- 실제 계산은 내부값 사용
 
 새 Technique은 항상 최저 숙련도에서 시작하지 않는다.
+관련 Base Technique, Growth Aptitude, 유사 기술 경험 등에 따라 초기 숙련도 보너스를 받을 수 있다.
+예: Punch Technique이 높은 선수가 새로운 Punch 계열 기술을 배우면 별 3 수준에서 시작 가능.
 
-관련 Base Technique과 적성, 기존 유사 기술 경험 등에 따라 초기 숙련도 보너스를 받을 수 있다.
-
-예:
-- Punch Technique이 높은 선수가 새로운 펀치 계열 기술을 습득 → 별 3 수준에서 시작 가능
-
-정확한 초기값 공식은 Parameter화한다.
-
-## Base Parameter와 Technique Proficiency 분리
-
-- Base Parameter: 해당 영역의 전반적 기본기
-- Technique Proficiency: 특정 기술 자체의 숙련
-
-실제 기술 성능에는 둘 다 관여한다.
-
-## Technique 3단 구조
-
+## 구조
 ### Fundamental Action
-
-기본적으로 사용할 수 있는 기술.
-
-예:
-- Jab
-- Cross
-- Hook
-- 기본 Low Kick
-- 기본 Clinch
-- 기본 Takedown
+기본 사용 가능. 예: Jab, Cross, Hook, 기본 Low Kick, 기본 Clinch, 기본 Takedown
 
 ### Learnable Technique
-
-별도 훈련으로 습득.
-
-예:
-- Spinning Backfist
-- Question Mark Kick
-- Flying Knee
-- 특정 Throw
-- 특정 Submission
+별도 훈련으로 습득. 예: Spinning Backfist, Question Mark Kick, Flying Knee, 특정 Throw/Submission
 
 ### Signature Technique
-
-일반 Technique을 장기간 높은 수준으로 사용하고 특정 실전/업적 조건을 충족했을 때 대표 기술로 발전 가능.
+장기간 높은 수준으로 사용하고 특정 실전/업적 조건을 만족하면 대표 기술로 발전 가능.
 
 ## Technique 학습 적성
-
-영향 후보:
-- 관련 Base Technique
-- 관련 Physical Parameter
-- Growth Aptitude
-- 일부 예외 Modifier
-- 기존 유사 Technique 경험
-- 코치 / 훈련 품질
-
-일부 선수는 특정 기술 또는 기술군에 Hidden Affinity를 가질 수 있다.
-
-Hidden Affinity는 내부 수치화하며 훈련/실전 Evidence를 통해 힌트로 파악한다.
+관련 Base Technique, Physical Parameter, Growth Aptitude, 예외 Modifier, 기존 유사 Technique, 코치/훈련 품질의 영향을 받는다.
+특정 기술군에 Hidden Affinity를 둘 수 있으며 Evidence를 통해 힌트로 파악한다.
 
 ---
 
-# 18. Technique / Combo 경험치
+# 17. Technique / Combo 경험치
 
-Technique는 훈련, 스파링, 실전 사용으로 성장한다.
-
+Technique는 훈련, Sparring, 실전 사용으로 성장한다.
 실전 경험은 훈련보다 훨씬 큰 성장 자극을 준다.
+현재 초기 가정은 `Match Technique EXP ≈ Training 대비 10배`이며 반드시 Parameter로 관리한다.
 
-현재 초기 밸런스 가정:
-- `Match Technique EXP Multiplier ≈ Training 대비 10배`
-
-이 값은 확정 상수가 아니며 반드시 Data Parameter로 관리한다.
-
-## Finish Bonus
-
-특정 Technique로 Finish했을 경우 해당 Technique에 매우 큰 추가 경험 보상을 준다.
-
-Finish Technique EXP Bonus 역시 독립 Parameter로 관리한다.
+특정 Technique으로 Finish하면 해당 Technique에 매우 큰 추가 경험 보상을 준다.
+Finish Bonus 역시 Parameter화한다.
 
 ## Combo / Sequence Proficiency
-
-단일 기술 숙련과 별개로 게임 데이터에 정의된 주요 Combo/Sequence는 독립 숙련도를 가질 수 있다.
-
-예:
-- Jab → Cross
-- Jab → Jab → Cross
-- Body Hook → Low Kick
-- Cross → Double Leg
-
-모든 가능한 조합을 저장하지 않고 의미 있는 사전 정의 Combo/Sequence만 관리한다.
-
-Combo Proficiency는 실행 안정성, Tactical Execution, Setup, Pattern Break, Action 연결 속도, Energy 효율 등에 관여할 수 있다.
+사전 정의된 주요 Combo/Sequence는 독립 숙련도를 가질 수 있다.
+모든 가능한 조합을 저장하지 않는다.
+Combo 숙련은 실행 안정성, Tactical Execution, Setup, 연결 속도, Energy 효율 등에 관여할 수 있다.
 
 ---
 
-# 19. Skill Card
+# 18. Skill Card
 
-Skill Card는 기술 자체가 아니라 **선수의 플레이 스타일 / 조건부 특성 / 행동 연결 특성**이다.
+Skill Card는 기술 자체가 아니라 플레이 스타일 / 조건부 특성 / 행동 연결 특성이다.
+예: Liver Hunter, Chain Wrestler, 무쇠 팔 계열.
 
-예:
-- Liver Hunter
-- Chain Wrestler
-- 무쇠 팔 계열
+- 선수는 커리어 동안 여러 장 보유 가능
+- 한 경기에서 동시에 활성화 가능한 카드: 기본 최대 5장
+- 경기 규칙, 상대, 전략에 따라 활성 세트를 변경
+- 활성 한도도 Parameter화
 
-## 보유 / 활성 구조
+Skill Card는 성장 가능하다.
+성장은 카드 고유 정체성을 유지한 채 그 특별한 효과를 증폭한다.
+공통적인 `Damage +N%` 카드 양산은 지양한다.
 
-선수는 커리어 동안 Skill Card를 여러 장 획득할 수 있다.
-
-경기에서 동시에 활성화 가능한 Skill Card는 **최대 5장**이다.
-
-따라서 카드 획득 시 기존 카드를 삭제할 필요가 없다.
-
-경기 규칙, 상대, 전략에 따라 활성 카드 세트를 변경할 수 있다.
-
-활성 카드 최대 수 역시 Parameter화 가능하게 한다.
-
-## Skill Card 성장
-
-Skill Card는 성장할 수 있다.
-
-성장은 카드의 고유한 정체성을 유지한 채 해당 효과를 증폭하는 방식으로 설계한다.
-
-단순한 공통 `Damage +N%` 카드의 반복은 지양한다.
-
-예:
-- Liver Hunter: Body Damage/Setup/Finish 관련 고유 로직 강화
-- Chain Wrestler: Takedown 실패 후 후속 Grappling 연결 관련 고유 로직 강화
-
-## Skill Card 획득
-
-카드 획득은 선수의 실제 육성/경기 역사와 연결한다.
-
-예:
-- 특정 Target 공격 Evidence
-- 특정 전투 스타일 반복
-- 관련 Technique 숙련
-- 특정 방식의 승리/Finish
-- 업적
-
-같은 초기 선수라도 플레이 역사에 따라 서로 다른 Skill Card 세트를 형성할 수 있어야 한다.
+카드 획득은 선수의 실제 역사와 연결한다.
+특정 Target 공격, 스타일 반복, Technique 숙련, 특정 승리/Finish, 업적 등이 조건이 될 수 있다.
 
 ---
 
-# 20. Ring Name
+# 19. Ring Name
 
-Ring Name은 Skill Card보다 훨씬 희귀한 커리어 업적/칭호다.
+Ring Name은 Skill Card보다 희귀한 커리어 업적/칭호다.
 
 계층:
-1. Technique — 비교적 자주 습득/성장
+1. Technique — 자주 습득/성장
 2. Skill Card — 스타일과 경력이 굳어지며 획득
 3. Ring Name — 커리어를 대표하는 희귀 업적
 
-Ring Name은 다음을 연결할 수 있다.
-- Combat Effect
-- Reputation
-- Fame
-- Market Value
-- Matchmaking
-- 상대 반응
-
+Ring Name은 Combat Effect, Reputation, Fame, Market Value, Matchmaking, 상대 반응 등에 영향을 줄 수 있다.
 같은 Ring Name을 사용하는 선수를 동시에 배치할 수 없다.
-
-## Unique Ring Name
-
-일부 적/라이벌은 일반 선수가 사용할 수 없는 Unique Ring Name을 가진다.
-
-NPC의 Unique Ring Name 자체를 탈취하지 않는다.
-
-대신 해당 NPC를 특정 조건으로 격파하면 그 업적에 대응하는 별도 Ring Name을 해금할 수 있다.
-
-예:
-- `The King`을 가진 라이벌 격파 → `Kingslayer` 계열 Ring Name 해금 가능
+일부 라이벌은 Unique Ring Name을 가진다.
+Unique Ring Name 자체를 탈취하지는 않지만 특정 조건으로 해당 NPC를 격파하면 대응 업적 Ring Name을 해금할 수 있다. 예: The King 격파 → Kingslayer 계열.
 
 ---
 
-# 21. 신체 / 체중 관리
+# 20. 신체 / 체중 관리
 
 신체 데이터는 Base Parameter와 별도 관리한다.
-
-후보:
-- Height
-- Reach
-- Natural Weight
-- Current Weight
-- Age
-- Stance
+후보: Height, Reach, Natural Weight, Current Weight, Age, Stance.
 
 증량/감량은 실제 경기력에 영향을 준다.
-
-개인차를 위해 숨겨진 체질 Parameter를 허용한다.
-
-단, 완전히 숨기지 않고 대화/관찰/과거 경험을 통해 힌트로 제공한다.
-
-정확한 내부값은 불확실할 수 있다.
+개인차를 위해 Weight Cut Resistance, Weight Gain Adaptability 같은 숨겨진 체질 Parameter를 허용한다.
+완전히 숨기지 않고 대화, 관찰, 과거 경험으로 힌트를 제공한다.
 
 ---
 
-# 22. Potential / Growth Aptitude
+# 21. Potential / Growth Aptitude / Breakthrough
 
 구조:
 - Overall Talent
@@ -713,524 +455,403 @@ NPC의 Unique Ring Name 자체를 탈취하지 않는다.
 - Grappling Aptitude
 - Combat Intelligence Aptitude
 
-Base Parameter마다 별도의 잠재력 숫자를 기본 구조로 두지 않는다.
-
-특정 선수의 특이성을 표현하기 위한 일부 Parameter/Technique Growth Modifier는 허용한다.
-
-Potential 정확한 상한은 플레이어에게 공개하지 않는다.
-
----
-
-# 23. Potential Curve / Breakthrough
+Base Parameter마다 별도 Potential 숫자를 기본으로 두지 않는다.
+Potential의 정확한 상한은 플레이어에게 공개하지 않는다.
 
 Potential은 Hard Cap이 아니다.
+한계 부근에서 성장 효율 Curve가 급격히 나빠져 사실상 정지처럼 느껴지지만 완전히 멈추지는 않는다.
+장기간 이 Curve를 극복하면서 중요한 경기/훈련 사건을 겪으면 Breakthrough가 가능하다.
 
-일정 성장 구간에 접근하면 성장 효율이 급격히 악화되어 사실상 정지처럼 느껴질 수 있다.
+Breakthrough는 내부적으로 수치화한다.
+후보: Progress, Threshold, Potential Proximity, Strong Opponent Experience, Match Importance, Adversity, Technique Mastery, Style Commitment, Coach/Age Modifier.
+정확한 Progress는 UI에 숨기고 힌트만 제공한다.
 
-완전히 멈추지는 않는다.
-
-장기간 이 비효율 Curve를 극복하며 중요한 경기/훈련 사건을 겪으면 Breakthrough 가능성이 생긴다.
-
-Breakthrough는 내부적으로 완전히 수치화한다.
-
-후보:
-- Breakthrough Progress
-- Breakthrough Threshold
-- Potential Proximity
-- Strong Opponent Experience
-- Match Importance
-- Adversity Overcome
-- Technique Mastery
-- Style Commitment
-- Coach Modifier
-- Age Modifier
-
-정확한 Progress는 UI에 공개하지 않고 힌트로 전달한다.
+극한 경기 중 *Darkest Dungeon*의 영웅의 기상과 비슷한 특별 성장 사건이 발생할 수 있다.
 
 ---
 
-# 24. 노화
+# 22. 노화
 
 - 신체 능력은 나이에 따라 저하
-- 노화는 완전히 극복하기 어렵고 갈수록 대응 난이도 증가
-- Fight IQ, Technique, 경험 등은 유지되거나 장점이 될 수 있음
-- 노령 선수는 젊은 시절과 다른 운영 방식으로 경쟁력을 유지할 수 있음
+- 완전 극복은 어렵고 나이가 들수록 대응 난이도 증가
+- Fight IQ, Technique, 경험은 유지되거나 장점이 될 수 있음
+- 노령 선수는 젊은 시절과 다른 전략/스타일로 경쟁력을 유지 가능
 
 ---
 
-# 25. 주간 Training / Life Management
+# 23. 주간 Training / Life Management
 
-주 단위 Calendar 사용.
-
-훈련 횟수를 인위적인 슬롯 수로 제한하지 않는다.
-
-선수의 삶 전체가 시간 자원을 경쟁한다.
+주 단위 Calendar를 사용한다.
+훈련 횟수를 인위적인 슬롯 수로 제한하지 않고 선수의 삶 전체가 시간 자원을 경쟁하게 한다.
 
 주간 활동 후보:
-- 훈련
-- Sparring
-- Technique 학습
+- 훈련 / Sparring / Technique 학습
 - Recovery
 - 상대 비디오 분석
-- 사생활
-- 스트레스 관리
-- 외부 활동
-- Fame 활동
-- 팬/미디어 활동
-- 스폰서/수익 활동
+- 사생활 / 스트레스 관리
+- Fame / 팬 / 미디어 / 외부 활동
+- Sponsor / 수익 활동
 - 경기 준비
 
-훈련만 반복하면:
-- Fatigue 증가
-- Stress 증가
-- Injury Risk 증가
-- Fight Readiness 감소
-- 사생활/만족도 악화 가능
-- Fame / Market Value 성장 기회 손실
+훈련만 반복하면 Fatigue, Stress, Injury Risk, Fight Readiness 저하, 사생활/만족도 악화, Fame/Market Value 성장 기회 손실이 발생할 수 있다.
+
+## 훈련 성장
+반통제형이다.
+훈련 품질, Talent, Growth Aptitude, 현재 능력, 나이, 코치, 시설, Sparring Partner, Fatigue, Stress, Potential과의 거리, 선수-훈련 적합도가 성장량에 영향을 준다.
+질 낮거나 부적합하거나 과도한 훈련은 성장 실패, 유지, 스트레스, 피로, 부상, 내구 악화를 만들 수 있다.
 
 ---
 
-# 26. 훈련 성장 방식
-
-반통제형.
-
-훈련은 여러 Base Parameter에 주/부 성장 효과를 줄 수 있다.
-
-실제 성장량 영향 후보:
-- 훈련 품질
-- Talent
-- Growth Aptitude
-- 예외 Modifier
-- 현재 능력치
-- 나이
-- 코치
-- 시설
-- Sparring Partner
-- Fatigue
-- Stress
-- Potential과의 거리
-- 선수-훈련 적합도
-
-질 낮거나 부적합하거나 과도한 훈련은:
-- 성장 실패
-- 유지 수준
-- 스트레스
-- 피로
-- 부상
-- 내구 상태 악화
-
-를 만들 수 있다.
-
----
-
-# 27. 실제 경기와 성장
+# 24. 실제 경기와 성장
 
 실제 경기는 훈련 캠프보다 더 큰 성장폭을 제공할 수 있다.
-
-특히:
-- Fight IQ
-- Tactical Execution
-- Rule Familiarity
-- 실전 대응 능력
-- Technique Proficiency
-- Combo/Sequence Proficiency
-
-등은 경기 경험 가치를 크게 가진다.
-
-강한 상대와 중요한 경기에는 큰 성장 자극과 위험이 함께 존재한다.
-
-경기 중 특별 성장 사건이 발생할 수 있다.
-
-지향 감성은 *Darkest Dungeon*의 영웅의 기상과 같은 극한 상황에서의 긍정적 전환이다.
-
-Technique 숙련도는 현재 초기 가정으로 실제 경기 경험 보상을 훈련 대비 약 10배 수준으로 두되, 반드시 Parameter로 관리해 추후 튜닝한다.
-
-특정 Technique로 Finish한 경우 매우 큰 추가 Technique 경험 보상을 부여한다.
+특히 Fight IQ, Tactical Execution, Rule Familiarity, 실전 대응, Technique/Combo Proficiency의 성장 자극이 크다.
+강한 상대 및 중요한 경기는 높은 성장 보상과 높은 위험을 함께 제공한다.
 
 ---
 
-# 28. 육성 밸런스 원칙
+# 25. 육성 밸런스 원칙
 
 > **육각형 선수는 있어도 만능 선수는 없다.**
 
-선수 강함은 단순 Parameter 합계가 아니다.
-
-상호작용 요소:
-- Base Parameter 조합
-- 신체조건
-- Technique
-- Combo/Sequence Proficiency
-- Skill Card
-- Ring Name
-- Rule Familiarity
-- 체급
-- 성장 적성
-- Opportunity Cost
-- 감독 전략
-- Setup
-- 상대 상성
-- Cardio
-- Damage
-
-Overall은 UI 편의용 평가값일 수 있으나 실제 전투 계산에 사용하지 않는다.
+선수의 강함은 Base Parameter 총합이 아니다.
+신체조건, Technique, Combo, Skill Card, Ring Name, Rule Familiarity, 체급, 성장 적성, Opportunity Cost, 감독 전략, Setup, 상성, Cardio, Damage가 상호작용한다.
+Overall은 UI 편의용 평가값일 수 있으나 실제 전투 계산에는 사용하지 않는다.
 
 ---
 
-# 29. Data-Driven / 확장성 원칙
+# 26. World Fighter DB / Known Fighter DB
 
-게임의 모든 핵심 시스템은 가능한 한 Parameter/Data 중심으로 구현한다.
-
-원칙:
-- 하드코딩 최소화
-- 가중치 조절 가능
-- Curve 조절 가능
-- Threshold 조절 가능
-- Ruleset별 설정 가능
-- Action별 설정 가능
-- Technique 추가 가능
-- Combo/Sequence 추가 가능
-- Skill Card 추가 가능
-- Ring Name 추가 가능
-- 성장/밸런스 튜닝 가능
-
-목표는 밸런스 문제가 생겼을 때 코드 구조를 다시 설계하지 않고 데이터와 Parameter를 조정해 대응하는 것이다.
-
-## Skill Card Data 후보
-- UnlockCondition
-- Trigger
-- Condition
-- Modifier
-- ActionOverride
-- AIWeightModifier
-- SetupModifier
-- GrowthCondition
-- GrowthModifier
-- MaxLevel
-- RuleAvailability
-
-## Ring Name Data 후보
-- UnlockCondition
-- CombatModifier
-- FameModifier
-- MarketValueModifier
-- MatchmakingModifier
-- OpponentModifier
-- RuleModifier
-- UniqueFlag
-
-## Technique 관련 Data 후보
-- InternalProficiency
-- DisplayStarThreshold
-- InitialProficiencyFormula
-- RelatedBaseParameter
-- GrowthAptitudeModifier
-- HiddenAffinityModifier
-- TrainingExpMultiplier
-- MatchExpMultiplier
-- FinishExpBonus
-
----
-
-# 30. World Fighter DB / Known Fighter DB
-
-전체 세계 Fighter DB와 플레이어가 알고 있는 `Known Fighter Database`를 분리한다.
-
+전체 세계 Fighter DB와 플레이어가 알고 있는 Known Fighter DB를 분리한다.
 플레이어는 처음부터 전체 선수 목록을 검색할 수 없다.
+미발견 선수도 세계 안에서 성장, 경기, 부상, 체급 변경, 계약 변화를 경험한다.
 
-선수는 플레이어에게 발견되지 않은 상태에서도 세계 안에서 성장, 경기, 부상, 체급 변경, 계약 변화 등을 경험할 수 있다.
-
-Known Fighter 등록 경로 후보:
-- 직접 경기 관람
-- 상대 선수로 조우
-- 체육관 방문
-- 아마추어 대회
-- 코치/선수/지인의 소개
-- SNS / 영상
-- 소문
+Known Fighter 발견 경로:
+- 직접 경기 관람 / 상대 선수로 조우
+- 체육관 / 아마추어 대회
+- 코치/선수/지인 소개
+- SNS / 영상 / 소문
 - Scout 보고
-- 공식적인 Fame
+- Fame에 의한 자연 발견
 
 ---
 
-# 31. Fighter Discovery / Scouting 활동
+# 27. Scouting 활동 / Knowledge
 
 선수 발견은 단일 Scout 버튼이 아니라 여러 활동과 정보 경로를 통해 발생한다.
+초반에는 플레이어가 직접 주간 시간을 쓰고, 후반에는 Scout와 Scouting Focus에 위임한다.
 
-초반에는 플레이어가 주간 시간을 직접 써서 지역 파이트클럽, 체육관, 대회 등을 탐색한다.
-
-게임 진행 후에는 Scout에게 이 과정을 위임하고 조건 기반 `Scouting Focus`를 설정할 수 있다.
-
-Scouting Focus 후보:
-- Age
-- Weight Class
-- Rule Fit
-- Style
-- Fame 범위
-- Growth Potential 추정
-- Region
-- Marketability
-
-발견 경로는 최초 Evidence의 양, 분야, 편향에 영향을 준다.
-
----
-
-# 32. 분야별 Scouting Knowledge
-
-단일 `Scouting Progress %`를 사용하지 않는다.
-
-분야별 Knowledge를 관리한다.
-
+단일 `Scouting %`는 사용하지 않고 분야별 Knowledge를 둔다.
 후보:
-- Physical Knowledge
-- Striking Knowledge
-- Grappling Knowledge
-- Combat Intelligence Knowledge
-- Technique Knowledge
-- Rule Familiarity Knowledge
-- Weight Adaptation Knowledge
-- Potential Knowledge
-- Market / Reputation Knowledge
+- Physical / Striking / Grappling / Combat Intelligence
+- Technique
+- Rule Familiarity
+- Weight Adaptation
+- Potential
+- Market / Reputation
 
-실제로 관찰된 행동에 관련된 Knowledge만 증가한다.
-
----
-
-# 33. Scouting Information State
-
-주요 스카우팅 정보에는 다음 세 내부값을 둔다.
-
+주요 정보에는 다음 내부값을 둔다.
 - Confidence
 - Freshness
 - Evidence Amount
 
-`Confidence`는 현재 해석의 확실성, `Freshness`는 정보의 최신성, `Evidence Amount`는 근거량이다.
-
-오래된 확실한 정보와 최신이지만 표본이 적은 정보가 구분되어야 한다.
-
 ---
 
-# 34. Raw Evidence / Interpretation
-
-핵심 원칙:
+# 28. Raw Evidence / Interpretation
 
 > **Raw Evidence는 사실이며 Interpretation은 틀릴 수 있다.**
 
-경기에서 실제 발생한 행동은 Raw Evidence로 저장된다.
-
-Scout/Coach/플레이어가 그 행동으로부터 선수 능력을 추론하는 과정이 Interpretation이다.
-
-Interpretation 오차 원인 후보:
-- Scout 능력
-- 표본 부족
-- 오래된 정보
-- 상대 수준 오판
-- SNS Highlight 편향
-- 최근 스타일 변화
-- 의도적으로 만든 잘못된 Pattern
-
-게임이 임의로 거짓 수치를 보여주는 방식보다 분석자의 불완전한 해석을 통해 정보 비대칭을 만든다.
+실제 행동은 사실로 저장한다.
+그 행동으로부터 능력을 추정하는 해석은 Scout/Coach/플레이어의 능력, 표본 부족, 오래된 정보, 상대 수준 오판, SNS Highlight 편향, 최근 스타일 변화 등으로 틀릴 수 있다.
+게임이 임의로 거짓 수치를 보여주는 것보다 불완전한 해석으로 정보 비대칭을 만든다.
 
 ---
 
-# 35. Trial Camp / Sparring Evaluation
+# 29. Trial / Watchlist / Scout
 
-영입 전 선수를 Trial Camp 또는 Sparring에 초대할 수 있다.
+## Trial Camp / Sparring
+영입 전 직접 테스트 가능.
+Base Parameter Evidence, Technique/Combo, Cardio, Tactical Execution, Weight 상태, Training Adaptation, Hidden Affinity 힌트를 얻을 수 있다.
+시간, 시설, 비용, 선수 동의, Injury Risk를 소비한다.
 
-Trial에서 얻을 수 있는 정보 후보:
-- Base Parameter Evidence
-- Technique / Combo Proficiency
-- Cardio
-- Tactical Execution
-- Weight 상태
-- Training Adaptation
-- Hidden Affinity 힌트
-
-비용/리스크:
-- 플레이어/코치 시간
-- 시설 사용
-- 비용
-- 선수 관심/동의
-- Injury Risk
-
-따라서 충분히 검증할지, 경쟁자보다 먼저 불확실한 상태에서 확보할지 선택하게 한다.
-
----
-
-# 36. Scouting Report UI / Recruitment Evaluation
-
+## Scouting Report
 `★★★★★ 영입 추천` 같은 단일 최종 추천 점수는 사용하지 않는다.
+Current Combat Level, Growth Potential, Strategy Fit, Ruleset Fit, Marketability, Confidence, Acquisition Difficulty 등 복수 축으로 평가한다.
 
-복수 축으로 평가한다.
+## Trade-off
+정보를 더 모으는 동안 다른 매니저가 먼저 접근할 수 있다.
+불확실한 조기 영입과 충분히 검증한 늦은 영입 사이 Trade-off를 만든다.
 
-후보:
-- Current Combat Level
-- Growth Potential
-- Our Strategy Fit
-- MMA Fit
-- Boxing Fit
-- Kickboxing Fit
-- No Rules Fit
-- Marketability
-- Information Confidence
-- Acquisition Difficulty
+## Watchlist
+관심 선수의 경기, Technique, 체급, 연승/연패, 부상, Fame, 계약, 경쟁 관심, 스타일 변화를 추적한다.
+관찰이 없으면 Freshness가 감소한다.
 
-Scout/Coach 자연어 의견을 함께 제공할 수 있다.
+## Scout 직원
+Discovery, Evaluation, Potential Evaluation, Region Knowledge, 분야별 평가, Network/Access 등의 Parameter를 가진다.
 
-기존 `Overall`은 UI 편의용 평가값으로 존재할 수 있으나 전투 계산에 사용하지 않으며, 영입 의사결정을 단일 추천 점수로 대체하지 않는다.
-
----
-
-# 37. Scouting Trade-off / 경쟁 영입
-
-정보를 더 모으는 동안 다른 매니저/팀이 먼저 접근하거나 계약할 수 있다.
-
-따라서:
-- 부족한 정보로 빠르게 영입
-- 충분한 Evidence를 모은 후 안전하게 영입
-
-사이에 Trade-off가 존재한다.
-
-Fame, 최근 성적, 시장 관심도에 따라 경쟁 강도가 증가할 수 있다.
+## 진행에 따른 진화
+- 1부 초반: 직접 지역 탐색
+- 1부 후반: 지역 네트워크 / 간단한 위임
+- 2부: 전문 Scout / 국제 Scouting Focus
+- 3부: 소속 선수뿐 아니라 대회의 미래 스타와 시장 발굴
 
 ---
 
-# 38. Watchlist / Fighter Tracking
+# 30. Fighter Management Agreement / Dual Contract
 
-관심 선수는 영입하지 않아도 Watchlist에 두고 장기 추적할 수 있다.
+플레이어는 선수를 소유하는 구단주가 아니라 **매니저 겸 코치**다.
 
-추적 정보 후보:
-- 경기 결과
-- Technique 변화
-- 체급 변경
-- 연승/연패
-- 부상
-- Fame
-- 계약 변화
+계약 구조를 두 층으로 분리한다.
+
+1. **Player ↔ Fighter**: Management / Coaching Agreement
+2. **Fighter ↔ Promotion / Fight Club**: 출전 / Fight Contract
+
+1부는 경기 단위 Fight Offer 중심, 2부 이후에는 Promotion과 다경기 계약 가능.
+3부에는 플레이어가 Promotion을 운영해 양쪽 관점을 경험할 수 있다.
+
+선수 Transfer Fee / 소유권 매매는 기본 시스템에 포함하지 않는다.
+
+---
+
+# 31. 선수단 규모 / 직접 관리 / 위임
+
+선수단 규모는 게임 진행과 조직 성장에 따라 단계적으로 확장한다.
+
+현재 초기 목표값:
+- 1부: `Organization Roster Capacity ≤ 3`
+- 2부: `≤ 10`
+- 3부: `≤ 100`
+
+모두 Data Parameter로 관리하고 밸런싱 가능하게 한다.
+
+## Direct Management Capacity
+플레이어가 높은 세밀도로 직접 관리하는 핵심 선수는 기본 **5명 이하** 수준을 목표로 한다.
+직접 관리 선수는 훈련, Technique, Skill Card, 비디오 분석, 체중, 스트레스, 일정, 전략 등을 깊게 설정할 수 있다.
+
+## Delegated Management
+선수단이 커지면 코치진/직원/관리 도구를 통해 자동 훈련, 컨디션/스트레스 경고, 경기 추천, 분석, 일정 및 계약 보조를 위임한다.
+
+> 선수단 확대는 클릭 수 증가가 아니라 조직의 관리 능력 증가여야 한다.
+
+---
+
+# 32. 영입 관심도 / Career Need
+
+정식 협상 전 선수의 `Join Interest`를 대화/힌트 형태로 파악할 수 있다.
+정확한 값은 내부 수치화한다.
+
+영향 후보:
+- Player Reputation
+- 선수 Fame / Rank
+- 코치진 / 시설
+- 기존 선수 성공
+- 계약 조건
 - 다른 매니저 관심
-- 스타일 변화
+- Career Need
 
-관찰하지 않는 시간이 길어질수록 기존 정보 Freshness가 감소한다.
+돈만 많이 주면 모든 선수가 오는 구조는 피한다.
+고정 Personality 대신 **현재 커리어 상황에서 생기는 Career Need**를 사용한다.
 
-Watchlist는 단순 Bookmark가 아니라 세계 안에서 변화하는 선수 커리어를 추적하는 기능이다.
-
----
-
-# 39. Scout 직원
-
-Scout는 직원 능력치와 지역 지식/네트워크로 차별화한다.
-
-후보 Parameter:
-- Discovery
-- Evaluation
-- Potential Evaluation
-- Region Knowledge
-- Striking Evaluation
-- Grappling Evaluation
-- Physical Evaluation
-- Combat Intelligence Evaluation
-- Network / Access
-
-Scout 능력은 Discovery 범위와 Interpretation 품질에 영향을 준다.
+예:
+- 유망주: 좋은 성장 환경
+- 전성기 선수: 타이틀/강한 상대
+- 노장: 높은 Purse / 효율적인 일정
+- 연패 선수: 재기 기회
+- 스타: 큰 무대 / Fame / 높은 수익
 
 ---
 
-# 40. Scouting System Progression
+# 33. Management 계약 조건 / Promise
 
-동일한 Scouting Core가 게임 진행에 따라 확장된다.
+협상 항목 후보:
+- Management Fee / Share
+- Contract Duration
+- Fight Commitment
+- Training Support
+- Termination Clause
+- Champion / Win Bonus
+- Sponsor Revenue Share
 
-## 1부 초반
-- 플레이어 직접 탐색
-- 지역 파이트클럽 / 체육관 중심
-- 소문/소개/직접 관찰
+게임 진행에 따라 계약 복잡도를 증가시킬 수 있다.
 
-## 1부 후반
-- 지역 네트워크 형성
-- 체육관/코치 제보
-- 간단한 위임
+## Promise
+돈 이외의 협상 카드로 Promise를 사용한다.
+예:
+- 일정 기간 내 경기 제공
+- 타이틀 도전 기회
+- 특정 Ruleset 중심 육성
+- 특정 체급 유지
+- 좋은 코치 영입 / 훈련 환경 개선
 
-## 2부 국제 리그
-- 전문 Scout 고용
-- 국가/지역별 Scouting Focus
-- 국제 유망주 경쟁
-
-## 3부 단체 운영
-- 소속 선수 영입을 넘어 대회의 미래 스타와 흥행 자원을 발굴
-- 참가 선수 발굴
-- 새로운 시장/지역 탐색
+Promise에는 상태, 기한, 중요도, 이행 여부를 기록한다.
+이행은 Trust 상승, 반복 불이행은 관계/재계약 악화로 이어진다.
 
 ---
 
-# 41. Scouting Data-Driven 후보
+# 34. Relationship / Stress
 
-스카우팅 시스템도 Data/Parameter 중심으로 구현한다.
+별도 Personality 시스템은 만들지 않는다.
+플레이어와 선수 사이 관계 상태는 내부 Parameter로 관리한다.
 
 후보:
-- KnowledgeGainRate
-- EvidenceDecayRate
-- FreshnessDecayCurve
-- InterpretationErrorCurve
-- ScoutDiscoveryWeight
-- ScoutEvaluationWeight
-- PotentialEvaluationWeight
-- TrialEvidenceMultiplier
-- ObservationEvidenceMultiplier
-- VideoEvidenceMultiplier
-- RivalInterestGrowthRate
-- RecruitmentCompetitionModifier
-- KnownFighterDiscoveryThreshold
-- ScoutingFocusWeights
+- Trust
+- Respect
+- Satisfaction
+
+좋은 계약인데 감독을 신뢰하지 않을 수 있고, 감독을 존중하지만 현재 대우에는 불만일 수 있으므로 관계 축은 분리 가능하다.
+
+## Stress
+Stress를 주간 관리의 핵심 상태값으로 둔다.
+
+원인 후보:
+- 과도한 훈련
+- 연패 / 큰 경기 압박
+- Injury
+- 계약 불만 / Promise 불이행
+- 잦은 감량
+- 사생활 부족
+- 미디어/팬 활동
+
+플레이어는 휴식, 일정, 활동 선택, 경기 배치, 커뮤니케이션으로 Stress를 관리한다.
+
+## Stress Resistance
+선수마다 Stress에 대한 저항력/적응력이 다르다.
+이는 Personality가 아니라 내부 선수 특성 Parameter로 관리한다.
+정확한 값은 완전 공개하지 않고 사건 반응/관찰로 힌트를 얻을 수 있다.
+
+---
+
+# 35. 재협상 / 경쟁 매니저 / Loyalty
+
+선수의 Rank, Fame, 최근 성적, Finish 기록, Title, Marketability, 다른 매니저/Promotion 관심에 따라 `Expected Value`가 변한다.
+성장한 선수는 재협상을 요구할 수 있다.
+
+계약 만료 또는 불만족 상태에서는 다른 매니저가 접근할 수 있다.
+계약 중 즉시 강제로 빼앗기는 구조는 제한하되 경쟁 Offer와 재계약 압박은 존재한다.
+
+고정 `Loyalty` Personality Parameter는 두지 않는다.
+장기 잔류는 오랜 동행, Promise 이행, 커리어 성공, Trust/Satisfaction, 좋은 대우의 결과로 발생한다.
+
+---
+
+# 36. 협상 실패의 비용
+
+계약 협상에서 계속 최저 조건을 찔러보는 플레이를 막는다.
+지나치게 낮은 Offer나 무리한 협상은 다음을 만들 수 있다.
+- Trust 하락
+- 협상 태도 악화
+- 요구 조건 상승
+- 일정 기간 재협상 제한
+- 다른 매니저 탐색
+
+협상 행동 자체가 관계 History에 남을 수 있다.
+
+---
+
+# 37. Fight Offer / Risk-Reward / Fame
+
+Fight Offer는 단순 파이트머니 선택이 아니다.
+
+데이터 후보:
+- Base Purse
+- Win Bonus
+- Finish Bonus
+- Opponent / Opponent Strength
+- Ruleset
+- Ranking Effect
+- Event Fame
+- Short Notice
+- Weight Requirement
+- Title / Contender Implication
+- Injury Risk
+- Expected Audience
+
+경기 선택은 돈, 랭킹, 성장, 부상 위험, Fame을 동시에 비교하는 의사결정이 된다.
+
+## Fame
+격투기는 스포츠이자 엔터테인먼트이므로 Fame을 적극 관리한다.
+Fame 가치가 높은 경기 예:
+- 유명한 상대
+- 악명 높은 상대
+- 라이벌전
+- 챔피언전
+- 큰 이벤트
+- 화제성 높은 매치업
+- 재대결
+
+Fame은 향후 Fight Purse, Sponsor, Matchmaking, 선수 Market Value, 계약 요구에 연결할 수 있다.
+
+---
+
+# 38. Management Business
+
+선수를 사고파는 Transfer Market은 기본적으로 없다.
+
+핵심 루프:
+**발견 → 평가 → 설득 → 계약 → 신뢰 형성 → 육성 → 경기/커리어 성장**
+
+플레이어는 선수의 Fight Purse, Sponsor, 기타 활동 수익에서 Management Agreement에 따른 몫을 얻고 자신의 Management Business와 조직을 키운다.
+
+---
+
+# 39. Data-Driven / 확장성 원칙
+
+모든 핵심 시스템은 가능한 한 Data/Parameter 중심으로 구현한다.
+
+원칙:
+- 하드코딩 최소화
+- 가중치 / Curve / Threshold 조절 가능
+- Ruleset / Action별 설정 가능
+- Technique / Combo / Skill Card / Ring Name 추가 가능
+- 성장/밸런스 튜닝 가능
+- Roster Capacity / Direct Management Capacity 조절 가능
+- Relationship / Stress / Fame / Contract 조건 조절 가능
+
+목표는 밸런스 문제가 생겼을 때 코드 구조를 다시 설계하지 않고 데이터 조정으로 대응하는 것이다.
+
+주요 Data 후보:
+- SkillCard Unlock/Trigger/Modifier/AIWeight/Setup/Growth/MaxLevel
+- RingName Unlock/Combat/Fame/Market/Matchmaking/Opponent Modifier
+- Technique Proficiency/StarThreshold/InitialFormula/Growth/MatchExp/FinishBonus
+- Scouting KnowledgeGain/FreshnessDecay/InterpretationError/Competition
+- Contract JoinInterest/CareerNeed/Promise/ExpectedValue
+- RosterCapacity/DirectManagementCapacity/DelegationEfficiency
+- StressGain/StressRecovery/StressResistance
+- FameGain/MatchFame/OpponentFame/RivalryModifier
 
 ---
 
 # 변경 이력 / Superseded Decisions
 
-## 인터뷰 05 → 인터뷰 06
+## 인터뷰 05 → 인터뷰 06: Judging
+이전의 "규칙별 평가 기준이 다를 수 있다"는 표현을 폐기.
+최신 결정은 Universal Judging Engine + Ruleset에서 발생 불가능한 항목만 비활성화.
 
-이전 표현:
-> 규칙별로 심판 평가 기준이 다를 수 있다.
+## 인터뷰 04 → 인터뷰 06: Counter / Feint
+초기 Counter Ability는 Counter Conversion과 실제 Context 기반 Counter Success로 구체화.
+Feint Ability는 Feint Execution / Feint Recognition으로 구체화.
 
-최신 결정:
-> Universal Judging Engine 하나를 사용하고, Ruleset에서 발생 불가능한 채점 항목만 비활성화한다.
-
-## 인터뷰 04 → 인터뷰 06
-
-초기 `Counter Ability` 표현은 이후 구조가 정교화되면서 다음으로 구분한다.
-- Counter Conversion: 선수의 카운터 기회 전환 역량
-- 실제 Counter Success: Counter Conversion + Vulnerability + Setup + Range + Read Confidence 등 Context
-
-초기 `Feint Ability` 표현도 다음으로 구체화한다.
-- Feint Execution
-- Feint Recognition
-
-## 인터뷰 02의 예시 능력치 명칭
-
-초기 문서의 `Punch Power`, `Speed`, `Endurance`, `Recovery` 등의 예시는 현재 Base Parameter 확정안으로 대체한다.
-
-최신 Base Parameter는 본 문서의 **5. Base Parameter**를 기준으로 한다.
+## 인터뷰 02의 초기 능력치 예시
+`Punch Power`, `Speed`, `Endurance`, `Recovery` 등의 예시는 현재 18개 Base Parameter 확정안으로 대체.
 
 ## 인터뷰 01 → 인터뷰 08: Skill Card 보유 구조
+초기: 선수 한 명당 최대 5개 보유.
+최신: 여러 장 보유 가능, 한 경기에서 동시에 활성화 가능한 카드만 기본 최대 5장.
 
-초기 표현:
-> 한 선수는 최대 5개의 Skill Card를 가질 수 있다.
-
-최신 결정:
-> 선수는 Skill Card를 여러 장 보유할 수 있으며, 한 경기에서 동시에 활성화 가능한 Skill Card만 최대 5장이다.
-
-## 인터뷰 01 → 인터뷰 08: 기술과 Skill Card 분리
-
-초기에는 선수 특징을 Skill Card 중심으로 정의했으나, 최신 구조에서는 다음을 분리한다.
-- Technique: 실제 사용 가능한 개별 기술 + 숙련도
-- Combo/Sequence Proficiency: 사전 정의 연속 기술의 숙련도
+## 인터뷰 01 → 인터뷰 08: Technique / Skill Card 분리
+최신 구조:
+- Technique: 실제 개별 기술 + 숙련도
+- Combo/Sequence Proficiency: 주요 연속 기술 숙련
 - Skill Card: 스타일/조건부 특성
 - Ring Name: 희귀 커리어 업적/칭호
 
-## 인터뷰 09: Overall과 Recruitment Recommendation 구분
+## 인터뷰 09: Overall / Recruitment Recommendation
+Overall은 UI 편의값으로 존재 가능하나 영입 추천을 단일 별점으로 압축하지 않는다.
+영입은 여러 축으로 평가한다.
 
-`Overall`은 UI 편의용 평가값으로 존재할 수 있다는 기존 결정은 유지한다.
-
-다만 스카우팅/영입에서 `★★★★★ 영입 추천` 같은 단일 최종 추천 점수는 사용하지 않는다.
-
-영입 평가는 전투 수준, 성장 가능성, 전략 적합성, Ruleset 적합성, 시장성, 정보 신뢰도 등 여러 축으로 분리한다.
+## 인터뷰 10: 선수단 규모
+1부 3명 / 2부 10명 / 3부 100명은 현재 목표값이며 고정 하드코딩 값이 아니다.
+`Organization Roster Capacity`와 `Direct Management Capacity`를 분리하며 직원/관리 도구가 조직 확장을 지원한다.
 
 ---
 
@@ -1238,9 +859,9 @@ Scout 능력은 Discovery 범위와 Interpretation 품질에 영향을 준다.
 
 1. `docs/interviews/`는 인터뷰 당시의 결정과 맥락을 보존한다.
 2. 결정이 바뀌면 이 `current_decisions.md`를 즉시 최신값으로 수정한다.
-3. 이전 결정과 충돌할 경우 `Superseded Decisions`에 변경 출처를 기록한다.
-4. 실제 구현/밸런싱 시에는 인터뷰 파일보다 이 문서를 우선한다.
-5. 새 벤치마킹 조사 내용은 `docs/benchmark/`의 게임별 파일에 누적한다.
-6. 새 인터뷰를 완료할 때마다 인터뷰 문서와 SSOT를 함께 갱신한다.
-7. 모든 주요 배율/Curve/Threshold/성장 보상은 코드 상수로 고정하지 않고 데이터 Parameter로 관리한다.
-8. 새 인터뷰 반영 후 GitHub 디렉터리/SSOT를 다시 조회해 실제 저장 여부를 검증한다.
+3. 이전 결정과 충돌하면 `Superseded Decisions`에 변경 출처를 기록한다.
+4. 실제 구현/밸런싱 시 인터뷰 파일보다 이 문서를 우선한다.
+5. 벤치마킹 조사 내용은 `docs/benchmark/`의 게임별 파일에 누적한다.
+6. 새 인터뷰 완료 시 인터뷰 문서와 SSOT를 함께 갱신한다.
+7. 모든 주요 배율/Curve/Threshold/성장 보상/관리 한도는 코드 상수가 아니라 Data Parameter로 관리한다.
+8. 반영 후 GitHub 디렉터리/SSOT를 다시 조회해 실제 저장 여부를 검증한다.
