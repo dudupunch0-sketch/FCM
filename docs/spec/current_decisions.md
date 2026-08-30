@@ -10,7 +10,7 @@
 
 ## 장르 / 플레이 판타지
 
-FCM은 지하 격투 세계에서 시작해 선수들을 발굴하고 육성하여 정상에 올린 뒤, 장기적으로 국제 무대와 자체 격투 단체 운영까지 확장되는 격투 매니지먼트 게임이다.
+FCM은 지하 격투 세계에서 시작해 선수를 발굴하고 육성하여 정상에 올린 뒤, 장기적으로 국제 무대와 자체 격투 단체 운영까지 확장되는 격투 매니지먼트 게임이다.
 
 핵심 재미 우선순위:
 1. 애정을 가지고 키운 선수가 전략과 성장을 거쳐 괴물급 선수로 성장하는 경험
@@ -76,7 +76,7 @@ Familiarity와 그 패널티는 내부적으로 수치화하며, 경기 규칙 �
 
 # 4. 선수 데이터 표시 / 정보 비대칭
 
-## 능력치 표시
+## Base Parameter 표시
 
 - 내부: 정밀한 실수값 등 세밀한 수치 허용
 - UI: 0~100 범위
@@ -103,7 +103,7 @@ Familiarity와 그 패널티는 내부적으로 수치화하며, 경기 규칙 �
 예:
 - 반복 카운터 성공 → Reflex / Fight IQ / Punch Technique 정보 정밀화
 - 후반 라운드 안정적 경기력 → Cardio 정보 정밀화
-- 반복 테이크다운 방어 성공 → Takedown Defense / Reflex / Fight IQ 정보 정밀화
+- 반복 테이크다운 방어 성공 → Takedown Defense Technique / Reflex / Fight IQ 정보 정밀화
 
 ---
 
@@ -119,13 +119,13 @@ Base Parameter만 직접 훈련/성장한다.
 - Durability
 - Reflex
 
-### Reflex 정의
+### Reflex
 
-Agility와 별개.
+Agility와 별개다.
 
 신체 이동속도가 아니라 인지, 판별, 예측, 반응의 속도.
 
-영향 후보:
+주요 영향:
 - Counter
 - Feint Recognition
 - 갑작스러운 공격 대응
@@ -165,7 +165,7 @@ Ground Striking은 별도 Base Parameter를 두지 않는다.
 
 FCM의 핵심 상위 중요 Parameter.
 
-영향 후보:
+주요 영향:
 - 상황 판단
 - 상대 패턴 학습
 - 자신의 패턴이 읽혔는지 인지
@@ -360,8 +360,6 @@ Setup 성공/실패 판정이 존재한다.
 
 # 12. Universal Judging Engine
 
-**최신 결정.**
-
 규칙별로 별개의 채점 공식을 만들지 않는다.
 
 하나의 공통 Judging Core를 사용한다.
@@ -383,8 +381,6 @@ Ruleset에서 발생 불가능한 항목만 비활성화한다.
 - Kickboxing: Punch, Kick 활성 / Grappling 비활성
 - MMA: Punch, Kick, Grappling, Submission 활성
 - No Rules: 가장 넓은 Action 집합 허용
-
-> 이 결정은 인터뷰 05의 "규칙별 평가 기준은 다를 수 있다"는 초기 표현을 대체한다.
 
 ---
 
@@ -474,7 +470,7 @@ Finish는 인과관계가 있는 조건 누적의 결과다.
 
 ---
 
-# 16. Action Data / Technique
+# 16. Action Data
 
 각 Action/Technique에는 선수 Base Parameter와 별도의 데이터가 존재한다.
 
@@ -492,54 +488,197 @@ Finish는 인과관계가 있는 조건 누적의 결과다.
 
 특정 기술 밸런스는 선수 스탯을 건드리지 않고 Action Data로 조절 가능해야 한다.
 
-## Technique 습득
+---
 
-기술 자체는 별도 훈련으로 배운다.
+# 17. Technique System
+
+Technique은 Skill Card와 분리한다.
+
+## Technique 내부 숙련도 / UI
+
+각 Technique은 독립적인 내부 숙련도 수치를 가진다.
+
+UI에서는 숙련도를 **별 1~5개**로 표시한다.
+
+실제 계산은 별 개수가 아니라 내부 정밀 수치를 사용한다.
+
+## 신규 Technique 시작 숙련도
+
+새 Technique은 항상 최저 숙련도에서 시작하지 않는다.
+
+관련 Base Technique과 적성, 기존 유사 기술 경험 등에 따라 초기 숙련도 보너스를 받을 수 있다.
+
+예:
+- Punch Technique이 높은 선수가 새로운 펀치 계열 기술을 습득 → 별 3 수준에서 시작 가능
+
+정확한 초기값 공식은 Parameter화한다.
+
+## Base Parameter와 Technique Proficiency 분리
+
+- Base Parameter: 해당 영역의 전반적 기본기
+- Technique Proficiency: 특정 기술 자체의 숙련
+
+실제 기술 성능에는 둘 다 관여한다.
+
+## Technique 3단 구조
+
+### Fundamental Action
+
+기본적으로 사용할 수 있는 기술.
 
 예:
 - Jab
 - Cross
 - Hook
-- Uppercut
-- Low Kick
-- High Kick
-- Flying Knee
-- Double Leg
-- Armbar
+- 기본 Low Kick
+- 기본 Clinch
+- 기본 Takedown
 
-Technique은 Skill Card가 아니다.
+### Learnable Technique
+
+별도 훈련으로 습득.
+
+예:
+- Spinning Backfist
+- Question Mark Kick
+- Flying Knee
+- 특정 Throw
+- 특정 Submission
+
+### Signature Technique
+
+일반 Technique을 장기간 높은 수준으로 사용하고 특정 실전/업적 조건을 충족했을 때 대표 기술로 발전 가능.
+
+## Technique 학습 적성
+
+영향 후보:
+- 관련 Base Technique
+- 관련 Physical Parameter
+- Growth Aptitude
+- 일부 예외 Modifier
+- 기존 유사 Technique 경험
+- 코치 / 훈련 품질
+
+일부 선수는 특정 기술 또는 기술군에 Hidden Affinity를 가질 수 있다.
+
+Hidden Affinity는 내부 수치화하며 훈련/실전 Evidence를 통해 힌트로 파악한다.
 
 ---
 
-# 17. Skill Card
+# 18. Technique / Combo 경험치
 
-선수는 최대 5개의 Skill Card를 가질 수 있다.
+Technique는 훈련, 스파링, 실전 사용으로 성장한다.
 
-획득 경로:
-- 초기 보유
-- 훈련
-- 업적
-- 경기/성장 이벤트
+실전 경험은 훈련보다 훨씬 큰 성장 자극을 준다.
 
-Skill Card는 `Flying Knee` 같은 기술 자체가 아니라 스타일/조건부 효과/행동 연결 특성이다.
+현재 초기 밸런스 가정:
+- `Match Technique EXP Multiplier ≈ Training 대비 10배`
+
+이 값은 확정 상수가 아니며 반드시 Data Parameter로 관리한다.
+
+## Finish Bonus
+
+특정 Technique로 Finish했을 경우 해당 Technique에 매우 큰 추가 경험 보상을 준다.
+
+Finish Technique EXP Bonus 역시 독립 Parameter로 관리한다.
+
+## Combo / Sequence Proficiency
+
+단일 기술 숙련과 별개로 게임 데이터에 정의된 주요 Combo/Sequence는 독립 숙련도를 가질 수 있다.
+
+예:
+- Jab → Cross
+- Jab → Jab → Cross
+- Body Hook → Low Kick
+- Cross → Double Leg
+
+모든 가능한 조합을 저장하지 않고 의미 있는 사전 정의 Combo/Sequence만 관리한다.
+
+Combo Proficiency는 실행 안정성, Tactical Execution, Setup, Pattern Break, Action 연결 속도, Energy 효율 등에 관여할 수 있다.
+
+---
+
+# 19. Skill Card
+
+Skill Card는 기술 자체가 아니라 **선수의 플레이 스타일 / 조건부 특성 / 행동 연결 특성**이다.
 
 예:
 - Liver Hunter
 - Chain Wrestler
+- 무쇠 팔 계열
+
+## 보유 / 활성 구조
+
+선수는 커리어 동안 Skill Card를 여러 장 획득할 수 있다.
+
+경기에서 동시에 활성화 가능한 Skill Card는 **최대 5장**이다.
+
+따라서 카드 획득 시 기존 카드를 삭제할 필요가 없다.
+
+경기 규칙, 상대, 전략에 따라 활성 카드 세트를 변경할 수 있다.
+
+활성 카드 최대 수 역시 Parameter화 가능하게 한다.
+
+## Skill Card 성장
+
+Skill Card는 성장할 수 있다.
+
+성장은 카드의 고유한 정체성을 유지한 채 해당 효과를 증폭하는 방식으로 설계한다.
+
+단순한 공통 `Damage +N%` 카드의 반복은 지양한다.
+
+예:
+- Liver Hunter: Body Damage/Setup/Finish 관련 고유 로직 강화
+- Chain Wrestler: Takedown 실패 후 후속 Grappling 연결 관련 고유 로직 강화
+
+## Skill Card 획득
+
+카드 획득은 선수의 실제 육성/경기 역사와 연결한다.
+
+예:
+- 특정 Target 공격 Evidence
+- 특정 전투 스타일 반복
+- 관련 Technique 숙련
+- 특정 방식의 승리/Finish
+- 업적
+
+같은 초기 선수라도 플레이 역사에 따라 서로 다른 Skill Card 세트를 형성할 수 있어야 한다.
 
 ---
 
-# 18. Ring Name
+# 20. Ring Name
 
-- 플레이 스타일/업적에 따라 획득 가능
-- 업적/칭호 시스템과 유사
-- Ring Name 자체에 게임플레이 효과 존재
-- 같은 Ring Name을 사용하는 선수를 동시에 배치할 수 없음
-- 일부 적/라이벌은 Unique Ring Name 보유
+Ring Name은 Skill Card보다 훨씬 희귀한 커리어 업적/칭호다.
+
+계층:
+1. Technique — 비교적 자주 습득/성장
+2. Skill Card — 스타일과 경력이 굳어지며 획득
+3. Ring Name — 커리어를 대표하는 희귀 업적
+
+Ring Name은 다음을 연결할 수 있다.
+- Combat Effect
+- Reputation
+- Fame
+- Market Value
+- Matchmaking
+- 상대 반응
+
+같은 Ring Name을 사용하는 선수를 동시에 배치할 수 없다.
+
+## Unique Ring Name
+
+일부 적/라이벌은 일반 선수가 사용할 수 없는 Unique Ring Name을 가진다.
+
+NPC의 Unique Ring Name 자체를 탈취하지 않는다.
+
+대신 해당 NPC를 특정 조건으로 격파하면 그 업적에 대응하는 별도 Ring Name을 해금할 수 있다.
+
+예:
+- `The King`을 가진 라이벌 격파 → `Kingslayer` 계열 Ring Name 해금 가능
 
 ---
 
-# 19. 신체 / 체중 관리
+# 21. 신체 / 체중 관리
 
 신체 데이터는 Base Parameter와 별도 관리한다.
 
@@ -561,7 +700,7 @@ Skill Card는 `Flying Knee` 같은 기술 자체가 아니라 스타일/조건�
 
 ---
 
-# 20. Potential / Growth Aptitude
+# 22. Potential / Growth Aptitude
 
 구조:
 - Overall Talent
@@ -582,7 +721,7 @@ Potential 정확한 상한은 플레이어에게 공개하지 않는다.
 
 ---
 
-# 21. Potential Curve / Breakthrough
+# 23. Potential Curve / Breakthrough
 
 Potential은 Hard Cap이 아니다.
 
@@ -610,7 +749,7 @@ Breakthrough는 내부적으로 완전히 수치화한다.
 
 ---
 
-# 22. 노화
+# 24. 노화
 
 - 신체 능력은 나이에 따라 저하
 - 노화는 완전히 극복하기 어렵고 갈수록 대응 난이도 증가
@@ -619,7 +758,7 @@ Breakthrough는 내부적으로 완전히 수치화한다.
 
 ---
 
-# 23. 주간 Training / Life Management
+# 25. 주간 Training / Life Management
 
 주 단위 Calendar 사용.
 
@@ -651,7 +790,7 @@ Breakthrough는 내부적으로 완전히 수치화한다.
 
 ---
 
-# 24. 훈련 성장 방식
+# 26. 훈련 성장 방식
 
 반통제형.
 
@@ -684,7 +823,7 @@ Breakthrough는 내부적으로 완전히 수치화한다.
 
 ---
 
-# 25. 실제 경기와 성장
+# 27. 실제 경기와 성장
 
 실제 경기는 훈련 캠프보다 더 큰 성장폭을 제공할 수 있다.
 
@@ -693,6 +832,8 @@ Breakthrough는 내부적으로 완전히 수치화한다.
 - Tactical Execution
 - Rule Familiarity
 - 실전 대응 능력
+- Technique Proficiency
+- Combo/Sequence Proficiency
 
 등은 경기 경험 가치를 크게 가진다.
 
@@ -702,9 +843,13 @@ Breakthrough는 내부적으로 완전히 수치화한다.
 
 지향 감성은 *Darkest Dungeon*의 영웅의 기상과 같은 극한 상황에서의 긍정적 전환이다.
 
+Technique 숙련도는 현재 초기 가정으로 실제 경기 경험 보상을 훈련 대비 약 10배 수준으로 두되, 반드시 Parameter로 관리해 추후 튜닝한다.
+
+특정 Technique로 Finish한 경우 매우 큰 추가 Technique 경험 보상을 부여한다.
+
 ---
 
-# 26. 육성 밸런스 원칙
+# 28. 육성 밸런스 원칙
 
 > **육각형 선수는 있어도 만능 선수는 없다.**
 
@@ -714,7 +859,9 @@ Breakthrough는 내부적으로 완전히 수치화한다.
 - Base Parameter 조합
 - 신체조건
 - Technique
+- Combo/Sequence Proficiency
 - Skill Card
+- Ring Name
 - Rule Familiarity
 - 체급
 - 성장 적성
@@ -729,7 +876,7 @@ Overall은 UI 편의용 평가값일 수 있으나 실제 전투 계산에 사�
 
 ---
 
-# 27. 데이터/확장성 원칙
+# 29. Data-Driven / 확장성 원칙
 
 게임의 모든 핵심 시스템은 가능한 한 Parameter/Data 중심으로 구현한다.
 
@@ -740,11 +887,47 @@ Overall은 UI 편의용 평가값일 수 있으나 실제 전투 계산에 사�
 - Threshold 조절 가능
 - Ruleset별 설정 가능
 - Action별 설정 가능
-- Skill Card 추가 가능
 - Technique 추가 가능
+- Combo/Sequence 추가 가능
+- Skill Card 추가 가능
+- Ring Name 추가 가능
 - 성장/밸런스 튜닝 가능
 
 목표는 밸런스 문제가 생겼을 때 코드 구조를 다시 설계하지 않고 데이터와 Parameter를 조정해 대응하는 것이다.
+
+## Skill Card Data 후보
+- UnlockCondition
+- Trigger
+- Condition
+- Modifier
+- ActionOverride
+- AIWeightModifier
+- SetupModifier
+- GrowthCondition
+- GrowthModifier
+- MaxLevel
+- RuleAvailability
+
+## Ring Name Data 후보
+- UnlockCondition
+- CombatModifier
+- FameModifier
+- MarketValueModifier
+- MatchmakingModifier
+- OpponentModifier
+- RuleModifier
+- UniqueFlag
+
+## Technique 관련 Data 후보
+- InternalProficiency
+- DisplayStarThreshold
+- InitialProficiencyFormula
+- RelatedBaseParameter
+- GrowthAptitudeModifier
+- HiddenAffinityModifier
+- TrainingExpMultiplier
+- MatchExpMultiplier
+- FinishExpBonus
 
 ---
 
@@ -774,6 +957,22 @@ Overall은 UI 편의용 평가값일 수 있으나 실제 전투 계산에 사�
 
 최신 Base Parameter는 본 문서의 **5. Base Parameter**를 기준으로 한다.
 
+## 인터뷰 01 → 인터뷰 08: Skill Card 보유 구조
+
+초기 표현:
+> 한 선수는 최대 5개의 Skill Card를 가질 수 있다.
+
+최신 결정:
+> 선수는 Skill Card를 여러 장 보유할 수 있으며, 한 경기에서 동시에 활성화 가능한 Skill Card만 최대 5장이다.
+
+## 인터뷰 01 → 인터뷰 08: 기술과 Skill Card 분리
+
+초기에는 선수 특징을 Skill Card 중심으로 정의했으나, 최신 구조에서는 다음을 분리한다.
+- Technique: 실제 사용 가능한 개별 기술 + 숙련도
+- Combo/Sequence Proficiency: 사전 정의 연속 기술의 숙련도
+- Skill Card: 스타일/조건부 특성
+- Ring Name: 희귀 커리어 업적/칭호
+
 ---
 
 # 문서 관리 규칙
@@ -784,3 +983,4 @@ Overall은 UI 편의용 평가값일 수 있으나 실제 전투 계산에 사�
 4. 실제 구현/밸런싱 시에는 인터뷰 파일보다 이 문서를 우선한다.
 5. 새 벤치마킹 조사 내용은 `docs/benchmark/`의 게임별 파일에 누적한다.
 6. 새 인터뷰를 완료할 때마다 인터뷰 문서와 SSOT를 함께 갱신한다.
+7. 모든 주요 배율/Curve/Threshold/성장 보상은 코드 상수로 고정하지 않고 데이터 Parameter로 관리한다.
