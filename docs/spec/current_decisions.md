@@ -931,6 +931,257 @@ Overall은 UI 편의용 평가값일 수 있으나 실제 전투 계산에 사�
 
 ---
 
+# 30. World Fighter DB / Known Fighter DB
+
+전체 세계 Fighter DB와 플레이어가 알고 있는 `Known Fighter Database`를 분리한다.
+
+플레이어는 처음부터 전체 선수 목록을 검색할 수 없다.
+
+선수는 플레이어에게 발견되지 않은 상태에서도 세계 안에서 성장, 경기, 부상, 체급 변경, 계약 변화 등을 경험할 수 있다.
+
+Known Fighter 등록 경로 후보:
+- 직접 경기 관람
+- 상대 선수로 조우
+- 체육관 방문
+- 아마추어 대회
+- 코치/선수/지인의 소개
+- SNS / 영상
+- 소문
+- Scout 보고
+- 공식적인 Fame
+
+---
+
+# 31. Fighter Discovery / Scouting 활동
+
+선수 발견은 단일 Scout 버튼이 아니라 여러 활동과 정보 경로를 통해 발생한다.
+
+초반에는 플레이어가 주간 시간을 직접 써서 지역 파이트클럽, 체육관, 대회 등을 탐색한다.
+
+게임 진행 후에는 Scout에게 이 과정을 위임하고 조건 기반 `Scouting Focus`를 설정할 수 있다.
+
+Scouting Focus 후보:
+- Age
+- Weight Class
+- Rule Fit
+- Style
+- Fame 범위
+- Growth Potential 추정
+- Region
+- Marketability
+
+발견 경로는 최초 Evidence의 양, 분야, 편향에 영향을 준다.
+
+---
+
+# 32. 분야별 Scouting Knowledge
+
+단일 `Scouting Progress %`를 사용하지 않는다.
+
+분야별 Knowledge를 관리한다.
+
+후보:
+- Physical Knowledge
+- Striking Knowledge
+- Grappling Knowledge
+- Combat Intelligence Knowledge
+- Technique Knowledge
+- Rule Familiarity Knowledge
+- Weight Adaptation Knowledge
+- Potential Knowledge
+- Market / Reputation Knowledge
+
+실제로 관찰된 행동에 관련된 Knowledge만 증가한다.
+
+---
+
+# 33. Scouting Information State
+
+주요 스카우팅 정보에는 다음 세 내부값을 둔다.
+
+- Confidence
+- Freshness
+- Evidence Amount
+
+`Confidence`는 현재 해석의 확실성, `Freshness`는 정보의 최신성, `Evidence Amount`는 근거량이다.
+
+오래된 확실한 정보와 최신이지만 표본이 적은 정보가 구분되어야 한다.
+
+---
+
+# 34. Raw Evidence / Interpretation
+
+핵심 원칙:
+
+> **Raw Evidence는 사실이며 Interpretation은 틀릴 수 있다.**
+
+경기에서 실제 발생한 행동은 Raw Evidence로 저장된다.
+
+Scout/Coach/플레이어가 그 행동으로부터 선수 능력을 추론하는 과정이 Interpretation이다.
+
+Interpretation 오차 원인 후보:
+- Scout 능력
+- 표본 부족
+- 오래된 정보
+- 상대 수준 오판
+- SNS Highlight 편향
+- 최근 스타일 변화
+- 의도적으로 만든 잘못된 Pattern
+
+게임이 임의로 거짓 수치를 보여주는 방식보다 분석자의 불완전한 해석을 통해 정보 비대칭을 만든다.
+
+---
+
+# 35. Trial Camp / Sparring Evaluation
+
+영입 전 선수를 Trial Camp 또는 Sparring에 초대할 수 있다.
+
+Trial에서 얻을 수 있는 정보 후보:
+- Base Parameter Evidence
+- Technique / Combo Proficiency
+- Cardio
+- Tactical Execution
+- Weight 상태
+- Training Adaptation
+- Hidden Affinity 힌트
+
+비용/리스크:
+- 플레이어/코치 시간
+- 시설 사용
+- 비용
+- 선수 관심/동의
+- Injury Risk
+
+따라서 충분히 검증할지, 경쟁자보다 먼저 불확실한 상태에서 확보할지 선택하게 한다.
+
+---
+
+# 36. Scouting Report UI / Recruitment Evaluation
+
+`★★★★★ 영입 추천` 같은 단일 최종 추천 점수는 사용하지 않는다.
+
+복수 축으로 평가한다.
+
+후보:
+- Current Combat Level
+- Growth Potential
+- Our Strategy Fit
+- MMA Fit
+- Boxing Fit
+- Kickboxing Fit
+- No Rules Fit
+- Marketability
+- Information Confidence
+- Acquisition Difficulty
+
+Scout/Coach 자연어 의견을 함께 제공할 수 있다.
+
+기존 `Overall`은 UI 편의용 평가값으로 존재할 수 있으나 전투 계산에 사용하지 않으며, 영입 의사결정을 단일 추천 점수로 대체하지 않는다.
+
+---
+
+# 37. Scouting Trade-off / 경쟁 영입
+
+정보를 더 모으는 동안 다른 매니저/팀이 먼저 접근하거나 계약할 수 있다.
+
+따라서:
+- 부족한 정보로 빠르게 영입
+- 충분한 Evidence를 모은 후 안전하게 영입
+
+사이에 Trade-off가 존재한다.
+
+Fame, 최근 성적, 시장 관심도에 따라 경쟁 강도가 증가할 수 있다.
+
+---
+
+# 38. Watchlist / Fighter Tracking
+
+관심 선수는 영입하지 않아도 Watchlist에 두고 장기 추적할 수 있다.
+
+추적 정보 후보:
+- 경기 결과
+- Technique 변화
+- 체급 변경
+- 연승/연패
+- 부상
+- Fame
+- 계약 변화
+- 다른 매니저 관심
+- 스타일 변화
+
+관찰하지 않는 시간이 길어질수록 기존 정보 Freshness가 감소한다.
+
+Watchlist는 단순 Bookmark가 아니라 세계 안에서 변화하는 선수 커리어를 추적하는 기능이다.
+
+---
+
+# 39. Scout 직원
+
+Scout는 직원 능력치와 지역 지식/네트워크로 차별화한다.
+
+후보 Parameter:
+- Discovery
+- Evaluation
+- Potential Evaluation
+- Region Knowledge
+- Striking Evaluation
+- Grappling Evaluation
+- Physical Evaluation
+- Combat Intelligence Evaluation
+- Network / Access
+
+Scout 능력은 Discovery 범위와 Interpretation 품질에 영향을 준다.
+
+---
+
+# 40. Scouting System Progression
+
+동일한 Scouting Core가 게임 진행에 따라 확장된다.
+
+## 1부 초반
+- 플레이어 직접 탐색
+- 지역 파이트클럽 / 체육관 중심
+- 소문/소개/직접 관찰
+
+## 1부 후반
+- 지역 네트워크 형성
+- 체육관/코치 제보
+- 간단한 위임
+
+## 2부 국제 리그
+- 전문 Scout 고용
+- 국가/지역별 Scouting Focus
+- 국제 유망주 경쟁
+
+## 3부 단체 운영
+- 소속 선수 영입을 넘어 대회의 미래 스타와 흥행 자원을 발굴
+- 참가 선수 발굴
+- 새로운 시장/지역 탐색
+
+---
+
+# 41. Scouting Data-Driven 후보
+
+스카우팅 시스템도 Data/Parameter 중심으로 구현한다.
+
+후보:
+- KnowledgeGainRate
+- EvidenceDecayRate
+- FreshnessDecayCurve
+- InterpretationErrorCurve
+- ScoutDiscoveryWeight
+- ScoutEvaluationWeight
+- PotentialEvaluationWeight
+- TrialEvidenceMultiplier
+- ObservationEvidenceMultiplier
+- VideoEvidenceMultiplier
+- RivalInterestGrowthRate
+- RecruitmentCompetitionModifier
+- KnownFighterDiscoveryThreshold
+- ScoutingFocusWeights
+
+---
+
 # 변경 이력 / Superseded Decisions
 
 ## 인터뷰 05 → 인터뷰 06
@@ -973,6 +1224,14 @@ Overall은 UI 편의용 평가값일 수 있으나 실제 전투 계산에 사�
 - Skill Card: 스타일/조건부 특성
 - Ring Name: 희귀 커리어 업적/칭호
 
+## 인터뷰 09: Overall과 Recruitment Recommendation 구분
+
+`Overall`은 UI 편의용 평가값으로 존재할 수 있다는 기존 결정은 유지한다.
+
+다만 스카우팅/영입에서 `★★★★★ 영입 추천` 같은 단일 최종 추천 점수는 사용하지 않는다.
+
+영입 평가는 전투 수준, 성장 가능성, 전략 적합성, Ruleset 적합성, 시장성, 정보 신뢰도 등 여러 축으로 분리한다.
+
 ---
 
 # 문서 관리 규칙
@@ -984,3 +1243,4 @@ Overall은 UI 편의용 평가값일 수 있으나 실제 전투 계산에 사�
 5. 새 벤치마킹 조사 내용은 `docs/benchmark/`의 게임별 파일에 누적한다.
 6. 새 인터뷰를 완료할 때마다 인터뷰 문서와 SSOT를 함께 갱신한다.
 7. 모든 주요 배율/Curve/Threshold/성장 보상은 코드 상수로 고정하지 않고 데이터 Parameter로 관리한다.
+8. 새 인터뷰 반영 후 GitHub 디렉터리/SSOT를 다시 조회해 실제 저장 여부를 검증한다.
