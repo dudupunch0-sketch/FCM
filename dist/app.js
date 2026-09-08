@@ -1,7 +1,8 @@
 import {CARDS,SKILLS,PROFILES,RULES,newMatch,makePlan,span,costOf,opponentPlan,observe,resolveTurn} from './engine.js';
-import {Ring} from './ring.js';
+import {createRing} from './ring.js';
+import {advancePlayback} from './motion.js';
 const $=id=>document.getElementById(id);
-const ring=new Ring($('ring'));
+const ring=await createRing($('ring'));
 let match=newMatch(),enemyPlan=null,draft=[],skill='first',mode='setup',last=null,play=null,speed=1,sound=false,audio=null,seed=17,lastLogged=-1;
 const icons={jab:'JAB',cross:'CRS',hook:'HOK',body:'BDY',heavy:'OVR',guard:'GRD',shell:'HLD',lowguard:'LOW',sway:'SWY',weave:'WEV',feint:'FNT',rest:'RST'};
 const keys=['1','2','3','4','5','6','7','8','9','0','-','='];
@@ -72,7 +73,7 @@ function beep(events){
 }
 function loop(now){
   if(play){
-    const dt=play.lastTime?Math.min(80,now-play.lastTime):0;play.lastTime=now;play.cursor+=dt/(ring.reduced?350:760)*speed;
+    const dt=play.lastTime?Math.min(80,now-play.lastTime):0;play.lastTime=now;advancePlayback(play,last.frames,dt,speed,ring.reduced);
     if(play.cursor>=last.frames.length){finishPlayback();ring.render(now,null,0,match.fighters);}
     else{const tick=Math.floor(play.cursor),p=play.cursor-tick,frame=last.frames[tick];ring.render(now,frame,p);
       if(p>=.5&&lastLogged<tick){for(let t=lastLogged+1;t<=tick;t++)appendEvents(last.frames[t]);lastLogged=tick;hud(frame.fighters);$('stageMessage').textContent=frame.events.find(e=>e.type==='hit'&&e.counter)?.text??frame.events.find(e=>e.type!=='rest')?.text??'호흡을 고르는 중';}
