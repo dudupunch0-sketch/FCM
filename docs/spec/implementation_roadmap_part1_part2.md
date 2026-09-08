@@ -1,7 +1,8 @@
 # FCM Part 1~2 — Implementation Roadmap
 
 > 목표: 명세를 실제 개발 순서로 변환
-> 최우선 원칙: **3D 전투보다 Headless Simulation과 Management Core를 먼저 완성**
+> 최우선 원칙: **콤보형 턴제 전투의 재미를 Headless Engine과 간단한 조작 화면으로 먼저 검증**
+> 최신 전투 상세: [콤보형 턴제 전투와 정보 공개 스킬카드](../design/18_combo_turn_combat_and_information_cards.md)
 > 현재 범위: Part 1 + Part 2
 > Part 3는 제외
 
@@ -93,20 +94,18 @@ Fighter 한 명을 생성하고:
 텍스트/로그 기반.
 
 ## 최소 Action
-모든 Ruleset 핵심 검증을 위해 소수 Action부터 시작.
+복싱 중심 콤보 시제품부터 시작한다. 다른 Ruleset 동작은 이후 확장한다.
 
 예:
 - Jab
 - Cross
 - Hook
-- Low Kick
-- Guard
-- Evasion
-- Takedown
-- Takedown Defense
-- Ground Control
-- Ground Escape
-- Basic Submission
+- 짧은/긴 Guard
+- Sway / Weaving
+- Feint
+- 호흡 정리
+
+Low Kick, Takedown, Ground Control, Submission 등은 복싱 시제품 검증 후 추가한다.
 
 ## 구현
 - Base → Derived
@@ -118,6 +117,12 @@ Fighter 한 명을 생성하고:
 - Vulnerability
 - Simple Strategy
 - Ruleset Action Mask
+- 8칸 ComboPlan / 동작당 1~4칸 점유
+- 계획 잠금과 동시 실행, 준비/타격/회수
+- 가드 자원 교환, 회피 후 짧은 카운터
+- 최소 정보 카드, 확정 공개와 추정 예고 분리
+- 상대 확정 후 플레이어 배치, AI 재계획/숨겨진 정보 유출 방지
+- 간단한 타임라인 배치 UI와 결과 재생
 
 ## 완료 기준
 - 강한 Fighter가 대체로 우세
@@ -212,7 +217,7 @@ Fighter 한 명을 생성하고:
 
 # 8. Milestone A — One Fighter Vertical Slice
 
-여기서 처음 플레이 가능 버전을 만든다.
+앞서 검증한 전투 시제품을 육성 루프에 연결한다.
 
 범위:
 - Fighter 1명
@@ -516,33 +521,24 @@ Engine과 Content를 분리한다.
 - Sponsor
 
 ## 마지막
-- 고급 Animation / 3D Integration
+- 고급 Animation (실시간 3D 대전 통합은 필수 아님)
 
 ---
 
-# 21. 3D Combat Interface Boundary
+# 21. 전투 판정과 연출 경계
 
-FCM Management Project와 3D Combat Project를 분리한다.
+전투 엔진 입력:
+- Fighter 상태, Technique / Skill Cards, Ruleset, Pre-Fight Condition
+- 확정된 양측 ComboPlan과 설정/Seed
 
-FCM → Combat Project Input:
-- Fighter True Combat Data
-- Technique / Skill Cards
-- Strategy
-- Ruleset
-- Pre-Fight Condition
+전투 엔진 출력:
+- 시간별 Action / 방어 / 회피 / Counter 결과 이벤트
+- Damage / Stamina History / Judge Metrics / Result / Generated Evidence
 
-Combat Project → FCM Output:
-- Action Log
-- Damage
-- Stamina History
-- Position History
-- Judge Metrics
-- Result
-- Generated Evidence
-
-3D Animation이 결과를 결정하는 구조보다 **Combat Simulation 결과를 표현하는 Presentation Layer**로 시작하는 것을 권장한다.
-
-추후 Real-Time 물리/접촉이 Gameplay에 들어가더라도 Interface Contract는 유지한다.
+간단한 측면 캐릭터와 타임라인으로 결과를 재생한다.
+애니메이션 속도와 스킵 여부는 판정에 영향을 주지 않는다.
+플레이어 관찰 뷰와 전체 디버그 결과를 분리한다.
+별도 실시간 3D 대전 프로젝트를 필수 의존성으로 두지 않는다.
 
 ---
 
@@ -584,7 +580,7 @@ Takedown Success
 7. 한 Fighter Vertical Slice를 가장 먼저 재미 검증한다.
 8. Part 1이 재미있기 전 Part 2를 크게 만들지 않는다.
 9. Staff/Delegation은 로스터 증가 후 클릭 수를 줄여야 한다.
-10. 3D는 Core Simulation이 검증된 뒤 붙인다.
+10. 판정과 연출을 분리하고 실시간 3D 대전을 필수 의존성으로 두지 않는다.
 
 ---
 

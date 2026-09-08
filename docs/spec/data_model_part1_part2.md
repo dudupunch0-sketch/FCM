@@ -236,6 +236,7 @@ SkillCardDefinition
 - action_overrides[]
 - ai_weight_modifiers[]
 - setup_modifiers[]
+- information_reveal_rules[]
 - growth_rules[]
 - max_level
 - rule_availability
@@ -440,6 +441,12 @@ ActionDefinition
 - target_options[]
 - rule_availability[]
 - transition_options[]
+- slot_duration
+- impact_offset
+- defense_active_window
+- evasion_tags[]
+- protected_targets[]
+- feint_cue
 ```
 
 ---
@@ -459,6 +466,11 @@ CombatState
 - current_strategy{}
 - judging_state
 - action_log[]
+- combo_turn_id
+- combo_phase: OpponentCommitted/PlayerPlanning/Resolving/Complete
+- committed_plans{}
+- observation_states{}
+- resolution_events[]
 ```
 
 ## FighterCombatState
@@ -921,3 +933,50 @@ Headless Simulation은 동일 Seed + 동일 Input이면 동일 결과를 재현�
 - Ranking 안정성 검증
 
 3D Presentation을 붙이기 전에 이 Data Model과 Headless Engine이 먼저 안정되어야 한다.
+
+
+# 콤보형 턴제 확장 스키마
+
+상세 기준: [전투 설계](../design/18_combo_turn_combat_and_information_cards.md).
+아래 필드는 개념 스키마이며 코드 구현이 아니다.
+
+```text
+ComboPlan
+- plan_id
+- fighter_id
+- combo_turn_id
+- committed
+- placements[]: action_id, start_slot, target
+
+InformationRevealRule
+- trigger
+- condition
+- target_selector
+- revealed_fields[]
+- precision: Exact/Cue
+- reveal_budget
+- expires_at
+- growth_rule
+
+CombatObservationState
+- observer_id
+- combo_turn_id
+- reveals[]: source_card_id, plan_id, visible_fields, precision, expires_at
+- observed_history[]
+
+CombatResolutionEvent
+- combo_turn_id
+- timestamp
+- actor_id
+- action_id
+- outcome
+- cause_tags[]
+- stamina_changes
+- damage_changes
+- animation_cue
+```
+
+8칸 시간축과 동작당 1~4칸 점유를 Config에서 검증한다.
+확정 계획과 실행 결과를 분리한다. UI에는 허용된 관찰 필드만 전달한다.
+정보 규칙이 없는 숨겨진 상대 계획과 디버그 이벤트는 플레이어용 뷰에서 제외한다.
+확정 정보와 페이크에 속할 수 있는 예고는 precision으로 구분한다.
