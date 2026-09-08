@@ -1,4 +1,6 @@
 import * as T from './vendor/three.module.min.js';
+import {CHARACTER_PROFILES} from './character-profile.js';
+import {buildHead} from './character-head.js';
 const Y=new T.Vector3(0,1,0);
 const sphere=new T.SphereGeometry(1,24,16);
 const cylinder=new T.CylinderGeometry(1,1,1,20,1);
@@ -29,47 +31,33 @@ class Segment {
   set(a,b){this.mesh.position.copy(a).add(b).multiplyScalar(.5);const d=b.clone().sub(a);this.mesh.scale.y=d.length();this.mesh.quaternion.setFromUnitVectors(Y,d.normalize());}
 }
 export class FighterModel {
-  constructor(index){
+  constructor(index,profile=CHARACTER_PROFILES[index?1:0]){
+    this.profile=profile;
     this.index=index;this.group=new T.Group();this.group.rotation.y=index?Math.PI:0;
-    const skin=skinMat(index?'#865337':'#be8662');
-    const skinLight=skinMat(index?'#925e40':'#c68e68');
-    const skinDark=skinMat(index?'#503223':'#865338');
-    const leather=new T.MeshPhysicalMaterial({color:index?'#d56546':'#a5c64c',roughness:.32,clearcoat:.45,clearcoatRoughness:.3});
+    const skin=skinMat(profile.colors.skin);
+    const skinLight=skinMat(profile.colors.skinLight);
+    const skinDark=skinMat(profile.colors.skinDark);
+    const leather=new T.MeshPhysicalMaterial({color:profile.colors.kit,roughness:.32,clearcoat:.45,clearcoatRoughness:.3});
     const fabric=new T.MeshStandardMaterial({color:index?'#1f282e':'#222b21',roughness:.91});
     const trim=new T.MeshStandardMaterial({color:index?'#e6835d':'#c4e46a',roughness:.6});
     const ivory=new T.MeshStandardMaterial({color:'#dedccf',roughness:.83});
     const dark=new T.MeshStandardMaterial({color:'#171a18',roughness:.5});
     this.hip=new T.Group();this.group.add(this.hip);
     this.torso=new T.Group();this.group.add(this.torso);
-    const torso=new T.Mesh(profileGeometry([[0,.13,.16],[.08,.128,.167],[.18,.145,.19],[.29,.172,.234],[.39,.18,.255],[.47,.155,.243],[.53,.095,.13],[.56,.075,.085]]),skin);this.torso.add(torso);torso.castShadow=true;torso.receiveShadow=true;
-    // Sculpted chest, obliques, shoulder caps and traps, kept intentionally restrained.
-    for(const sign of [-1,1]){
-      ellipsoid(this.torso,skinLight,[.139,.375,sign*.117],[.05,.09,.122]);
-      ellipsoid(this.torso,skin,[.045,.445,sign*.218],[.095,.09,.09]);
-      ellipsoid(this.torso,skin,[.012,.488,sign*.095],[.085,.064,.12]);
-      for(let j=0;j<3;j++)ellipsoid(this.torso,skin,[.134,.12+j*.065,sign*.049],[.021,.034,.047]);
-      ellipsoid(this.torso,skin,[-.115,.32,sign*.10],[.045,.16,.105]);
+    const torso=new T.Mesh(profileGeometry([[0,.13,.145],[.08,.128,.15],[.18,.145,.19],[.29,.172,.234],[.39,.18,.255],[.47,.155,.243],[.53,.095,.13],[.56,.075,.085]]),skin);this.torso.add(torso);torso.castShadow=true;torso.receiveShadow=true;
+    // Continuous trunk silhouette; surface anatomy belongs to the mesh/material,
+    // not a stack of overlapping pectoral and abdominal spheres.
+    torso.scale.set(profile.body.chestDepth/.168,1,1);
+    const waistRatio=profile.body.waistWidth/.29;
+    const positions=torso.geometry.attributes.position;
+    for(let i=0;i<positions.count;i++){
+      const y=positions.getY(i),weight=Math.max(0,1-y/.25);
+      positions.setZ(i,positions.getZ(i)*(waistRatio*weight+(profile.body.shoulderWidth/.49)*(1-weight)));
     }
+    torso.geometry.computeVertexNormals();
     this.neck=ellipsoid(this.group,skin,[0,1.53,0],[.071,.105,.075]);
     this.head=new T.Group();this.group.add(this.head);
-    ellipsoid(this.head,skin,[0,.025,0],[.108,.135,.097]);
-    ellipsoid(this.head,skin,[.047,-.06,0],[.08,.058,.083]);
-    ellipsoid(this.head,skinLight,[.078,.012,0],[.034,.05,.077]);
-    ellipsoid(this.head,skin,[.11,.005,0],[.038,.027,.026]);
-    ellipsoid(this.head,skinLight,[.098,.024,0],[.022,.047,.021]);
-    for(const sign of [-1,1]){
-      ellipsoid(this.head,skin,[-.015,.011,sign*.096],[.028,.041,.016]);
-      ellipsoid(this.head,skinDark,[-.008,.012,sign*.109],[.012,.023,.005]);
-      ellipsoid(this.head,skinDark,[.093,.035,sign*.046],[.015,.018,.034]);
-      ellipsoid(this.head,ivory,[.104,.031,sign*.047],[.008,.009,.022]);
-      ellipsoid(this.head,dark,[.111,.031,sign*.046],[.003,.007,.008]);
-      const brow=ellipsoid(this.head,dark,[.102,.054,sign*.047],[.01,.007,.035]);brow.rotation.x=sign*.12;
-    }
-    ellipsoid(this.head,skinDark,[.118,-.036,0],[.005,.005,.038]);
-    ellipsoid(this.head,skinLight,[.113,-.045,0],[.007,.006,.034]);
-    const hairMat=new T.MeshStandardMaterial({color:index?'#201b17':'#282019',roughness:.96});
-    const hair=new T.Mesh(new T.SphereGeometry(1,24,12,0,Math.PI*2,0,Math.PI*.45),hairMat);hair.scale.set(.109,.14,.101);hair.position.set(-.006,.026,0);this.head.add(hair);hair.castShadow=true;
-    if(index)ellipsoid(this.head,hairMat,[.06,-.078,0],[.067,.023,.071]);
+    this.headMesh=buildHead(this.head,profile,{skin,skinDark,ivory,dark});
     // Shorts are separate fitted volumes with a waistband and fabric piping.
     const shorts=new T.Mesh(profileGeometry([[-.04,.14,.18],[.02,.14,.177],[.06,.128,.171]]),fabric);this.hip.add(shorts);
     const belt=new T.Mesh(profileGeometry([[.035,.136,.178],[.075,.13,.175]]),ivory);this.hip.add(belt);
@@ -100,6 +88,14 @@ export class FighterModel {
       box(boot,trim,[-.066,.21,sign*.04],[.026,.04,.012]);
       this.legs.push({sign,thigh,calf,knee,quad,shortLeg,stripe,boot});
     }
+    for(const arm of this.arms){
+      for(const cap of [arm.shoulder,arm.elbow,arm.muscle])cap.scale.multiplyScalar(profile.body.armThickness);
+      for(const segment of [arm.upper,arm.fore]){segment.mesh.scale.x=profile.body.armThickness;segment.mesh.scale.z=profile.body.armThickness;}
+    }
+    for(const leg of this.legs){
+      for(const cap of [leg.knee,leg.quad])cap.scale.multiplyScalar(profile.body.legThickness);
+      for(const segment of [leg.thigh,leg.calf]){segment.mesh.scale.x=profile.body.legThickness;segment.mesh.scale.z=profile.body.legThickness;}
+    }
     this.headPoint=new T.Vector3();this.bodyPoint=new T.Vector3();this.glovePoints=[new T.Vector3(),new T.Vector3()];
   }
   pose(m){
@@ -117,7 +113,7 @@ export class FighterModel {
     const s=Math.sin(m.twist),c=Math.cos(m.twist);
     for(let i=0;i<2;i++){
       const arm=this.arms[i],sign=arm.sign;
-      const shoulder=chest.clone().add(v([sign*.205*s,.005,sign*.205*c]));
+      const shoulder=chest.clone().add(v([sign*(this.profile.body.shoulderWidth*.42)*s,.005,sign*(this.profile.body.shoulderWidth*.42)*c]));
       const reach=i===0?m.lead:m.rear;
       const idle=v([i===0?.32:.18,1.47+m.crouch+m.breath,i===0?.16:-.15]);
       idle.x+=m.lean*.5;idle.y-=m.rest*.13;
