@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#111510"><meta name="description" content="상대의 패턴을 읽고 콤보를 설계하는 턴제 격투 게임."><title>FCM · 콤보 링</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23d7ff63'/%3E%3Ctext x='7' y='24' font-size='24' font-family='sans-serif' font-weight='bold'%3EF%3C/text%3E%3C/svg%3E"><link rel="stylesheet" href="./style.css"></head>
+<body><div class="app">
+<header><a class="brand" href="./" aria-label="FCM 처음으로">FCM<span>FIGHT CLUB MANAGER</span></a><div class="edition">COMBAT LAB <span>전투 시제품</span></div><button id="helpButton" class="quiet">플레이 방법</button></header>
+<main>
+<section class="arena-panel" aria-label="전투 경기장">
+  <div class="arena-title"><div><span class="eyebrow">UNDERGROUND / BOXING</span><h1>콤보 링<span class="live-mark">전략을 짜고, 링에서 증명하세요.</span></h1></div><div class="turn"><span id="phase">경기 준비</span><strong id="turn">교환 —</strong></div></div>
+  <div class="fighters-hud"><div id="playerHud" class="fighter-hud"></div><div class="versus">VS</div><div id="enemyHud" class="fighter-hud enemy"></div></div>
+  <div class="stage"><canvas id="ring" width="1100" height="410" role="img" aria-label="선수의 공격, 회피, 가드와 피격을 보여주는 전투 애니메이션"></canvas><div class="stage-caption"><span>THE BASEMENT</span><span id="stageMessage">당신의 첫 콤보를 기다립니다</span></div><div id="result" class="result" hidden></div></div>
+  <div class="playback"><span id="playbackLabel">판정과 애니메이션이 함께 재생됩니다</span><div><button id="sound" class="quiet" aria-pressed="false">소리 꺼짐</button><button id="speed" class="quiet">속도 ×1</button><button id="skip" class="quiet" disabled>재생 건너뛰기</button><button id="replay" class="quiet" disabled>다시 보기</button></div></div>
+</section>
+<div class="workbench">
+<section class="planner" aria-label="콤보 편집">
+  <div class="section-heading"><h2>상대의 의도</h2><span id="skillTag" class="tag">정보 카드 선택 전</span></div>
+  <div id="intel" class="timeline intel" aria-label="상대 행동 정보"></div>
+  <p id="intelHint" class="hint">확정 정보는 실선, 추정 예고는 점선으로 표시합니다.</p>
+  <div class="section-heading mine"><h2>나의 콤보 <span id="slotCount">0 / 8</span></h2><div><button id="undo" class="quiet" disabled>되돌리기</button><button id="clear" class="quiet" disabled>비우기</button></div></div>
+  <div id="timeline" class="timeline editable" aria-label="나의 콤보 타임라인"></div>
+  <div class="plan-meta"><span id="cost">공격·동작 비용 0</span><span>빈칸은 호흡 정리 · 배치한 동작을 누르면 삭제</span></div>
+  <div id="moveControls" class="move-controls" hidden><span id="selectedName"></span><button id="moveLeft" class="quiet">앞으로 이동</button><button id="moveRight" class="quiet">뒤로 이동</button></div>
+  <div class="deck-heading"><h2>동작 카드</h2><span>클릭 또는 숫자 키로 추가</span></div>
+  <div id="deck" class="deck"></div>
+  <div class="commit-row"><div><label for="preset">콤보 예시</label><select id="preset"><option value="">직접 구성</option value="counter">회피 후 반격</option><option value="pressure">잽으로 압박</option><option value="body">가드 흔들기</option></select></div><button id="execute" class="primary" disabled>콤보 실행 <span>↵</span></button></div>
+  <p id="notice" class="notice" role="status" aria-live="polite">오른쪽에서 상대와 정보 카드를 고른 뒤 경기를 시작하세요.</p>
+</section>
+<aside>
+  <section id="setup" class="side-card"><span class="eyebrow">FIGHT SETUP</span><h2>상대를 읽는 방법</h2><label for="opponent">스파링 상대</label><select id="opponent"></select><p id="opponentHint" class="hint"></p><label for="skill">정보 스킬카드</label><select id="skill"></select><p id="skillHint" class="hint"></p><button id="start" class="primary">대전 시작 <span>→</span></button><p class="fine">정보 카드는 경기 시작 후 고정됩니다.</p></section>
+  <section id="coach" class="side-card" hidden><span class="eyebrow">YOUR CORNER</span><h2>코너 노트</h2><p id="coachText"></p><div class="legend"><span><i class="exact-dot"></i>확정</span><span><i class="cue-dot"></i>추정 · 페이크 가능</span></div><button id="rematch" class="quiet full">새 경기 준비</button></section>
+  <section class="side-card history"><div class="section-heading"><h2>지난 콤보</h2><span id="historyTurn">—</span></div><div id="history"><p class="hint">상대가 실제로 사용한 순서를 기억하세요. 반복은 약점이 됩니다.</p></div></section>
+  <section class="side-card log-card"><div class="section-heading"><h2>교환 기록</h2><span id="logCount">—</span></div><div id="log" class="log" aria-label="전투 결과 기록"><p class="hint">공격이 왜 통했는지, 어디서 막혔는지 보여줍니다.</p></div></section>
+</aside>
+</div>
+<footer><span>선수의 성장으로 이어질, 첫 번째 링.</span><span>복싱 전투 시제품 · 육성 연결 전</span></footer>
+</main></div>
+<dialog id="help"><div class="help-head"><h2>타이밍을 읽는 격투</h2><button id="closeHelp" class="quiet">닫기 ✕</button></div><p>상대는 먼저 콤보를 확정합니다. 정보 카드로 일부를 읽은 뒤 당신의 동작을 배치하세요. 실행하면 양쪽이 같은 박자에 움직입니다.</p><dl><dt>시간축</dt><dd>카드의 칸 수는 동작의 길이입니다. 카드의 작은 타격 표시가 실제로 때리는 박자입니다. 빈칸은 호흡 정리로 채워집니다.</dd><dt>가드와 회피</dt><dd>상단 가드는 머리를, 바디 가드는 몸통을 막습니다. 스웨이는 직선, 위빙은 훅을 피합니다. 실제 회피에 성공하면 이어지는 짧은 구간에 카운터 이점이 생깁니다.</dd><dt>페이크</dt><dd>상대가 방어 중일 때 쓰면 후속 공격에 빈틈이 생깁니다. 강타 예고는 페이크일 수 있지만, 확정 공개된 카드는 거짓이 아닙니다.</dd><dt>승리</dt><dd>머리에 충격이 쌓인 상태에서 큰 타격을 맞으면 KO가 됩니다. 제한 교환을 모두 마치면 유효 타격과 방어 점수로 판정합니다. 표시되는 충격량은 전신 HP가 아닙니다.</dd><dt>편집과 단축키</dt><dd>카드를 누르면 추가, 시간축의 동작을 누르면 삭제합니다. 각 동작 아래 이동 버튼으로 순서를 바꿀 수 있습니다. Enter로 실행, Backspace로 되돌리기. 입력창에서는 단축키가 작동하지 않습니다.</dd></dl></dialog>
+<script type="module" src="./app.js"></script></body></html>
