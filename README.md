@@ -21,7 +21,7 @@ python3 -m http.server 8000 --directory dist
 ## 검증
 
 ```bash
-node --test tests/combat.test.mjs
+node --test tests/*.test.mjs
 ```
 
 ## 문서
@@ -31,3 +31,5 @@ node --test tests/combat.test.mjs
 - [플랫폼 선택, 구현 범위, 임시 판정 규칙과 한계](docs/design/19_combat_prototype_implementation.md)
 
 현재 시제품은 육성 시스템과 분리되어 있으며 상대 패턴 학습, 전체 선수 능력치 계산, MMA 확장은 아직 미구현입니다.
+
+입체 캐릭터와 관절 애니메이션의 구현 범위는 [모델·애니메이션 업그레이드](docs/design/20_fighter_visual_upgrade.md)를 참고하세요. WebGL 초기화가 불가능하면 기본 Canvas 화면으로 전환합니다.
