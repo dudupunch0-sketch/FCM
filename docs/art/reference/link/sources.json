@@ -1,0 +1,34 @@
+[
+  {
+    "id": "TOTK-LINK",
+    "file": "totk-link-official.webp",
+    "source_page": "https://www.nintendo.com/jp/zelda/totk/character/index.html",
+    "image_url": "https://www.nintendo.com/jp/zelda/totk/assets/img/character/chara_link_sp.webp",
+    "retrieved_at": "2026-09-09",
+    "publisher": "Nintendo",
+    "copyright": "© Nintendo; reference only, not covered by project code license",
+    "kind": "official promotional illustration; not an in-game screenshot",
+    "usage": "얼굴 인상, 눈매, 헤어 덩어리, 동작 실루엣",
+    "width": 1500,
+    "height": 1298,
+    "bytes": 255720,
+    "sha256": "5f8a73f85e8cd12db4dd86e41916be70249263252a7a20807e5160b90e8d5ac5",
+    "transformation": "none"
+  },
+  {
+    "id": "BOTW-LINK",
+    "file": "botw-link-key-art.jpg",
+    "source_page": "https://www.nintendo.com/jp/zelda/botw/index.html",
+    "image_url": "https://www.nintendo.com/jp/zelda/botw/assets/img/top/top_visual.jpg",
+    "retrieved_at": "2026-09-09",
+    "publisher": "Nintendo",
+    "copyright": "© Nintendo; reference only, not covered by project code license",
+    "kind": "official promotional illustration; not an in-game screenshot",
+    "usage": "뒤쪽 헤어와 전신 실루엣, 색과 빛의 관계; 얼굴 기준으로 쓰지 않음",
+    "width": 3200,
+    "height": 1624,
+    "bytes": 916444,
+    "sha256": "d61aac4b83ec8edb1820253612a51a840fc245cba84be6e784dc7b049d4bc769",
+    "transformation": "none"
+  }
+]
