@@ -1,0 +1,12 @@
+{
+  "name": "Rook",
+  "stage": "art blockout, not final likeness approval",
+  "reference_ids": ["TOTK-LINK", "BOTW-LINK"],
+  "face": {"width_scale": 1.0, "eye_spacing": 0.043, "nose_projection": 0.018},
+  "palette": {
+    "skin": "#edbd94", "skin_shadow": "#b77861", "lip": "#985f56",
+    "hair": "#b58a3c", "hair_light": "#d7ad58", "hair_shadow": "#795729",
+    "iris": "#269cae", "ivory": "#fff2dc", "ink": "#23303a",
+    "kit": "#286887", "trim": "#d0a853", "wrap": "#dcd5bc", "boot": "#293b4a"
+  }
+}
