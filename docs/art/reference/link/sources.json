@@ -30,5 +30,37 @@
     "bytes": 916444,
     "sha256": "d61aac4b83ec8edb1820253612a51a840fc245cba84be6e784dc7b049d4bc769",
     "transformation": "none"
+  },
+  {
+    "id": "TOTK-LINK-SCREEN",
+    "file": "totk-link-falling-screen.jpg",
+    "source_page": "https://www.nintendo.com/en-gb/Games/Nintendo-Switch-games/The-Legend-of-Zelda-Tears-of-the-Kingdom-1576884.html",
+    "image_url": "https://www.nintendo.com/eu/media/images/08_content_images/games_6/nintendo_switch_7/nswitch_thelegendofzeldatearsofthekingdom/TheLegendOfZeldaTearsOfTheKingdom_Link_scr_01.jpg",
+    "retrieved_at": "2026-09-09",
+    "publisher": "Nintendo",
+    "copyright": "© Nintendo; reference only",
+    "kind": "official promotional game screenshot; exact capture build unknown",
+    "usage": "링크의 전신 동작 실루엣. 어두운 조명과 원근 때문에 얼굴 비례 측정에는 부적합.",
+    "width": 893,
+    "height": 502,
+    "bytes": 28400,
+    "sha256": "2ae389548409dcb924bdf891eba7f5b1dc3c66e64bee0589769a1dc822c0a2f6",
+    "transformation": "none"
+  },
+  {
+    "id": "TOTK-SHADING",
+    "file": "totk-zelda-shading-screen.jpg",
+    "source_page": "https://www.nintendo.com/en-gb/Games/Nintendo-Switch-games/The-Legend-of-Zelda-Tears-of-the-Kingdom-1576884.html",
+    "image_url": "https://www.nintendo.com/eu/media/images/08_content_images/games_6/nintendo_switch_7/nswitch_thelegendofzeldatearsofthekingdom/TheLegendOfZeldaTearsOfTheKingdom_Link_scr_03.jpg",
+    "retrieved_at": "2026-09-09",
+    "publisher": "Nintendo",
+    "copyright": "© Nintendo; reference only",
+    "kind": "official promotional game screenshot; exact capture build unknown",
+    "usage": "젤다의 피부·머리 명암 단계 참고. 링크가 아니며 얼굴·체형 기준으로 사용하지 않음.",
+    "width": 893,
+    "height": 502,
+    "bytes": 75837,
+    "sha256": "c5c1f95fae3b2b0198479fa4bf8145aaba2b0979f8a9d629f65b3708bd3ad6c4",
+    "transformation": "none"
   }
 ]

@@ -26,6 +26,7 @@ node --test tests/*.test.mjs
 
 ## 문서
 
+- [독립 캐릭터 모델 초안과 미리보기](assets/characters/rook/README.md)
 - [캐릭터 고정 레퍼런스: 야생의 숨결·왕국의 눈물 링크](docs/art/reference/link/README.md)
 - [현재 결정과 전체 게임 범위](docs/spec/current_decisions.md)
 - [콤보 전투와 정보 카드 설계](docs/design/18_combo_turn_combat_and_information_cards.md)
