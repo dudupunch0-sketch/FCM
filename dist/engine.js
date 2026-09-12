@@ -13,6 +13,7 @@ let INTERVAL = null;
 let SUBBEAT = null;
 let RANGE = null;
 let FIRST_STRIKE = null;
+let REVEAL = null;
 
 const required = () => {
   if (!RULES) throw Error('전투 엔진이 설정되지 않았습니다. configureEngine(definitions)를 먼저 호출하세요');
@@ -34,6 +35,7 @@ export function configureEngine(definitions) {
   SUBBEAT = cfg.subBeat;
   RANGE = cfg.range;
   FIRST_STRIKE = cfg.firstStrike;
+  REVEAL = cfg.reveal;
   return { RULES, CARDS, SKILLS, PROFILES };
 }
 
@@ -112,19 +114,53 @@ export function opponentPlan(match){
   if(match.fighters[1].stamina<LOW_STAMINA.threshold){return makePlan([...LOW_STAMINA.actions]);}
   return makePlan(ids);
 }
-export function observe(plan,skill,match){
-  const reveals=[];
+// Raw candidates for one information card. Budget and priority are applied by observe().
+function candidates(plan,skill,match){
+  const out=[];
   const exact=p=>({start:p.start,kind:'exact',label:CARDS[p.id].name,id:p.id});
-  if(skill==='first')reveals.push(exact(plan[0]));
+  if(skill==='first')out.push(exact(plan[0]));
   if(skill==='heavy'){
-    const candidates=plan.filter(p=>p.id==='heavy'||p.id==='feint').slice(0,2);
-    for(const p of candidates)reveals.push({start:Math.min(7,p.start+(p.id==='heavy'?CARDS.heavy.impact:1)),kind:'cue',label:'강타 예고'});
+    for(const p of plan.filter(p=>p.id==='heavy'||p.id==='feint').slice(0,2)){
+      out.push({start:Math.min(RULES.slots-1,p.start+(p.id==='heavy'?CARDS.heavy.impact:1)),kind:'cue',label:'강타 예고'});
+    }
   }
-  if(skill==='guard')for(const p of plan.filter(p=>CARDS[p.id].kind==='guard').slice(0,2))for(let i=p.start;i<p.start+CARDS[p.id].duration;i++)reveals.push({start:i,kind:'zone',label:'가드 구간'});
-  if(skill==='pattern'&&match.lastPlans)for(const p of plan.filter(p=>match.lastPlans[1].some(old=>old.start===p.start&&old.id===p.id)).slice(0,2))reveals.push(exact(p));
-  if(skill==='counter'&&match.lastEvaded[0]){const p=plan.find(p=>CARDS[p.id].kind==='attack');if(p)reveals.push(exact(p));}
-  return reveals;
+  if(skill==='guard')for(const p of plan.filter(p=>CARDS[p.id].kind==='guard').slice(0,2))for(let i=p.start;i<p.start+CARDS[p.id].duration;i++)out.push({start:i,kind:'zone',label:'가드 구간'});
+  if(skill==='pattern'&&match.lastPlans)for(const p of plan.filter(p=>match.lastPlans[1].some(old=>old.start===p.start&&old.id===p.id)).slice(0,2))out.push(exact(p));
+  if(skill==='counter'&&match.lastEvaded[0]){const p=plan.find(p=>CARDS[p.id].kind==='attack');if(p)out.push(exact(p));}
+  return out;
 }
+
+export function activeSkillLimit(){required();return REVEAL.activeLimit;}
+
+// Accepts one skill id or up to activeLimit of them. Every equipped card draws on one shared
+// per-turn budget, so extra cards buy trigger coverage rather than more disclosure.
+// Spec: docs/design/31_information_economy_and_placement.md.
+export function observe(plan,skills,match){
+  required();
+  const list=(Array.isArray(skills)?skills:[skills]).filter(id=>id&&id!=='none');
+  for(const id of list)if(!SKILLS[id])throw Error('알 수 없는 정보 스킬');
+  if(list.length>REVEAL.activeLimit)throw Error(`정보 카드는 최대 ${REVEAL.activeLimit}장입니다`);
+  const pool=[];
+  for(const id of new Set(list))for(const reveal of candidates(plan,id,match))pool.push({...reveal,source:id});
+  // Deterministic priority: trigger specificity, then card id. An arbitrary order would leak
+  // different information from the same seed.
+  pool.sort((a,b)=>(SKILLS[b.source].specificity-SKILLS[a.source].specificity)
+    ||a.start-b.start
+    ||(a.source<b.source?-1:a.source>b.source?1:0));
+  const chosen=[],seen=new Set();
+  let budget=REVEAL.perTurnTotal,exactUsed=0;
+  for(const reveal of pool){
+    const key=`${reveal.start}:${reveal.kind}:${reveal.label}`;
+    if(seen.has(key))continue;               // the same placement costs budget once, not twice
+    const cost=REVEAL.cost[reveal.kind]??1;
+    if(cost>budget)continue;
+    if(reveal.kind==='exact'&&exactUsed>=REVEAL.maxExactPerTurn)continue;
+    seen.add(key);budget-=cost;if(reveal.kind==='exact')exactUsed++;
+    chosen.push(reveal);
+  }
+  return chosen.sort((a,b)=>a.start-b.start);
+}
+
 export function costOf(ids){return ids.reduce((n,id)=>n+CARDS[id].cost,0);}
 export function resolveTurn(input,playerPlan,enemyPlan){
   required();

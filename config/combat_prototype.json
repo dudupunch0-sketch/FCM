@@ -228,27 +228,33 @@
   "skills": {
     "first": {
       "name": "초반 간파",
-      "description": "첫 동작의 카드명과 시작 위치를 확정 공개합니다."
+      "description": "첫 동작의 카드명과 시작 위치를 확정 공개합니다.",
+      "specificity": 5
     },
     "heavy": {
       "name": "강타 감지",
-      "description": "강공격처럼 보이는 타격 박자를 예고합니다. 페이크에 속을 수 있습니다."
+      "description": "강공격처럼 보이는 타격 박자를 예고합니다. 페이크에 속을 수 있습니다.",
+      "specificity": 1
     },
     "guard": {
       "name": "수비 분석",
-      "description": "가드 구간만 확정 공개합니다. 보호 부위는 숨깁니다."
+      "description": "가드 구간만 확정 공개합니다. 보호 부위는 숨깁니다.",
+      "specificity": 2
     },
     "pattern": {
       "name": "패턴 독해",
-      "description": "직전 콤보와 같은 위치에 반복되는 동작을 최대 두 개 공개합니다."
+      "description": "직전 콤보와 같은 위치에 반복되는 동작을 최대 두 개 공개합니다.",
+      "specificity": 3
     },
     "counter": {
       "name": "카운터 본능",
-      "description": "직전 교환에서 실제 회피에 성공하면 다음 공격 하나를 공개합니다."
+      "description": "직전 교환에서 실제 회피에 성공하면 다음 공격 하나를 공개합니다.",
+      "specificity": 4
     },
     "none": {
       "name": "정보 카드 없음",
-      "description": "지난 콤보와 상대 습관만으로 예측합니다."
+      "description": "지난 콤보와 상대 습관만으로 예측합니다.",
+      "specificity": 0
     }
   },
   "profiles": {
@@ -397,5 +403,16 @@
     "staggerWeakensLater": 0.7,
     "groggyWeakensLater": 0.5,
     "note": "A strictly earlier impact weakens the later one rather than erasing it. Only a KO cancels."
+  },
+  "reveal": {
+    "perTurnTotal": 3,
+    "cost": {
+      "exact": 2,
+      "zone": 1,
+      "cue": 1
+    },
+    "maxExactPerTurn": 2,
+    "activeLimit": 3,
+    "note": "Budget shared by every equipped information card. Extra cards buy trigger coverage across situations, never more disclosure in one turn. Spec: docs/design/31_information_economy_and_placement.md."
   }
 }

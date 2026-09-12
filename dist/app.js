@@ -5,7 +5,7 @@ import {advancePlayback} from './motion.js';
 import {editDraft,forecast} from './planner.js';
 const $=id=>document.getElementById(id);
 const ring=await createRing($('ring'));
-let match=newMatch(),enemyPlan=null,draft=[],skill='first',mode='planning',last=null,play=null,speed=2,sound=false,audio=null,seed=17,lastLogged=-1,selected=-1,undoStack=[],category='attack';
+let match=newMatch(),enemyPlan=null,draft=[],skills=['first','none','none'],mode='planning',last=null,play=null,speed=2,sound=false,audio=null,seed=17,lastLogged=-1,selected=-1,undoStack=[],category='attack';
 const keys=['1','2','3','4','5','6','7','8','9','0','-','='];
 const presets={counter:['sway','cross','weave','jab','rest','rest'],pressure:['jab','cross','jab','hook','rest','rest'],body:['feint','body','jab','body','rest','rest']};
 const dialogs=['menu','help','cardsInfo'];
@@ -15,7 +15,15 @@ function hud(fighters){fighters.forEach((f,i)=>{$(i?'enemyHud':'playerHud').inne
 function renderIntel(reveals=[]){
   $('intel').innerHTML=Array.from({length:RULES.slots},(_,i)=>{const r=reveals.find(r=>r.start===i),label=r?(r.id?CARDS[r.id].short:r.kind==='cue'?'강타?':r.kind==='zone'?'가드':r.label):'?';return `<div class="slot ${r?.kind??''}" data-beat="${i}" aria-label="${i+1}박 ${r?(r.kind==='cue'?'추정 ':'확정 ')+r.label:'미공개'}"><span class="${r?'intel-label':'unknown'}">${label}</span></div>`;}).join('');
 }
-function updateIntel(){renderIntel(enemyPlan?observe(enemyPlan,skill,match):[]);$('skillTag').textContent=SKILLS[skill].name+' ⓘ';$('intelHint').textContent=SKILLS[skill].description+' 실선은 확정, 점선은 추정입니다. 상대 계획은 이미 고정됐습니다.';}
+const skillIds=['skill','skill2','skill3'];
+const activeSkills=()=>[...new Set(skills.filter(id=>id&&id!=='none'))];
+function updateIntel(){
+  const active=activeSkills();
+  renderIntel(enemyPlan?observe(enemyPlan,active,match):[]);
+  $('skillTag').textContent=(active.length?active.map(id=>SKILLS[id].name).join(' · '):SKILLS.none.name)+' ⓘ';
+  const detail=active.length?active.map(id=>SKILLS[id].description).join(' '):SKILLS.none.description;
+  $('intelHint').textContent=detail+' 여러 장을 껴도 한 턴 공개량 상한은 같습니다. 실선은 확정, 점선은 추정입니다. 상대 계획은 이미 고정됐습니다.';
+}
 function renderDeck(){
   const entries=Object.entries(CARDS).filter(([,c])=>category==='attack'?c.kind==='attack':category==='defense'?['guard','evade'].includes(c.kind):['feint','rest'].includes(c.kind));
   const used=span(draft)-(selected>=0?CARDS[draft[selected]].duration:0);
@@ -37,11 +45,11 @@ function renderControls(){
   $('execute').disabled=mode==='playing';$('execute').innerHTML=match.finished?'다시 대전 <span>↻</span>':'콤보 실행 <span>▶</span>';
   $('phase').textContent=mode==='playing'?(play?.paused?'일시정지 · 관찰 중':'전투 중'):match.finished?'경기 종료':'작전 중 · 시간 정지';
   $('turn').textContent=`교환 ${play?.turn??match.turn} / ${RULES.maxTurns}`;
-  $('skip').disabled=mode!=='playing';$('replay').disabled=!last||mode==='playing';$('start').disabled=mode==='playing';$('opponent').disabled=mode==='playing';$('skill').disabled=mode==='playing';
+  $('skip').disabled=mode!=='playing';$('replay').disabled=!last||mode==='playing';$('start').disabled=mode==='playing';$('opponent').disabled=mode==='playing';skillIds.forEach(id=>{$(id).disabled=mode==='playing';});
   $('pause').hidden=mode!=='playing';$('pause').textContent=play?.paused?'계속 재생':'일시정지';renderDraft();
 }
 function start(){
-  skill=$('skill').value;match=newMatch($('opponent').value,seed++);enemyPlan=opponentPlan(match);draft=[];last=null;play=null;mode='planning';selected=-1;undoStack=[];
+  skills=skillIds.map(id=>$(id).value);match=newMatch($('opponent').value,seed++);enemyPlan=opponentPlan(match);draft=[];last=null;play=null;mode='planning';selected=-1;undoStack=[];
   $('result').hidden=true;$('menu').close();$('history').textContent='아직 관찰한 콤보가 없습니다.';$('historyTurn').textContent='';$('log').innerHTML='';$('logCount').textContent='';$('coachText').textContent=PROFILES[match.profile].trait;$('playbackLabel').textContent='전투 후 다음 콤보를 바로 준비합니다.';$('preset').value='';
   updateIntel();hud(match.fighters);renderControls();notice('카드로 추가 · 타임라인으로 편집');$('stageMessage').textContent='상대의 첫 동작을 읽고 콤보를 준비하세요';
 }
@@ -83,9 +91,13 @@ function loop(now){
   }else ring.render(now,null,0,match.fighters);
   requestAnimationFrame(loop);
 }
-$('opponent').innerHTML=Object.entries(PROFILES).map(([id,p])=>`<option value="${id}">${p.name}</option>`).join('');$('skill').innerHTML=Object.entries(SKILLS).map(([id,p])=>`<option value="${id}">${p.name}</option>`).join('');
-function setupHints(){$('opponentHint').textContent=PROFILES[$('opponent').value].trait;$('skillHint').textContent=SKILLS[$('skill').value].description;}
-$('opponent').onchange=setupHints;$('skill').onchange=setupHints;
+$('opponent').innerHTML=Object.entries(PROFILES).map(([id,p])=>`<option value="${id}">${p.name}</option>`).join('');skillIds.forEach((slot,index)=>{$(slot).innerHTML=Object.entries(SKILLS).map(([id,p])=>`<option value="${id}"${(index>0&&id==='none')||(index===0&&id==='first')?' selected':''}>${p.name}</option>`).join('');});
+function setupHints(){
+  $('opponentHint').textContent=PROFILES[$('opponent').value].trait;
+  const picked=[...new Set(skillIds.map(id=>$(id).value).filter(id=>id&&id!=='none'))];
+  $('skillHint').textContent=picked.length?picked.map(id=>SKILLS[id].description).join(' '):SKILLS.none.description;
+}
+$('opponent').onchange=setupHints;skillIds.forEach(id=>{$(id).onchange=setupHints;});
 $('cardsInfoBody').innerHTML=Object.entries(CARDS).map(([id,c],i)=>`<section><h3>${c.name} · ${c.duration}칸</h3><p>${c.description}</p><p>기력 소모 ${c.cost}${c.kind==='attack'?` · 타격은 동작의 ${c.impact+1}번째 박자`:''} · 단축키 ${keys[i]}</p></section>`).join('');
 $('deck').onclick=e=>{const b=e.target.closest('[data-card]');if(b&&!b.disabled)add(b.dataset.card);};
 $('timeline').onclick=e=>{const b=e.target.closest('[data-select]');if(!canEdit()||!b)return;selected=selected===Number(b.dataset.select)?-1:Number(b.dataset.select);renderDraft();notice(selected>=0?'카드를 누르면 선택한 동작과 교체됩니다.':'카드로 추가 · 타임라인으로 편집');};
@@ -99,7 +111,7 @@ $('skip').onclick=()=>{finishPlayback();$('menu').close();};$('replay').onclick=
 $('speed').onclick=()=>{speed=speed===2?1:speed===1?3:2;$('speed').textContent=speed===1?'천천히':speed===2?'빠르게':'매우 빠르게';};
 $('sound').onclick=()=>{sound=!sound;$('sound').textContent=sound?'소리 켜짐':'소리 꺼짐';$('sound').setAttribute('aria-pressed',String(sound));if(sound)beep([{type:'block'}]);};
 $('menuButton').onclick=()=>{if(play&&!play.paused){play.paused=true;renderControls();}$('menu').showModal();};
-$('skillTag').onclick=()=>{notice(SKILLS[skill].description);};$('helpButton').onclick=()=>$('help').showModal();$('cardHelp').onclick=()=>$('cardsInfo').showModal();
+$('skillTag').onclick=()=>{const active=activeSkills();notice(active.length?active.map(id=>SKILLS[id].description).join(' '):SKILLS.none.description);};$('helpButton').onclick=()=>$('help').showModal();$('cardHelp').onclick=()=>$('cardsInfo').showModal();
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.close).close());
 document.addEventListener('keydown',e=>{if(['SELECT','INPUT','TEXTAREA','BUTTON'].includes(document.activeElement.tagName)||dialogs.some(id=>$(id).open))return;if(e.key==='Enter'&&!$('execute').disabled){e.preventDefault();execute();}if(canEdit()){const i=keys.indexOf(e.key);if(i>=0){e.preventDefault();add(Object.keys(CARDS)[i]);}if(e.key==='Backspace'){e.preventDefault();$('undo').click();}}});
 document.addEventListener('visibilitychange',()=>{if(play){play.lastTime=0;if(document.hidden){play.paused=true;renderControls();}}});

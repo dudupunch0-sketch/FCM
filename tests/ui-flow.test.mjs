@@ -36,3 +36,10 @@ test('paused replay cannot edit, advance, or change the committed result; skip i
 test('selected card replacement, undo, new match, and modal wiring work',async()=>{
  const h=await harness();h.add('jab');h.setSelected(0);h.add('sway');assert.deepEqual(h.getState().draft,['sway']);h.ids.get('undo').click();assert.deepEqual(h.getState().draft,['jab']);h.ids.get('menuButton').click();assert.equal(h.ids.get('menu').open,true);h.ids.get('start').click();assert.deepEqual(h.getState().draft,[]);assert.equal(h.getState().match.turn,1);assert.equal(h.ids.get('menu').open,false);
 });
+test('three information slots exist, default to one card, and feed observe as a set',async()=>{
+ const h=await harness();
+ for(const id of ['skill','skill2','skill3'])assert.ok(h.ids.has(id),'정보 카드 슬롯이 없습니다: '+id);
+ assert.match(h.ids.get('skill').innerHTML,/option value="first"/);
+ assert.match(h.ids.get('skill2').innerHTML,/option value="none" selected/);
+ assert.ok(h.ids.get('skillTag').textContent.length>0);
+});

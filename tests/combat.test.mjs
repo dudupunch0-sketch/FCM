@@ -45,7 +45,8 @@ test('exact reveal identifies feint; cue reveals no hidden action ID or span',()
 });
 test('pattern and counter information require actual previous evidence',()=>{
   const m=newMatch(),p=makePlan(['jab','cross']);assert.deepEqual(observe(p,'pattern',m),[]);assert.deepEqual(observe(p,'counter',m),[]);
-  m.lastPlans=[makePlan([]),p];assert.equal(observe(p,'pattern',m).length,2);
+  // Budget-limited: two exact reveals cost more than one turn's budget allows.
+  m.lastPlans=[makePlan([]),p];assert.equal(observe(p,'pattern',m).length,1);
   m.lastEvaded=[true,false];assert.equal(observe(p,'counter',m).length,1);
   const all=Object.keys(SKILLS).map(s=>observe(p,s,m));assert(all.length);
 });

@@ -306,7 +306,17 @@ const validators = {
     for (const id of cfg.low_stamina_plan?.actions ?? []) {
       if (!cards[id]) fail(file, 'low_stamina_plan.actions', `알 수 없는 카드: ${id}`);
     }
-    requireObject(file, 'skills', cfg.skills);
+    const skills = requireObject(file, 'skills', cfg.skills);
+    for (const id of dataKeys(skills)) requireNumber(file, `skills.${id}.specificity`, skills[id].specificity, { min: 0 });
+    const reveal = requireObject(file, 'reveal', cfg.reveal);
+    requireNumber(file, 'reveal.activeLimit', reveal.activeLimit, { min: 1 });
+    requireNumber(file, 'reveal.perTurnTotal', reveal.perTurnTotal, { min: 1 });
+    requireNumber(file, 'reveal.cost.exact', reveal.cost?.exact, { min: 1 });
+    requireNumber(file, 'reveal.cost.cue', reveal.cost?.cue, { min: 1 });
+    if (reveal.cost.cue >= reveal.cost.exact) fail(file, 'reveal.cost', '확정 공개가 추정 예고보다 비싸야 합니다');
+    if (reveal.activeLimit > 1 && reveal.perTurnTotal >= reveal.activeLimit * reveal.cost.exact) {
+      fail(file, 'reveal.perTurnTotal', '예산이 카드 수를 구속하지 못합니다');
+    }
     const sub = requireObject(file, 'subBeat', cfg.subBeat);
     requireNumber(file, 'subBeat.nominal', sub.nominal, { min: 0, max: 1 });
     requireNumber(file, 'subBeat.tolerance', sub.tolerance, { min: 0, max: 0.5 });
@@ -370,6 +380,13 @@ export function crossValidate(configs) {
   const slots = configs.information_cards.placement.slots;
   if (configs.combat_prototype.rules.slots !== slots) {
     fail('combat_prototype', 'rules.slots', `information_cards.placement.slots와 달라야 하지 않습니다: ${configs.combat_prototype.rules.slots} vs ${slots}`);
+  }
+  const cards = configs.information_cards;
+  if (configs.combat_prototype.reveal.activeLimit !== cards.active_card_limit.information) {
+    fail('combat_prototype', 'reveal.activeLimit', `information_cards.active_card_limit.information과 달라서는 안 됩니다: ${configs.combat_prototype.reveal.activeLimit} vs ${cards.active_card_limit.information}`);
+  }
+  if (configs.combat_prototype.reveal.perTurnTotal !== cards.reveal_budget.per_turn_total) {
+    fail('combat_prototype', 'reveal.perTurnTotal', '공개 예산이 information_cards와 어긋납니다');
   }
   const [, maxDuration] = configs.information_cards.placement.card_duration_range;
   for (const id of dataKeys(configs.combat_prototype.cards)) {
