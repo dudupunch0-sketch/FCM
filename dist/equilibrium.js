@@ -10,7 +10,7 @@
 
 import { newMatch, makePlan, resolveTurn } from './engine.js';
 import { neighbours, planKey, samplePlans } from './plan-space.js';
-import { choosePlan, observableView, policyKey, policyNeighbours, samplePolicies } from './policy.js';
+import { CONDITIONS, ROLES, behaviourKey, choosePlan, firingRule, observableView, policyNeighbours, roleNames, samplePolicies, thresholdsFor } from './policy.js';
 
 // Double oracle rebuilds the matrix every round, so the same pairing is asked for repeatedly.
 // Results are deterministic, which makes them perfectly cacheable.
@@ -131,16 +131,23 @@ export function doubleOracle(seedPool, rng, { rounds = 6, candidatesPerRound = 2
 
   for (let round = 0; round < rounds; round++) {
     const support = pool.filter((_, i) => solution.strategy[i] > 0.01);
-    const candidates = [];
-    for (const plan of support) {
-      for (const candidate of space.neighbours(plan, { limit: 60 })) {
-        const key = space.key(candidate);
-        if (!seen.has(key)) candidates.push(candidate);
-      }
-    }
-    for (const plan of space.sample(rng, Math.max(20, Math.floor(candidatesPerRound / 4)))) {
-      if (!seen.has(space.key(plan))) candidates.push(plan);
-    }
+    const local = [], fresh = [];
+    const round_seen = new Set(seen);
+    const collect = (into, candidate) => {
+      const key = space.key(candidate);
+      if (round_seen.has(key)) return;
+      round_seen.add(key);
+      into.push(candidate);
+    };
+    for (const plan of support) for (const candidate of space.neighbours(plan, { limit: 60 })) collect(local, candidate);
+    const freshShare = Math.max(20, Math.floor(candidatesPerRound / 4));
+    for (const plan of space.sample(rng, freshShare)) collect(fresh, plan);
+
+    // Both lists are budgeted separately. Concatenating and truncating starved the search of
+    // fresh candidates entirely whenever the support was wide enough for its neighbours to
+    // fill the budget on their own, which left the solver doing pure local search and sitting
+    // in whatever basin it started in.
+    const candidates = [...fresh.slice(0, freshShare), ...local.slice(0, Math.max(0, candidatesPerRound - freshShare))];
     if (!candidates.length) break;
 
     // Best response. Adding only the single best answer converges far too slowly here: the
@@ -148,7 +155,7 @@ export function doubleOracle(seedPool, rng, { rounds = 6, candidatesPerRound = 2
     // in turn, leaving the support small and fully exploitable. Taking the top K widens the
     // pool fast enough for a stable mixture to form.
     const scored = [];
-    for (const candidate of candidates.slice(0, candidatesPerRound)) {
+    for (const candidate of candidates) {
       let value = 0;
       for (let j = 0; j < pool.length; j++) {
         if (!solution.strategy[j]) continue;
@@ -209,12 +216,13 @@ export function clearPolicyDuelCache() { policyDuelCache.clear(); }
 export function duelPolicies(policyA, policyB, options = {}) {
   const { seeds = [1, 2, 3], stats = null, profile = 'pressure' } = options;
   const tail = `${profile}#${seeds.join(',')}#${stats ? stats.base.punch_technique : 'd'}`;
-  const key = `${policyKey(policyA)}#${policyKey(policyB)}#${tail}`;
+  // Keyed by behaviour, so two differently written but identical policies share a cache entry.
+  const key = `${behaviourKey(policyA)}#${behaviourKey(policyB)}#${tail}`;
   const cached = policyDuelCache.get(key);
   if (cached !== undefined) return cached;
   const value = computePolicyDuel(policyA, policyB, { seeds, stats, profile });
   policyDuelCache.set(key, value);
-  policyDuelCache.set(`${policyKey(policyB)}#${policyKey(policyA)}#${tail}`, -value);
+  policyDuelCache.set(`${behaviourKey(policyB)}#${behaviourKey(policyA)}#${tail}`, -value);
   return value;
 }
 
@@ -255,7 +263,8 @@ export const PLAN_SPACE = Object.freeze({
 });
 
 export const POLICY_SPACE = Object.freeze({
-  key: policyKey,
+  // Behaviour, not syntax: a pool that dedupes by text fills with policies that play the same.
+  key: behaviourKey,
   clone: policy => ({ rules: policy.rules.map(r => ({ ...r })), fallback: policy.fallback }),
   neighbours: (policy, opts) => policyNeighbours(policy, opts),
   sample: (rng, count) => samplePolicies(rng, count),
@@ -287,4 +296,86 @@ export function cardUsage(pool, strategy, { seeds = [1, 2, 3], stats = null, pro
   const out = {};
   for (const [id, n] of counts) out[id] = n / (total || 1);
   return out;
+}
+
+// How much of the grammar is actually load-bearing. A policy can carry four rules and still
+// behave like a constant: what matters is which rule decided each turn, and how many distinct
+// combos the policy ended up throwing. Measured the same way card usage is — by replay.
+export function grammarUsage(pool, strategy, { seeds = [1, 2, 3], stats = null, profile = 'pressure', threshold = 0.005 } = {}) {
+  const active = pool.map((policy, i) => ({ policy, weight: strategy[i] })).filter(e => e.weight > threshold);
+  const mass = active.reduce((n, e) => n + e.weight, 0) || 1;
+  const byCondition = new Map();
+  const byRuleIndex = new Map();
+  let decisions = 0, fromFallback = 0, distinctTotal = 0, replays = 0;
+  for (const a of active) {
+    for (const b of active) {
+      const share = (a.weight / mass) * (b.weight / mass);
+      for (const seed of seeds) {
+        let match = newMatch(profile, seed, stats ? { player: stats, opponent: stats } : undefined);
+        const thrown = [[], []];
+        while (!match.finished) {
+          const view = observableView(match, 0, thrown[1]);
+          const fired = firingRule(a.policy, view);
+          decisions += share;
+          if (fired < 0) fromFallback += share;
+          else {
+            const when = a.policy.rules[fired].when;
+            byCondition.set(when, (byCondition.get(when) ?? 0) + share);
+            byRuleIndex.set(fired, (byRuleIndex.get(fired) ?? 0) + share);
+          }
+          const chosen = [choosePlan(a.policy, view), choosePlan(b.policy, observableView(match, 1, thrown[0]))];
+          thrown[0].push(chosen[0]);
+          thrown[1].push(chosen[1]);
+          match = resolveTurn(match, makePlan(chosen[0]), makePlan(chosen[1])).match;
+        }
+        distinctTotal += share * new Set(thrown[0].map(p => p.join('+'))).size;
+        replays += share;
+      }
+    }
+  }
+  const norm = m => Object.fromEntries([...m].map(([k, v]) => [k, v / (decisions || 1)]));
+  return {
+    fallbackShare: fromFallback / (decisions || 1),
+    byCondition: norm(byCondition),
+    byRuleIndex: norm(byRuleIndex),
+    // 1.0 means the mixture is reactive in name only: every policy threw one combo all fight.
+    distinctPlansPerMatch: distinctTotal / (replays || 1)
+  };
+}
+
+// How often each condition is true at a turn boundary, played out across every role pairing.
+// This is the grammar's health check, independent of any solve: a condition that is almost
+// never true is a rule slot nobody can use, and one that is almost always true is the
+// fallback wearing a disguise. Both inflate the search space without adding strategies, which
+// is why double oracle struggled before the first grammar was measured.
+export function conditionBaseRates({ seeds = [1, 2, 3], stats = null, profile = 'pressure' } = {}) {
+  const roles = roleNames();
+  const probes = [];
+  for (const when of CONDITIONS) {
+    const values = thresholdsFor(when);
+    for (const value of values.length ? values : [undefined]) {
+      probes.push({ label: value === undefined ? when : `${when}:${value}`, rule: { when, value, role: roles[0] } });
+    }
+  }
+  const hits = new Map(probes.map(p => [p.label, 0]));
+  let decisions = 0;
+  for (const a of roles) {
+    for (const b of roles) {
+      for (const seed of seeds) {
+        let match = newMatch(profile, seed, stats ? { player: stats, opponent: stats } : undefined);
+        const thrown = [[], []];
+        while (!match.finished) {
+          const view = observableView(match, 0, thrown[1]);
+          decisions++;
+          for (const probe of probes) {
+            if (firingRule({ rules: [probe.rule], fallback: roles[0] }, view) === 0) hits.set(probe.label, hits.get(probe.label) + 1);
+          }
+          thrown[0].push(ROLES[a]);
+          thrown[1].push(ROLES[b]);
+          match = resolveTurn(match, makePlan(ROLES[a]), makePlan(ROLES[b])).match;
+        }
+      }
+    }
+  }
+  return Object.fromEntries([...hits].map(([label, n]) => [label, n / (decisions || 1)]));
 }

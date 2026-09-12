@@ -9,6 +9,7 @@
 //   node tools/calibrate.mjs check                         fail if the committed mixture is stale
 //   node tools/calibrate.mjs report                        inspect the current mixture
 //   node tools/calibrate.mjs policies [rounds] [poolSize]  solve over REACTIVE policies
+//   node tools/calibrate.mjs grammar                       which of the policy grammar is load-bearing
 //
 // `solve` works over fixed plans: one combo thrown every turn for the whole fight. That is
 // the wrong question for any card that exists to answer a read, so `policies` solves the
@@ -24,8 +25,8 @@ import { loadDefinitions } from '../dist/definitions.js';
 import { configureEngine, CARDS } from '../dist/engine.js';
 import { createRngSet } from '../dist/rng.js';
 import { samplePlans, planKey } from '../dist/plan-space.js';
-import { doubleOracle, payoffMatrix, fictitiousPlay, exploitability, supportOf, duel, duelPolicies, deviateMixture, clearDuelCache, clearPolicyDuelCache, cardUsage, POLICY_SPACE } from '../dist/equilibrium.js';
-import { samplePolicies, policyKey, describePolicy, ROLES } from '../dist/policy.js';
+import { doubleOracle, payoffMatrix, fictitiousPlay, exploitability, supportOf, duel, duelPolicies, deviateMixture, clearDuelCache, clearPolicyDuelCache, cardUsage, grammarUsage, conditionBaseRates, POLICY_SPACE } from '../dist/equilibrium.js';
+import { samplePolicies, policyKey, describePolicy, ROLES, CONDITIONS, thresholdsFor } from '../dist/policy.js';
 import { ALL_BASE_PARAMETERS } from '../dist/fighter-schema.js';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -335,9 +336,55 @@ async function solvePolicies(rounds = 8, poolSize = 36) {
   return document;
 }
 
+// Is the policy grammar doing any work? A policy can carry four rules and still behave like a
+// constant. Written-down rules are not played rules, so this replays the solved mixture and
+// counts which rule actually decided each turn. Read it before widening the grammar: adding
+// conditions multiplies the search space, and is only worth it if the ones present are used.
+async function grammar() {
+  // Base rates first: they need no solve, and they explain most of what the rest shows.
+  const rates = conditionBaseRates({ stats: MIRROR, seeds: POLICY_OPTIONS.seeds, profile: POLICY_OPTIONS.profile });
+  console.log('조건이 참일 확률 (모든 역할 조합 자가 대전):');
+  for (const [label, rate] of Object.entries(rates)) {
+    const warn = rate < 0.03 ? '   ← 거의 발동하지 않음' : rate > 0.9 ? '   ← 사실상 기본 역할' : '';
+    console.log(`  ${label.padEnd(20)} ${(rate * 100).toFixed(2).padStart(6)}%${warn}`);
+  }
+
+  const doc = await loadJson(POLICY_OUTPUT);
+  if (!doc) { console.log('\n반응형 정책 해가 아직 없어 여기까지입니다. node tools/calibrate.mjs policies 로 계산하세요.'); return; }
+  if (doc.equilibrium_support.some(s => s.policy.rules.some(r => !CONDITIONS.includes(r.when)))) {
+    console.log('\n저장된 해가 이전 문법으로 풀린 것입니다. node tools/calibrate.mjs policies 로 다시 계산하세요.');
+    return;
+  }
+  console.log('');
+  const pool = doc.equilibrium_support.map(s => s.policy);
+  const strategy = doc.equilibrium_support.map(s => s.weight);
+  const usage = grammarUsage(pool, strategy, { seeds: POLICY_OPTIONS.seeds, stats: MIRROR, profile: POLICY_OPTIONS.profile });
+
+  console.log(`정책 ${pool.length}개, 규칙 개수 분포 ${JSON.stringify(pool.reduce((acc, p) => ({ ...acc, [p.rules.length]: (acc[p.rules.length] ?? 0) + 1 }), {}))}`);
+  console.log(`\n한 경기에서 실제로 던진 서로 다른 콤보 수: ${usage.distinctPlansPerMatch.toFixed(2)}`);
+  if (usage.distinctPlansPerMatch < 1.5) console.log('  ⚠ 1에 가까우면 반응형이라는 이름뿐입니다.');
+  console.log(`기본 역할로 결정한 비율: ${(usage.fallbackShare * 100).toFixed(1)}%`);
+
+  console.log('\n실제로 발동한 조건:');
+  for (const when of CONDITIONS) {
+    const share = usage.byCondition[when] ?? 0;
+    console.log(`  ${when.padEnd(18)} ${(share * 100).toFixed(1).padStart(5)}%${share === 0 ? '   ← 한 번도 발동하지 않음' : ''}`);
+  }
+  console.log('\n몇 번째 규칙이 결정했나 (뒤쪽 규칙이 0이면 문법이 그만큼 낭비):');
+  for (const [index, share] of Object.entries(usage.byRuleIndex).sort((a, b) => a[0] - b[0])) {
+    console.log(`  ${Number(index) + 1}번째      ${(share * 100).toFixed(1).padStart(5)}%`);
+  }
+
+  // A role no policy ever selects is grammar that exists only to be skipped.
+  const selected = new Set(pool.flatMap(p => [p.fallback, ...p.rules.map(r => r.role)]));
+  const unused = Object.keys(ROLES).filter(r => !selected.has(r));
+  console.log(`\n균형이 한 번도 고르지 않은 역할: ${unused.length ? unused.join(', ') : '없음'}`);
+}
+
 const [mode = 'report', ...rest] = process.argv.slice(2);
 if (mode === 'solve') await solve(Number(rest[0]) || 8, Number(rest[1]) || 28);
 else if (mode === 'policies') await solvePolicies(Number(rest[0]) || 8, Number(rest[1]) || 36);
+else if (mode === 'grammar') await grammar();
 else if (mode === 'check') await check();
 else if (mode === 'report') await report();
 else { console.error(`알 수 없는 모드: ${mode}`); process.exitCode = 1; }

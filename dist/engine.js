@@ -124,6 +124,10 @@ export function rangeFactor(gap,card){
   return clamp(1-RANGE.maxFalloff*Math.pow(clamp(excess,0,1),1/RANGE.falloffExponent),1-RANGE.maxFalloff,1);
 }
 
+// The band boundaries themselves, for anything that needs to reason about distance in the
+// same terms the player is shown. Spec: docs/design/22_combat_range_model.md section 2.
+export function rangeBands(){required();return {...RANGE.bands};}
+
 export function bandOf(gap){
   const bands=Object.entries(RANGE.bands).sort((a,b)=>a[1]-b[1]);
   for(const [name,limit] of bands)if(gap<=limit)return name;

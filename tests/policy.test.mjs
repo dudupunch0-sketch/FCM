@@ -9,10 +9,10 @@ import assert from 'node:assert/strict';
 import {definitions} from './helpers/engine-setup.mjs';
 import {CARDS, RULES, span, newMatch} from '../dist/engine.js';
 import {createRngSet} from '../dist/rng.js';
-import {ROLES, CONDITIONS, roleNames, observableView, choosePlan, policyKey, describePolicy,
-  samplePolicies, policyNeighbours, validateRole} from '../dist/policy.js';
-import {duelPolicies, playPolicies, cardUsage, payoffMatrix, fictitiousPlay, doubleOracle,
-  supportOf, exploitability, clearPolicyDuelCache, POLICY_SPACE} from '../dist/equilibrium.js';
+import {ROLES, CONDITIONS, roleNames, observableView, choosePlan, firingRule, policyKey,
+  describePolicy, samplePolicies, policyNeighbours, validateRole, thresholdsFor} from '../dist/policy.js';
+import {duelPolicies, playPolicies, cardUsage, conditionBaseRates, grammarUsage, payoffMatrix,
+  fictitiousPlay, doubleOracle, supportOf, exploitability, clearPolicyDuelCache, POLICY_SPACE} from '../dist/equilibrium.js';
 import {ALL_BASE_PARAMETERS} from '../dist/fighter-schema.js';
 
 const MIRROR = { base: Object.fromEntries(ALL_BASE_PARAMETERS.map(k => [k, 60])) };
@@ -161,4 +161,54 @@ test('conditional cards reach the timeline once play is reactive', () => {
   const usage = cardUsage([stepper], [1], { seeds: [1, 2], stats: MIRROR });
   const moved = ['stepin', 'backstep', 'sidestep'].filter(id => usage[id] > 0);
   assert.ok(moved.length >= 2, `거리·각 카드가 타임라인에 오르지 않았습니다: ${JSON.stringify(usage)}`);
+});
+
+test('every condition is sometimes true and sometimes false', () => {
+  // The grammar's health check. A condition almost never true is a rule slot nobody can use;
+  // one almost always true is the fallback in disguise. Both inflate the search space without
+  // adding strategies. The first grammar failed this: stamina thresholds fired 0-1% of the
+  // time and the counter window and the angle fired 0.00%, because both expire inside the
+  // combo and are gone by the next turn boundary.
+  const rates = conditionBaseRates({ stats: MIRROR, seeds: [1, 2] });
+  assert.ok(Object.keys(rates).length >= CONDITIONS.length);
+  for (const [label, rate] of Object.entries(rates)) {
+    assert.ok(rate > 0.03, `${label}이 거의 발동하지 않습니다: ${(rate * 100).toFixed(2)}%`);
+    assert.ok(rate < 0.9, `${label}이 거의 항상 참입니다: ${(rate * 100).toFixed(2)}%`);
+  }
+});
+
+test('thresholds come from Config, not from magic numbers', () => {
+  const bands = definitions.configs.combat_prototype.range.bands;
+  assert.deepEqual(thresholdsFor('gapAbove'), [bands.mid]);
+  assert.deepEqual(thresholdsFor('gapBelow'), [bands.clinch, bands.inside]);
+  assert.deepEqual(thresholdsFor('staminaBelow'), [Math.round(RULES.maxStamina * 0.9)]);
+  assert.equal(thresholdsFor('opponentRepeated').length, 0, '조건 없는 값에 임계값이 붙었습니다');
+  // Sampling and the neighbour search may only use declared thresholds, or a solved policy
+  // could sit on a value the health check never measured.
+  for (const policy of samplePolicies(rng(), 80)) {
+    for (const rule of policy.rules) {
+      const declared = thresholdsFor(rule.when);
+      if (!declared.length) assert.equal(rule.value, undefined);
+      else assert.ok(declared.includes(rule.value), `${rule.when}에 선언되지 않은 임계값: ${rule.value}`);
+    }
+    for (const near of policyNeighbours(policy, { limit: 60 })) {
+      for (const rule of near.rules) {
+        const declared = thresholdsFor(rule.when);
+        if (declared.length) assert.ok(declared.includes(rule.value), `이웃이 임계값을 벗어났습니다: ${rule.when}=${rule.value}`);
+      }
+    }
+  }
+});
+
+test('grammar usage counts the rule that fired, not the rules written down', () => {
+  const never = { rules: [{ when: 'staminaBelow', value: -1, role: 'power' }], fallback: 'bodywork' };
+  const usage = grammarUsage([never], [1], { seeds: [1], stats: MIRROR });
+  assert.equal(usage.fallbackShare, 1, '발동하지 않은 규칙이 결정한 것으로 집계됐습니다');
+  assert.deepEqual(usage.byCondition, {});
+  assert.equal(usage.distinctPlansPerMatch, 1, '고정 정책이 여러 콤보를 던졌습니다');
+
+  const always = { rules: [{ when: 'gapBelow', value: 99, role: 'power' }], fallback: 'bodywork' };
+  const forced = grammarUsage([always], [1], { seeds: [1], stats: MIRROR });
+  assert.equal(forced.fallbackShare, 0);
+  assert.ok(forced.byCondition.gapBelow > 0.99);
 });
