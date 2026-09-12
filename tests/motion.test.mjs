@@ -41,10 +41,21 @@ test('strong impact holds contact once without rewinding or changing resolution'
  const resolved=resolveTurn(newMatch(),makePlan(['cross']),makePlan([]));
  const snapshot=JSON.stringify(resolved);
  const play={cursor:1.49,holdRemaining:0};
- advancePlayback(play,resolved.frames,30,1,false);close(play.cursor,1.5);assert(play.holdRemaining>0);
- advancePlayback(play,resolved.frames,100,1,false);close(play.cursor,1.5);
- advancePlayback(play,resolved.frames,30,1,false);assert(play.cursor>1.5);
+ advancePlayback(play,resolved.frames,10,1,false);close(play.cursor,1.5);assert(play.holdRemaining>0);
+ advancePlayback(play,resolved.frames,10,1,false);close(play.cursor,1.5);
+ advancePlayback(play,resolved.frames,100,1,false);assert(play.cursor>1.5);
  assert.equal(JSON.stringify(resolved),snapshot);
+});
+test('display playback is frame-partition independent and stops at most 120ms per exchange',()=>{
+ const frames=Array.from({length:8},()=>({events:[{type:'hit',power:20},{type:'hit',counter:true,power:30}]}));
+ for(const speed of [1,2,3]){
+  const a={cursor:0},b={cursor:0};const ticksA=[],ticksB=[];
+  for(let t=0;t<1300;t+=10){advancePlayback(a,frames,10,speed);ticksA.push(...a.contacts.map(c=>c.tick));}
+  advancePlayback(b,frames,1300,speed);ticksB.push(...b.contacts.map(c=>c.tick));
+  close(a.cursor,b.cursor);close(a.holdSpent,b.holdSpent);assert.deepEqual(ticksA,ticksB);
+  advancePlayback(b,frames,10000,speed);assert.equal(b.cursor,8);assert.equal(b.holdSpent,120);
+  const reduced={cursor:0};advancePlayback(reduced,frames,8*760/speed,speed,true);close(reduced.cursor,8);assert.equal(reduced.holdSpent,0);
+ }
 });
 test('reduced motion suppresses bob and hit stop; KO pose settles on floor',()=>{
  const m=sampleMotion(null,0,1234,0,[],true,true);assert.equal(m.breath,0);assert.equal(m.fall,1);

@@ -52,10 +52,29 @@ export function sampleMotion(pose,progress,now=0,index=0,events=[],finishedKO=fa
 }
 
 export function advancePlayback(play,frames,delta,speed=1,reduced=false){
-  if(play.holdRemaining>0){play.holdRemaining=Math.max(0,play.holdRemaining-delta);return;}
-  const previous=play.cursor,next=previous+delta/(reduced?350:760)*speed;
-  const tick=Math.floor(previous),contact=tick+.5;
-  const event=frames[tick]?.events.find(e=>e.type==='hit'&&(e.counter||e.power>=16));
-  if(!reduced&&event&&previous<contact&&next>=contact&&play.heldTick!==tick){play.cursor=contact;play.heldTick=tick;play.holdRemaining=(event.counter?65:40)/speed;}
-  else play.cursor=next;
+  // A display clock independent of resolution. Consume overshoot rather than
+  // dropping wall time; a slow frame must not miss or replay a contact.
+  let remaining=Math.max(0,delta);const beatMs=760/Math.max(.1,speed);
+  play.elapsed??=0;play.holdSpent??=0;play.contacts=[];
+  while(remaining>1e-7&&play.cursor<frames.length){
+    if(play.holdRemaining>0){
+      const spent=Math.min(remaining,play.holdRemaining);
+      play.holdRemaining-=spent;play.elapsed+=spent;remaining-=spent;continue;
+    }
+    const tick=Math.floor(play.cursor),contact=tick+.5;
+    const approaching=play.cursor<contact-1e-9;
+    const end=approaching?contact:tick+1;
+    const spent=Math.min(remaining,Math.max(0,(end-play.cursor)*beatMs));
+    play.cursor+=spent/beatMs;play.elapsed+=spent;remaining-=spent;
+    if(play.cursor>=end-1e-9){
+      play.cursor=end;
+      if(approaching){
+        play.contacts.push({tick,at:play.elapsed});
+        const hits=frames[tick].events.filter(e=>e.type==='hit');
+        const desired=reduced?0:hits.some(e=>e.counter)?45:hits.some(e=>e.power>=16)?30:0;
+        play.holdRemaining=Math.min(desired,Math.max(0,120-play.holdSpent));
+        play.holdSpent+=play.holdRemaining;
+      }
+    }
+  }
 }

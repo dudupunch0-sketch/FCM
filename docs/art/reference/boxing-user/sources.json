@@ -1,0 +1,44 @@
+[
+  {
+    "file": "straight-photo.png",
+    "source": "codex-clipboard-b81224e2-2425-4cff-8f1d-3eb26bc9d052.png",
+    "sha256": "08ad330831dbe62e74bed1da7bc4f1238b148b0a7559570b0b4d476e56b9680e",
+    "role": "user-supplied pose reference, development only"
+  },
+  {
+    "file": "body-hook-comparison.png",
+    "source": "codex-clipboard-4c5e1558-9318-4f39-a37f-e6cf1d37b40c.png",
+    "sha256": "c33b6fcb2951ca4e2c7de50de4ee64cbc57eaa4a854cd9601465dfcbb1bfe359",
+    "role": "user-supplied pose reference, development only"
+  },
+  {
+    "file": "contact-photo.png",
+    "source": "codex-clipboard-8bf75931-7bf9-4ad4-a6e4-5a80891e3670.png",
+    "sha256": "7e1b8de2b04b5a701b6c1e3d674c248c2fb9e8b111caf799e045be240bb1ff92",
+    "role": "user-supplied pose reference, development only"
+  },
+  {
+    "file": "overhand-study.png",
+    "source": "codex-clipboard-cc3ef82e-d100-4d27-b7d7-5cb3ad5b453d.png",
+    "sha256": "81f2330ca827999cc3d5730c9663363d0bfab9927d705569d91ef24d18093118",
+    "role": "user-supplied pose reference, development only"
+  },
+  {
+    "file": "straight-sequence.png",
+    "source": "codex-clipboard-12497d7f-07f3-4541-9f38-0a9e29a58bc4.png",
+    "sha256": "393c7a2f788f24fcea9190dd1d982741ce6eef0f13df98cb9cfc6ed5440e1297",
+    "role": "user-supplied pose reference, development only"
+  },
+  {
+    "file": "high-guard.png",
+    "source": "codex-clipboard-93fb9c4e-6622-4117-ba5a-ac5aa3376601.png",
+    "sha256": "169a4103e40dadb592f6768d60d5b7f07d0fdef59880998f43c54ae71571f318",
+    "role": "user-supplied pose reference, development only"
+  },
+  {
+    "file": "punch-comparison.png",
+    "source": "codex-clipboard-c07b0cb6-7a12-4c1a-836e-22e1e3adbf46.png",
+    "sha256": "4e1d9e8a0df279be59eb3fc308903f22d03750d62fd79fdbb7fb0bd5d097369b",
+    "role": "user-supplied pose reference, development only"
+  }
+]

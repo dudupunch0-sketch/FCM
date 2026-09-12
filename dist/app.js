@@ -2,12 +2,14 @@ import {CARDS,SKILLS,PROFILES,RULES,newMatch,makePlan,span,opponentPlan,observe,
 import {createRing} from './ring.js';
 import {advancePlayback} from './motion.js';
 import {editDraft,forecast} from './planner.js';
+import {captureSlots,animateSlots} from './ui-motion.js';
 const $=id=>document.getElementById(id);
 const ring=await createRing($('ring'));
 let match=newMatch(),enemyPlan=null,draft=[],skill='first',mode='planning',last=null,play=null,speed=2,sound=false,audio=null,seed=17,lastLogged=-1,selected=-1,undoStack=[],category='attack';
 const keys=['1','2','3','4','5','6','7','8','9','0','-','='];
 const presets={counter:['sway','cross','weave','jab','rest','rest'],pressure:['jab','cross','jab','hook','rest','rest'],body:['feint','body','jab','body','rest','rest']};
 const dialogs=['menu','help','cardsInfo'];
+let deckCategory=null,lastUiSound=0;
 const canEdit=()=>mode==='planning'&&!match.finished;
 function notice(text,warning=false){$('notice').textContent=text;$('notice').classList.toggle('warning',warning);}
 function hud(fighters){fighters.forEach((f,i)=>{$(i?'enemyHud':'playerHud').innerHTML=`<div class="fighter-name"><span>${f.name.split(' · ')[0]}</span><small>기력 ${Math.round(f.stamina)}</small></div><div class="stamina" role="meter" aria-label="${f.name} 스태미너" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(f.stamina)}"><div style="width:${f.stamina}%"></div></div><div class="damage-line"><span>머리 <b>${Math.round(f.damage.head)}</b></span><span>몸통 <b>${Math.round(f.damage.body)}</b></span><span>팔 <b>${Math.round(f.damage.arms)}</b></span></div>`;});}
@@ -18,7 +20,18 @@ function updateIntel(){renderIntel(enemyPlan?observe(enemyPlan,skill,match):[]);
 function renderDeck(){
   const entries=Object.entries(CARDS).filter(([,c])=>category==='attack'?c.kind==='attack':category==='defense'?['guard','evade'].includes(c.kind):['feint','rest'].includes(c.kind));
   const used=span(draft)-(selected>=0?CARDS[draft[selected]].duration:0);
-  $('deck').innerHTML=entries.map(([id,c])=>`<button class="card ${c.kind}" data-card="${id}" ${!canEdit()||used+c.duration>RULES.slots?'disabled':''} aria-label="${selected>=0?'교체: ':''}${c.name}, ${c.duration}칸, 소모 ${c.cost}. ${c.description}"><strong>${c.name}</strong><span class="card-meta"><span>${c.duration}칸</span><span>${c.kind==='rest'?'기력 회복':'기력 −'+c.cost}</span></span></button>`).join('');
+  // Keep the actual buttons alive through rapid taps and keyboard activation.
+  if(deckCategory!==category){
+    deckCategory=category;
+    $('deck').innerHTML=entries.map(([id,c])=>`<button class="card ${c.kind}" data-card="${id}"><span class="card-face"><strong>${c.name}</strong><span class="card-meta"><span>${c.duration}칸</span><span>${c.kind==='rest'?'기력 회복':'기력 −'+c.cost}</span></span><span class="card-beats" aria-hidden="true">${'▰'.repeat(c.duration)}</span></span></button>`).join('');
+  }
+  Array.from($('deck').children).forEach((button,i)=>{
+    const c=entries[i]?.[1];if(!c)return;
+    const fits=used+c.duration<=RULES.slots;
+    button.disabled=!canEdit();button.setAttribute('aria-disabled',String(!canEdit()||!fits));
+    button.classList.toggle('unavailable',!fits);
+    button.setAttribute('aria-label',`${selected>=0?'교체: ':''}${c.name}, ${c.duration}칸, 소모 ${c.cost}. ${!fits?`남은 ${RULES.slots-used}칸 / 필요한 ${c.duration}칸. `:''}${c.description}`);
+  });
 }
 function renderDraft(){
   const ids=play?last.draft:draft;let beat=0;
@@ -32,6 +45,7 @@ function renderDraft(){
   $('undo').disabled=!canEdit()||!undoStack.length;$('clear').disabled=!canEdit()||!draft.length;$('preset').disabled=!canEdit();renderDeck();
 }
 function renderControls(){
+  $('game').dataset.mode=mode;
   if(play)play.visualTick=-1;
   $('execute').disabled=mode==='playing';$('execute').innerHTML=match.finished?'다시 대전 <span>↻</span>':'콤보 실행 <span>▶</span>';
   $('phase').textContent=mode==='playing'?(play?.paused?'일시정지 · 관찰 중':'전투 중'):match.finished?'경기 종료':'작전 중 · 시간 정지';
@@ -44,10 +58,24 @@ function start(){
   $('result').hidden=true;$('menu').close();$('history').textContent='아직 관찰한 콤보가 없습니다.';$('historyTurn').textContent='';$('log').innerHTML='';$('logCount').textContent='';$('coachText').textContent=PROFILES[match.profile].trait;$('playbackLabel').textContent='전투 후 다음 콤보를 바로 준비합니다.';$('preset').value='';
   updateIntel();hud(match.fighters);renderControls();notice('카드로 추가 · 타임라인으로 편집');$('stageMessage').textContent='상대의 첫 동작을 읽고 콤보를 준비하세요';
 }
-function edit(operation){if(!canEdit())return;try{const next=editDraft(draft,operation);undoStack.push([...draft]);draft=next;if(operation.type==='move')selected=operation.index+operation.direction;else selected=-1;$('preset').value='';renderDraft();notice(operation.id?CARDS[operation.id].description:'콤보를 수정했습니다.');}catch(e){notice(e.message,true);}}
+function edit(operation){
+  if(!canEdit())return;
+  const before=captureSlots($('timeline')),index=operation.type==='add'?draft.length:operation.index;
+  try{
+    const next=editDraft(draft,operation);undoStack.push([...draft]);draft=next;
+    if(operation.type==='move')selected=operation.index+operation.direction;else selected=-1;
+    $('preset').value='';renderDraft();animateSlots($('timeline'),before,{...operation,index},ring.reduced);
+    if(operation.type==='remove')$('timeline').children[Math.min(index,draft.length-1)]?.focus?.({preventScroll:true});
+    if(operation.type==='move'&&document.activeElement?.disabled)$('timeline').children[selected]?.focus?.({preventScroll:true});
+    uiSound();notice(operation.id?CARDS[operation.id].description:'콤보를 수정했습니다.');
+  }catch(e){
+    const used=span(draft)-(selected>=0?CARDS[draft[selected]].duration:0);
+    notice(operation.id?`남은 ${RULES.slots-used}칸 / 필요한 ${CARDS[operation.id].duration}칸`:e.message,true);
+  }
+}
 function add(id){edit({type:selected>=0?'replace':'add',id,index:selected});}
 function execute(){if(match.finished&&mode!=='playing'){start();return;}if(!canEdit())return;selected=-1;const result=resolveTurn(match,makePlan(draft),enemyPlan);last={...result,before:structuredClone(match),turn:match.turn,draft:[...draft]};beginPlayback(false);}
-function beginPlayback(replaying){play={cursor:0,lastTime:0,replaying,turn:last.turn,paused:false};mode='playing';selected=-1;lastLogged=-1;$('menu').close();$('log').innerHTML='';$('result').hidden=true;$('playbackLabel').textContent=replaying?'직전 교환 다시 보기':'양측 콤보 동시 실행';hud(last.before.fighters);renderControls();notice(replaying?'다시 보기는 결과를 바꾸지 않습니다.':'양측 콤보를 동시에 실행합니다.');}
+function beginPlayback(replaying){play={cursor:0,lastTime:0,elapsed:0,replaying,turn:last.turn,paused:false};ring.resetEffects?.();mode='playing';selected=-1;lastLogged=-1;$('menu').close();$('log').innerHTML='';$('result').hidden=true;$('playbackLabel').textContent=replaying?'직전 교환 다시 보기':'양측 콤보 동시 실행';hud(last.before.fighters);renderControls();notice(replaying?'다시 보기는 결과를 바꾸지 않습니다.':'양측 콤보를 동시에 실행합니다.');}
 function appendEvents(frame,audible=true){
   for(const e of frame.events.filter(e=>e.type!=='rest')){const row=document.createElement('div');row.className=`log-entry ${e.actor===1?'enemy':''}`;const tick=document.createElement('span');tick.className='tick';tick.textContent=`${frame.tick+1}박`;row.append(tick);const label=document.createElement(e.counter?'strong':'span');label.textContent=e.text;row.append(label);$('log').prepend(row);}
   if(sound&&audible)beep(frame.events);$('logCount').textContent=`${frame.tick+1}/${last.frames.length}박`;
@@ -67,13 +95,26 @@ function finishPlayback(){
   hud(match.fighters);renderControls();
 }
 function beep(events){if(!audio){try{audio=new (window.AudioContext||window.webkitAudioContext)();}catch{return;}}if(audio.state==='suspended')audio.resume().catch(()=>{});for(const e of events.filter(e=>['hit','block','evade'].includes(e.type))){const o=audio.createOscillator(),g=audio.createGain(),t=audio.currentTime;o.type=e.type==='hit'?'triangle':'sine';o.frequency.setValueAtTime(e.type==='hit'?120:e.type==='block'?270:650,t);o.frequency.exponentialRampToValueAtTime(45,t+.1);g.gain.setValueAtTime(.09,t);g.gain.exponentialRampToValueAtTime(.001,t+.12);o.connect(g);g.connect(audio.destination);o.start(t);o.stop(t+.13);}}
+function uiSound(){
+  if(!sound)return;const now=performance.now();if(now-lastUiSound<65)return;lastUiSound=now;
+  if(!audio)beep([]);if(!audio)return;
+  const o=audio.createOscillator(),g=audio.createGain(),t=audio.currentTime;
+  o.frequency.setValueAtTime(540,t);o.frequency.exponentialRampToValueAtTime(260,t+.04);
+  g.gain.setValueAtTime(.025,t);g.gain.exponentialRampToValueAtTime(.001,t+.045);
+  o.connect(g);g.connect(audio.destination);o.start(t);o.stop(t+.05);o.onended=()=>{o.disconnect();g.disconnect();};
+}
 function loop(now){
   if(play){
-    const dt=play.lastTime?Math.min(80,now-play.lastTime):0;play.lastTime=now;
-    if(!play.paused){advancePlayback(play,last.frames,dt,speed,ring.reduced);play.renderTime=now;}
+    const dt=play.lastTime?Math.min(1000,now-play.lastTime):0;play.lastTime=now;
+    if(!play.paused){
+      advancePlayback(play,last.frames,dt,speed,ring.reduced);play.renderTime=now;
+      for(const contact of play.contacts??[]){
+        const frame=last.frames[contact.tick];ring.queueEffects?.(frame,contact.at);
+        if(lastLogged<contact.tick){for(let t=lastLogged+1;t<=contact.tick;t++)appendEvents(last.frames[t],t===contact.tick);lastLogged=contact.tick;hud(frame.fighters);$('stageMessage').textContent=frame.events.find(e=>e.type==='hit'&&e.counter)?.text??frame.events.find(e=>e.type!=='rest')?.text??'호흡 정리';}
+      }
+    }
     if(play.cursor>=last.frames.length){finishPlayback();ring.render(now,null,0,match.fighters);}
-    else{const tick=Math.floor(play.cursor),p=play.cursor-tick,frame=last.frames[tick];ring.render(play.renderTime??now,frame,p);
-      if(p>=.5&&lastLogged<tick){for(let t=lastLogged+1;t<=tick;t++)appendEvents(last.frames[t]);lastLogged=tick;hud(frame.fighters);$('stageMessage').textContent=frame.events.find(e=>e.type==='hit'&&e.counter)?.text??frame.events.find(e=>e.type!=='rest')?.text??'호흡 정리';}
+    else{const tick=Math.floor(play.cursor),p=play.cursor-tick,frame=last.frames[tick];ring.render(play.elapsed??0,frame,p);
       // Replay reveals only what has executed, never the next committed enemy plan.
       if(play.visualTick!==tick){play.visualTick=tick;
       renderIntel(last.plans[1].filter(a=>a.start<=tick).map(a=>({...a,kind:'exact',label:CARDS[a.id].name})));
@@ -87,10 +128,10 @@ function setupHints(){$('opponentHint').textContent=PROFILES[$('opponent').value
 $('opponent').onchange=setupHints;$('skill').onchange=setupHints;
 $('cardsInfoBody').innerHTML=Object.entries(CARDS).map(([id,c],i)=>`<section><h3>${c.name} · ${c.duration}칸</h3><p>${c.description}</p><p>기력 소모 ${c.cost}${c.kind==='attack'?` · 타격은 동작의 ${c.impact+1}번째 박자`:''} · 단축키 ${keys[i]}</p></section>`).join('');
 $('deck').onclick=e=>{const b=e.target.closest('[data-card]');if(b&&!b.disabled)add(b.dataset.card);};
-$('timeline').onclick=e=>{const b=e.target.closest('[data-select]');if(!canEdit()||!b)return;selected=selected===Number(b.dataset.select)?-1:Number(b.dataset.select);renderDraft();notice(selected>=0?'카드를 누르면 선택한 동작과 교체됩니다.':'카드로 추가 · 타임라인으로 편집');};
+$('timeline').onclick=e=>{const b=e.target.closest('[data-select]');if(!canEdit()||!b)return;const index=Number(b.dataset.select);selected=selected===index?-1:index;renderDraft();$('timeline').children[index]?.focus?.({preventScroll:true});notice(selected>=0?'카드를 누르면 선택한 동작과 교체됩니다.':'카드로 추가 · 타임라인으로 편집');};
 document.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>{category=b.dataset.category;document.querySelectorAll('[data-category]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));renderDeck();});
-$('moveLeft').onclick=()=>edit({type:'move',index:selected,direction:-1});$('moveRight').onclick=()=>edit({type:'move',index:selected,direction:1});$('remove').onclick=()=>edit({type:'remove',index:selected});$('cancelSelection').onclick=()=>{selected=-1;renderDraft();};
-$('clear').onclick=()=>edit({type:'clear'});$('undo').onclick=()=>{if(canEdit()&&undoStack.length){draft=undoStack.pop();selected=-1;renderDraft();}};
+$('moveLeft').onclick=()=>edit({type:'move',index:selected,direction:-1});$('moveRight').onclick=()=>edit({type:'move',index:selected,direction:1});$('remove').onclick=()=>edit({type:'remove',index:selected});$('cancelSelection').onclick=()=>{const index=selected;selected=-1;renderDraft();$('timeline').children[index]?.focus?.({preventScroll:true});};
+$('clear').onclick=()=>edit({type:'clear'});$('undo').onclick=()=>{if(canEdit()&&undoStack.length){const before=captureSlots($('timeline'));draft=undoStack.pop();selected=-1;renderDraft();animateSlots($('timeline'),before,{type:'undo'},ring.reduced);if($('undo').disabled)$('deck').children[0]?.focus?.({preventScroll:true});notice('직전 편집을 되돌렸습니다.');}};
 $('start').onclick=start;$('execute').onclick=execute;
 $('preset').onchange=()=>{const ids=presets[$('preset').value];if(ids&&canEdit()){undoStack.push([...draft]);draft=[...ids];selected=-1;renderDraft();$('menu').close();notice('상대의 공개 행동에 맞춰 수정하세요.');}};
 $('pause').onclick=()=>{if(play){play.paused=!play.paused;play.lastTime=0;renderControls();}};

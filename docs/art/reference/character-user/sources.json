@@ -1,0 +1,26 @@
+[
+  {
+    "file": "01-initial-guard.png",
+    "source": "codex-clipboard-9039ece1-3c15-40b6-af57-c131905581ab.png",
+    "sha256": "80cdea223c7f4dbf7d2e7ea95a36ad7c942b4acf9d3daa273e6da333a2643550",
+    "bytes": 540958,
+    "provided_by": "user",
+    "preserved_on": "2026-09-13"
+  },
+  {
+    "file": "02-raised-guard.png",
+    "source": "codex-clipboard-0e2e34a4-aee9-4b04-841e-248dfe118758.png",
+    "sha256": "31e970052bc2984572448e329e39d18beae8c50942e188a2ad05f8d46332d852",
+    "bytes": 540000,
+    "provided_by": "user",
+    "preserved_on": "2026-09-13"
+  },
+  {
+    "file": "03-straight.png",
+    "source": "codex-clipboard-33b199ea-5566-4203-a10d-9780737d3744.png",
+    "sha256": "63814af59eef667ccd0c531494a40434d79f2260619e97ebacaf83d0b02884ec",
+    "bytes": 542104,
+    "provided_by": "user",
+    "preserved_on": "2026-09-13"
+  }
+]

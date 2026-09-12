@@ -46,3 +46,12 @@ export const PLAYER_SPRITES=[
  {box:[816,753,234,242],anchor:[114,235]},
  {box:[1104,908,419,92],anchor:[210,89]},
 ];
+
+// Normalized landmarks inside each existing crop, never gameplay hitboxes.
+const HEADS=[[.55,.16],[.30,.16],[.30,.16],[.50,.18],[.53,.20],[.54,.23],[.52,.18],[.56,.20],[.45,.18],[.53,.25],[.52,.26],[.86,.45]];
+export function pixelContact(index,spriteIndex,part='head',rootX=0){
+  const s=(index===0?PLAYER_SPRITES:SPRITES)[spriteIndex],scale=index===0?.68:.72,sign=index===0?1:-1;
+  const [hx,hy]=HEADS[spriteIndex];
+  const x=s.box[2]*(part==='body'?.48:hx),y=s.box[3]*(part==='body'?.46:hy);
+  return {x:(index===0?238:402)+sign*(Math.round(rootX*60)+(x-s.anchor[0])*scale),y:278+(y-s.anchor[1])*scale};
+}

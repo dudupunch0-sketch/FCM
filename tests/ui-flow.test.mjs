@@ -5,6 +5,7 @@ import {readFile} from 'node:fs/promises';
 import * as engine from '../dist/engine.js';
 import {advancePlayback} from '../dist/motion.js';
 import * as planner from '../dist/planner.js';
+import {captureSlots,animateSlots} from '../dist/ui-motion.js';
 async function harness(){
  const html=await readFile(new URL('../dist/index.html',import.meta.url),'utf8');
  class Element{
@@ -19,7 +20,7 @@ async function harness(){
  const events={};let raf;
  const document={getElementById:id=>{assert.ok(ids.has(id),'missing HTML element: '+id);return ids.get(id);},querySelectorAll:q=>q==='[data-category]'?categories:q==='[data-close]'?closes:q==='#timeline .slot'?ids.get('timeline').children:[],createElement:()=>new Element(),addEventListener:(e,fn)=>events[e]=fn,activeElement:new Element()};
  const source=(await readFile(new URL('../dist/app.js',import.meta.url),'utf8')).replace(/^import .*;\n/gm,'');
- const deps={...engine,...planner,advancePlayback,document,createRing:async()=>({render(){},reduced:false}),requestAnimationFrame:f=>raf=f,window:{}};
+ const deps={...engine,...planner,advancePlayback,captureSlots,animateSlots,document,createRing:async()=>({render(){},reduced:false}),requestAnimationFrame:f=>raf=f,window:{}};
  const factory=new (Object.getPrototypeOf(async function(){}).constructor)('deps',`const {${Object.keys(deps).join(',')}}=deps;\n${source}\nreturn {add,execute,finishPlayback,beginPlayback,edit,getState:()=>structuredClone({match,enemyPlan,draft,mode,play,last}),setSelected:i=>selected=i};`);
  const api=await factory(deps);return {...api,ids,events,step:t=>raf(t)};
 }
@@ -28,6 +29,13 @@ test('normal completion returns directly to planning, keeps draft, and hides une
  for(let t=1;t<6000&&h.getState().mode==='playing';t+=16)h.step(t);
  const after=h.getState();assert.equal(after.mode,'planning');assert.equal(after.match.turn,2);assert.deepEqual(after.draft,original.draft);assert.equal(h.ids.get('intel').innerHTML.match(/class="slot exact"/g)?.length,1);
  h.add('jab');const edited=h.getState();h.beginPlayback(true);h.finishPlayback();const replayed=h.getState();assert.deepEqual(replayed.match,edited.match);assert.deepEqual(replayed.enemyPlan,edited.enemyPlan);assert.deepEqual(replayed.draft,edited.draft);
+});
+test('rapid edits do not queue rejected cards for the next turn',async()=>{
+ const h=await harness();for(let i=0;i<10;i++)h.add('jab');
+ assert.equal(h.getState().draft.length,8);assert.match(h.ids.get('notice').textContent,/남은 0칸/);
+ h.execute();h.add('cross');h.finishPlayback();assert.deepEqual(h.getState().draft,Array(8).fill('jab'));
+ h.setSelected(0);h.add('cross');assert.equal(h.getState().draft.length,8);
+ h.edit({type:'remove',index:1});h.setSelected(0);h.add('cross');assert.equal(h.getState().draft[0],'cross');
 });
 test('paused replay cannot edit, advance, or change the committed result; skip is equivalent',async()=>{
  const h=await harness();h.add('jab');h.execute();const calculated=h.getState().last.match;h.ids.get('pause').click();h.step(16);const before=h.getState();h.add('cross');h.step(200);assert.deepEqual(h.getState().draft,before.draft);assert.equal(h.getState().play.cursor,before.play.cursor);h.finishPlayback();assert.deepEqual(h.getState().match,calculated);assert.equal(h.ids.get('pause').hidden,true);

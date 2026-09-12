@@ -3,4 +3,38 @@
 @media(max-height:740px) and (max-width:640px){.game{min-height:640px;grid-template-rows:44px 61px minmax(105px,1fr) 72px 115px 162px 62px;padding-left:10px;padding-right:10px}.intel-panel{padding-top:0}.section-heading{min-height:32px}.planner>.section-heading{min-height:34px}.deck-heading{height:36px}.deck{grid-template-rows:repeat(2,58px);gap:5px}.brand{font-size:22px}.plan-meta,.move-controls{min-height:37px}}
 @media(min-width:850px){body{padding:18px}.game{height:calc(100svh - 36px);max-height:960px;border:1px solid var(--line);border-radius:16px;padding-left:22px;padding-right:22px}.stage{margin-top:6px}}
 @media(max-width:350px){.game{padding-left:8px;padding-right:8px}.brand span{display:none}.fighter-name{font-size:13px}.damage-line{gap:4px}.categories button{padding:5px 9px}.commit-row{grid-template-columns:minmax(0,1fr) 130px}.card{padding:6px}.card strong{font-size:13px}.move-controls button{padding:4px 6px}}
-@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+/* Motion direction: quiet surfaces, crisp beats, immediate editing. */
+:root{--snap:cubic-bezier(.16,1,.3,1)}
+button{border-radius:6px;touch-action:manipulation;font-variant-numeric:tabular-nums}
+.game{max-width:640px;grid-template-rows:50px 66px minmax(150px,1fr) 78px 123px 188px 62px;min-height:725px}
+.brand{letter-spacing:-1.5px}.brand span{font-size:12px;letter-spacing:.03em}
+.phase>span::before{content:'';display:inline-block;width:5px;height:5px;margin-right:6px;background:var(--lime)}
+.fighters-hud{border-top:1px solid #2b3a47;padding-top:8px}.stamina{height:4px;border-radius:0}.stamina>div{border-radius:0}
+.stage{border-radius:4px;border-color:#405663}.stage canvas{object-fit:cover}.arena-word{font-size:10px;font-weight:800;letter-spacing:.16em}
+.stage-caption{text-align:left;padding-left:12px;border-top:1px solid #ffffff12}
+.section-heading h2{font-size:12px;letter-spacing:.025em;color:var(--muted)}
+.slot{border-radius:3px}.slot.action{border-width:0 0 3px;background:#25342c}
+.slot.action.selected{outline-color:var(--lime);background:#354529}
+.slot.current{outline-color:var(--text);filter:none;background:#3a4938}
+.slot.action.guard.current,.slot.action.evade.current{background:#2c5360}
+.deck{grid-template-rows:repeat(2,66px);gap:6px}
+.card{position:relative;padding:0;border-radius:4px;border:1px solid #435342;background:#1d2a26;overflow:hidden}
+.card-face{display:flex;flex-direction:column;justify-content:center;gap:5px;padding:9px;width:100%;height:100%;transition:transform 60ms ease-out}
+.card strong{font-weight:750;font-size:14px;letter-spacing:-.02em}.card-meta{font-variant-numeric:tabular-nums}
+.card-beats{position:absolute;right:8px;top:3px;font-size:6px;letter-spacing:2px;color:var(--lime);opacity:.65}
+.card.guard .card-beats,.card.evade .card-beats{color:var(--blue)}.card.feint .card-beats{color:var(--yellow)}
+.card:active:not(:disabled) .card-face{transform:scale(.97)}
+.card:hover:not(:disabled){background:#2b3c2b}.card.guard:hover,.card.evade:hover{background:#274653}.card.feint:hover{background:#463c27}
+.card.unavailable{opacity:.46;border-style:dashed}.card.unavailable:hover{opacity:.75}
+.categories button{border-radius:0;border-width:0 0 2px;min-height:38px}.categories [aria-pressed=true]{background:transparent;border-color:var(--lime)}
+.primary{border-radius:4px;font-weight:800;min-height:48px;letter-spacing:-.025em}
+.primary span{border-left:1px solid #26361940;padding-left:12px;transform:skewX(-12deg)}
+.primary:active:not(:disabled){background:#eaffae}.commit-row{border-top:1px solid #304035}
+.game[data-mode=playing] .deck{opacity:.45}.game[data-mode=playing] .phase>span{color:var(--text)}
+.game[data-mode=playing] .phase>span::before{background:var(--red)}
+.game[data-mode=playing] .slot:disabled{opacity:1}.move-controls button{min-height:44px;min-width:44px}
+.move-controls>span{font-size:12px}.damage-line,.plan-meta{font-variant-numeric:tabular-nums}
+@media(max-height:740px) and (max-width:640px){.game{grid-template-rows:44px 61px minmax(140px,1fr) 72px 123px 174px 62px;min-height:680px}.deck{grid-template-rows:repeat(2,64px)}}
+@media(max-width:350px){.move-controls{flex-wrap:wrap;justify-content:flex-end}.move-controls>span{flex-basis:100%}.planner:has(.move-controls:not([hidden])){padding-bottom:42px}.game:has(.move-controls:not([hidden])){grid-template-rows:44px 61px minmax(140px,1fr) 72px 165px 174px 62px;min-height:725px}}
+@media(min-width:760px){body{background:radial-gradient(ellipse at 50% 20%,#253929,#0b111a 65%)}.game{border-left:1px solid #2f4039;border-right:1px solid #2f4039;padding-inline:22px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}.card:active:not(:disabled) .card-face{transform:none}}
