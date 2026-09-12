@@ -6,7 +6,7 @@ import { ALL_BASE_PARAMETERS, DERIVED_CAPABILITIES, isBaseParameter, isDerivedCa
 
 export const CONFIG_FILES = Object.freeze([
   'derived_capability', 'effective_performance', 'action_resolution',
-  'grappling', 'combat_ai', 'knowledge', 'information_cards', 'save'
+  'grappling', 'combat_ai', 'knowledge', 'information_cards', 'save', 'combat_prototype'
 ]);
 
 const EPSILON = 1e-9;
@@ -241,6 +241,49 @@ const validators = {
     if (placement.overflow_policy !== 'reject') fail(file, 'placement.overflow_policy', '초과 배치는 거부해야 합니다');
   },
 
+  // docs/design/19_combat_prototype_implementation.md
+  combat_prototype(file, cfg) {
+    const rules = requireObject(file, 'rules', cfg.rules);
+    for (const key of ['slots', 'maxTurns', 'maxStamina', 'restRecovery', 'counterWindow', 'guardDrain', 'koDamage', 'staggerDamage', 'staggerImpact']) {
+      requireNumber(file, `rules.${key}`, rules[key], { min: 0 });
+    }
+    if (rules.staggerDamage >= rules.koDamage) fail(file, 'rules.staggerDamage', 'koDamage보다 작아야 합니다');
+    const cards = requireObject(file, 'cards', cfg.cards);
+    const kinds = new Set(['attack', 'guard', 'evade', 'feint', 'rest']);
+    for (const id of dataKeys(cards)) {
+      const card = cards[id];
+      if (!kinds.has(card.kind)) fail(file, `cards.${id}.kind`, `알 수 없는 종류: ${card.kind}`);
+      requireNumber(file, `cards.${id}.duration`, card.duration, { min: 1, max: rules.slots });
+      requireNumber(file, `cards.${id}.cost`, card.cost, { min: 0 });
+      if (card.kind === 'attack') {
+        requireNumber(file, `cards.${id}.power`, card.power, { min: 0 });
+        requireNumber(file, `cards.${id}.impact`, card.impact, { min: 0, max: card.duration - 1 });
+        if (!card.target || !card.trajectory) fail(file, `cards.${id}`, '공격은 target과 trajectory가 필요합니다');
+      }
+      if (card.kind === 'guard' && !card.protect) fail(file, `cards.${id}.protect`, '가드는 보호 부위가 필요합니다');
+      if (card.kind === 'evade' && !(card.dodges ?? []).length) fail(file, `cards.${id}.dodges`, '회피는 궤도 상성이 필요합니다');
+    }
+    if (!cards.rest || cards.rest.kind !== 'rest') fail(file, 'cards.rest', '빈칸은 호흡 정리로 처리되므로 rest 카드가 필요합니다');
+    const profiles = requireObject(file, 'profiles', cfg.profiles);
+    const patterns = requireObject(file, 'patterns', cfg.patterns);
+    for (const profile of dataKeys(profiles)) {
+      const list = patterns[profile];
+      if (!Array.isArray(list) || !list.length) fail(file, `patterns.${profile}`, '패턴이 필요합니다');
+      list.forEach((ids, index) => {
+        let total = 0;
+        for (const id of ids) {
+          if (!cards[id]) fail(file, `patterns.${profile}[${index}]`, `알 수 없는 카드: ${id}`);
+          total += cards[id].duration;
+        }
+        if (total > rules.slots) fail(file, `patterns.${profile}[${index}]`, `${rules.slots}칸을 초과합니다: ${total}`);
+      });
+    }
+    for (const id of cfg.low_stamina_plan?.actions ?? []) {
+      if (!cards[id]) fail(file, 'low_stamina_plan.actions', `알 수 없는 카드: ${id}`);
+    }
+    requireObject(file, 'skills', cfg.skills);
+  },
+
   // docs/design/32_save_versioning_and_determinism.md
   save(file, cfg) {
     const persistence = requireObject(file, 'persistence', cfg.persistence);
@@ -286,6 +329,15 @@ export function validateConfig(name, data) {
 // Cross-file invariants that no single file can check on its own.
 export function crossValidate(configs) {
   const slots = configs.information_cards.placement.slots;
+  if (configs.combat_prototype.rules.slots !== slots) {
+    fail('combat_prototype', 'rules.slots', `information_cards.placement.slots와 달라야 하지 않습니다: ${configs.combat_prototype.rules.slots} vs ${slots}`);
+  }
+  const [, maxDuration] = configs.information_cards.placement.card_duration_range;
+  for (const id of dataKeys(configs.combat_prototype.cards)) {
+    if (configs.combat_prototype.cards[id].duration > maxDuration) {
+      fail('combat_prototype', `cards.${id}.duration`, `card_duration_range 상한 ${maxDuration}을 초과합니다`);
+    }
+  }
   const carryover = configs.action_resolution.turn_carryover;
   if (configs.action_resolution.sub_beat.enabled && slots < 1) {
     fail('action_resolution', 'sub_beat', '타임라인 칸 수가 유효하지 않습니다');

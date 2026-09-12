@@ -4,6 +4,7 @@ import * as T from '../dist/vendor/three.module.min.js';
 import {CARDS,newMatch,makePlan,resolveTurn} from '../dist/engine.js';
 import {sampleMotion,advancePlayback} from '../dist/motion.js';
 import {solveIK,FighterModel} from '../dist/fighter-model.js';
+import './helpers/engine-setup.mjs';
 const close=(a,b)=>assert(Math.abs(a-b)<1e-6,`${a} != ${b}`);
 
 test('motion is continuous across every internal card boundary',()=>{

@@ -194,3 +194,43 @@ test('dist/config mirrors the authoritative config directory', async () => {
     assert.deepEqual(JSON.parse(mirrored), JSON.parse(source), `${name}.json 동기화 필요: node tools/sync_config.mjs`);
   }
 });
+
+test('the engine refuses to run before it is configured', async () => {
+  const fresh = await import(`../dist/engine.js?fresh=${Date.now()}`);
+  assert.throws(() => fresh.newMatch(), /configureEngine/);
+  assert.equal(fresh.RULES, null);
+});
+
+test('engine balance comes from config, not from code', async () => {
+  const fresh = await import(`../dist/engine.js?tuned=${Date.now()}`);
+  const cfg = structuredClone(await readConfig('combat_prototype'));
+  cfg.rules.maxTurns = 3;
+  cfg.cards.jab.power = 999;
+  fresh.configureEngine(cfg);
+  assert.equal(fresh.RULES.maxTurns, 3);
+  assert.equal(fresh.CARDS.jab.power, 999);
+  let match = fresh.newMatch();
+  while (!match.finished) match = fresh.resolveTurn(match, fresh.makePlan([]), fresh.makePlan([])).match;
+  assert.ok(match.turn <= 3, `maxTurns 설정이 반영되지 않았습니다: ${match.turn}`);
+});
+
+test('prototype cards respect the documented timeline limits', async () => {
+  const prototype = await readConfig('combat_prototype');
+  const placement = (await readConfig('information_cards')).placement;
+  assert.equal(prototype.rules.slots, placement.slots);
+  const [, maxDuration] = placement.card_duration_range;
+  for (const [id, card] of Object.entries(prototype.cards)) {
+    assert.ok(card.duration <= maxDuration, `${id} duration ${card.duration} > ${maxDuration}`);
+  }
+});
+
+test('every opponent pattern fits the timeline and uses known cards', async () => {
+  const cfg = await readConfig('combat_prototype');
+  for (const [profile, plans] of Object.entries(cfg.patterns)) {
+    if (!Array.isArray(plans)) continue;
+    for (const ids of plans) {
+      const total = ids.reduce((n, id) => n + cfg.cards[id].duration, 0);
+      assert.ok(total <= cfg.rules.slots, `${profile}: ${total}칸`);
+    }
+  }
+});

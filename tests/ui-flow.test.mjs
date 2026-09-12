@@ -5,6 +5,7 @@ import {readFile} from 'node:fs/promises';
 import * as engine from '../dist/engine.js';
 import {advancePlayback} from '../dist/motion.js';
 import * as planner from '../dist/planner.js';
+import './helpers/engine-setup.mjs';
 async function harness(){
  const html=await readFile(new URL('../dist/index.html',import.meta.url),'utf8');
  class Element{

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {CARDS,makePlan,newMatch,resolveTurn} from '../dist/engine.js';
 import {editDraft,forecast} from '../dist/planner.js';
 import {pixelFrame,SPRITES,PLAYER_SPRITES} from '../dist/pixel-motion.js';
+import './helpers/engine-setup.mjs';
 test('replace and reorder preserve the original draft and enforce the time budget',()=>{
  const draft=['sway','cross','weave','jab','rest','rest'];
  const moved=editDraft(draft,{type:'move',index:1,direction:-1});

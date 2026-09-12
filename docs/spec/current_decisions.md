@@ -1038,9 +1038,14 @@ Definition Data이므로 `dist/`가 아니라 저장소 루트 `config/`에 둔�
 | `knowledge.json` | Evidence 변환, 편향, Confidence 보정 | `docs/design/29_*.md` |
 | `information_cards.json` | 공개 예산, 중첩 상한, 배치 규칙 | `docs/design/31_*.md` |
 | `save.json` | 저장 대상, 버전 정책, RNG 스트림, 히스토리 보존 | `docs/design/32_*.md` |
+| `combat_prototype.json` | 시제품 전투 수치·카드·상대 패턴 | `docs/design/19_*.md` |
 
-**아직 어떤 코드도 이 파일들을 읽지 않는다.** Definition Data Loader는 로드맵 Phase 0 항목이며
-시제품 `dist/engine.js`는 여전히 자체 상수를 쓴다. 이 구간은 명세가 코드를 앞선 상태다.
+Definition Data Loader(`dist/definitions.js`)가 이 파일들을 읽고 각 설계 문서의 검증 기준을 실행한 뒤
+결과를 깊게 동결한다. 잘못된 값은 파일과 경로를 지목하며 거부된다.
+
+`dist/engine.js`는 `configureEngine()`으로 밸런스를 주입받으며 코드에 수치를 두지 않는다.
+`dist/config/`는 정적 서버용 생성 사본이고 `config/`가 단일 원본이다.
+`derived_capability` 등 전체 모델용 설정은 아직 계산에 연결되지 않았다. 이 구간은 명세가 코드를 앞선 상태다.
 
 ## 저장과 재현성
 세부 기준: `docs/design/32_save_versioning_and_determinism.md`

@@ -1,3 +1,4 @@
+import './boot.js';
 import {CARDS,SKILLS,PROFILES,RULES,newMatch,makePlan,span,opponentPlan,observe,resolveTurn} from './engine.js';
 import {createRing} from './ring.js';
 import {advancePlayback} from './motion.js';

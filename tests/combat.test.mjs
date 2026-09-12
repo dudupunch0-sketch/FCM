@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {CARDS,SKILLS,newMatch,makePlan,validatePlan,opponentPlan,observe,resolveTurn} from '../dist/engine.js';
+import './helpers/engine-setup.mjs';
 
 test('plan validation rejects unknown, overlapping and oversized actions',()=>{
   assert.throws(()=>makePlan(['nope']));assert.throws(()=>makePlan(['shell','shell','jab']));

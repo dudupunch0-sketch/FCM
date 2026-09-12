@@ -7,8 +7,10 @@
 외부 패키지 설치가 필요 없는 정적 브라우저 앱입니다. 저장소 루트에서 실행합니다.
 
 ```bash
-python3 -m http.server 8000 --directory dist
+npm start
 ```
+
+`npm start`는 `config/`의 밸런스 데이터를 `dist/config/`로 동기화한 뒤 정적 서버를 띄웁니다.
 
 브라우저에서 `http://localhost:8000`을 엽니다. ES 모듈을 사용하므로 HTML 파일을 직접 더블 클릭하는 대신 HTTP 서버를 사용하세요.
 
@@ -21,8 +23,10 @@ python3 -m http.server 8000 --directory dist
 ## 검증
 
 ```bash
-node --test tests/*.test.mjs
+npm test
 ```
+
+`config/`가 밸런스 데이터의 단일 원본입니다. 전투 수치는 코드가 아니라 `config/combat_prototype.json`에 있고, 값을 바꾸면 코드 수정 없이 결과가 바뀝니다. 로더가 각 설계 문서의 검증 기준을 실행하므로 잘못된 값은 파일과 경로를 지목하며 거부됩니다.
 
 ## 문서
 
