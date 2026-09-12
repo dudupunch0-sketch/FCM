@@ -67,7 +67,10 @@ test('all opponent profiles remain valid and matches terminate with bounded reso
     assert(m.method);
   }
 });
-test('rest-only match still ends by decision, counter does not leak across turns',()=>{
+// Prototype-only: docs/design/30_combo_boundary_and_sub_beat.md makes counter windows CARRY across
+// combo boundaries. This assertion pins current engine behaviour and must be inverted when carryover,
+// sub-beat timing and the groggy defence bias land together.
+test('rest-only match still ends by decision; counter does not leak across turns (prototype rule)',()=>{
   let m=newMatch();while(!m.finished)m=resolveTurn(m,makePlan([]),makePlan([])).match;
   assert.equal(m.method,'판정');assert.equal(m.winner,null);
   const r=resolveTurn(newMatch(),makePlan(['sway']),makePlan(['jab']));assert.equal(r.match.fighters[0].counterUntil,-1);

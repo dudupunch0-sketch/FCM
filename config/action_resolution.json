@@ -5,8 +5,36 @@
 
   "resolution": {
     "unit": "slot",
-    "note": "Every slot resolves from a snapshot taken at slot start. Both fighters' actions at the same slot use the same snapshot and apply together.",
+    "note": "Every slot resolves from a snapshot taken at slot start. Actions landing within the simultaneity tolerance share that snapshot and apply together.",
     "phases": ["pay_cost", "apply_movement", "impact_check", "defense_check", "context_modifiers", "apply_result", "status_transition"]
+  },
+
+  "sub_beat": {
+    "note": "Impact position inside a slot, expressed as a fraction. Priority is an outcome of timing, not a separate rule. The 8-slot structure is unchanged.",
+    "enabled": true,
+    "nominal_impact_position": 0.5,
+    "speed_shift_max": 0.30,
+    "speed_reference": "punch_execution_speed / kick_execution_speed",
+    "simultaneity_tolerance": 0.08,
+    "note_simultaneity": "Impacts within this tolerance resolve from the same snapshot and apply together, so a double knockout stays reachable.",
+    "evasion_window_alignment_max": 0.25,
+    "evasion_window_width_max": 0.35,
+    "note_evasion": "Evasion Capability tightens alignment and widens the active window. Execution Speed is deliberately NOT applied to evasion: agility already feeds both derived values, and adding it again would double count (see docs/design/24_base_to_derived_mapping.md section 4)."
+  },
+
+  "first_strike": {
+    "note": "A strictly earlier impact is applied first. It weakens the later one rather than erasing it.",
+    "stagger_weakens_later_impact": 0.70,
+    "groggy_weakens_later_impact": 0.50,
+    "knockdown_cancels_later": true,
+    "ko_cancels_later": true
+  },
+
+  "turn_carryover": {
+    "note": "Combo (turn) boundaries are continuous action, unlike round boundaries. State and short-lived effects carry across. Round boundary rules in docs/design/23_round_structure_and_judging.md take precedence where the two coincide.",
+    "carries": ["status", "status_recovery_slots", "counter_window", "feint_opening", "recovery_window", "gap", "grapple_advantage", "submission_stage"],
+    "resets": [],
+    "note_precedence": "When a turn boundary is also a round boundary, the round rules apply and counter_window, feint_opening and recovery_window expire while gap resets."
   },
 
   "randomness": {
