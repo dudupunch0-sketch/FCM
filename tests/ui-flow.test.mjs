@@ -18,7 +18,7 @@ async function harness(){
  const closes=['menu','help','cardsInfo'].map(c=>Object.assign(new Element(),{dataset:{close:c}}));
  const events={};let raf;
  const document={getElementById:id=>{assert.ok(ids.has(id),'missing HTML element: '+id);return ids.get(id);},querySelectorAll:q=>q==='[data-category]'?categories:q==='[data-close]'?closes:q==='#timeline .slot'?ids.get('timeline').children:[],createElement:()=>new Element(),addEventListener:(e,fn)=>events[e]=fn,activeElement:new Element()};
- const source=(await readFile(new URL('../dist/app.js',import.meta.url),'utf8')).replace(/^import .*;\n/gm,'');
+ const source=(await readFile(new URL('../dist/app.js',import.meta.url),'utf8')).replace(/^import .*;\r?\n/gm,'');
  const deps={...engine,...planner,advancePlayback,document,createRing:async()=>({render(){},reduced:false}),requestAnimationFrame:f=>raf=f,window:{}};
  const factory=new (Object.getPrototypeOf(async function(){}).constructor)('deps',`const {${Object.keys(deps).join(',')}}=deps;\n${source}\nreturn {add,execute,finishPlayback,beginPlayback,edit,getState:()=>structuredClone({match,enemyPlan,draft,mode,play,last}),setSelected:i=>selected=i};`);
  const api=await factory(deps);return {...api,ids,events,step:t=>raf(t)};
