@@ -334,8 +334,18 @@ Breakthrough는 내부적으로 수치화하되 Progress는 UI에 직접 공개�
 **Base Parameter → Derived Capability → Effective Performance → Action Result**
 
 ## Derived Capability
+세부 기준: `docs/design/24_base_to_derived_mapping.md`
+실물 Config: `config/derived_capability.json`
+
 Base + Body 조합으로 계산.
 독립 성장값이 아니다.
+
+계산 형태:
+- **가중 기하평균**을 사용한다. 가중합이 아니다. 약한 Base 하나가 Derived 전체를 끌어내리는 병목형이며 "총합이 정답이 되면 안 된다"는 핵심 원칙의 직접 구현이다.
+- 각 Derived의 가중치 합은 1.0이며 `base_floor`로 클램프해 0 붕괴를 막는다.
+- Body는 `mass_ratio`·`height_ratio` 곱셈 보정으로만 들어간다. 체급 내 상대값이므로 체급 상승만으로 유리해지지 않는다.
+- Cardio, Durability, Tactical Execution은 Derived 기여가 의도적으로 작다. Effective Performance와 계획 수행 계층에서 작동한다.
+- **이중계산 방지**: Reach는 거리 판정에서만, Age는 Base 감소로만, Stance는 매치업 계층에서만 작동한다. Derived는 손상·피로가 없는 기준 능력이며 현재 상태 반영은 Effective Performance의 몫이다.
 
 주요 Derived:
 - Punch Impact
@@ -364,6 +374,18 @@ Stamina, Damage, Injury, Weight, Range, Setup, Familiarity, Skill Card 등 현�
 ## Action Result
 실제 Action 시도/성공/실패/Impact/Position/Damage를 계산.
 
+## 라운드 구조
+세부 기준: `docs/design/23_round_structure_and_judging.md`
+
+- 한 라운드는 **고정된 개수의 콤보 턴**으로 구성한다. 경기 = R 라운드 × T 턴, 콤보 턴 = 8칸.
+- 시간은 연출과 UI 표기 전용이며 **판정 로직이 읽지 않는다**. `R`과 `T`는 Ruleset/Part별 Config다.
+- 콤보 턴은 라운드 경계에서 잘리지 않는다. 모든 턴은 8칸을 완주하거나 피니시로 즉시 종료된다.
+- 경계 이월: 부위 손상, Permanent Wear, Combat Memory, Read Confidence는 이월한다.
+- 경계 소멸: 카운터 기회, 페이크 빈틈, 피격 경직은 소멸하고 거리 `gap`은 리셋한다.
+- 스태미너는 부분 회복한다. 회복 폭은 Cardio·누적 손상·Recovery Debt·코너 품질에 의존하며 완전 회복은 없다.
+- 라운드 사이가 코너 지시의 정규 개입 창이다. 반영률은 Tactical Execution에 의존한다.
+- 판정은 턴별 Judge Metric → 라운드 집계 → 경기 합산의 2단이며 라운드 격차를 내부 보존한다.
+
 ---
 
 # 14. Action Data
@@ -389,9 +411,19 @@ Technique 밸런스는 Fighter Base Parameter를 직접 수정하지 않고 Acti
 # 15. Range / Setup / Combat Memory
 
 ## Range
+세부 기준: `docs/design/22_combat_range_model.md`
+
 각 Action의 Optimal Range에서 Impact를 최대한 발휘.
 Range Control은 자신의 유리한 거리를 만드는 능력.
 Reach는 Range Strategy와 결합.
+
+콤보 타임라인에서의 거리 표현:
+- 두 선수 사이 간격을 단일 스칼라 `gap`으로 둔다. 선수별 위치 좌표와 링 이동은 현재 범위 밖이다.
+- 거리는 별도 스텝 카드가 아니라 **동작카드에 내장된 이동**으로 변화한다. Action Data에 `range_shift`, `shift_timing`, `reach_bonus`를 추가한다.
+- 잽 / 플리커잽 / 전진훅처럼 같은 기술군의 변형을 Fighter 능력치 수정 없이 Action Data만으로 생성한다.
+- 같은 칸의 양측 이동은 합산하고 Clinch 하한과 Outside 상한으로 클램프한다.
+- Range Control은 의도한 이동의 실제 반영률을 결정한다. 상대 이동을 완전히 무효화하는 값은 허용하지 않는다.
+- 계획 UI의 예상 거리는 상대 이동을 제외해 계산하며 그 사실을 명시한다.
 
 ## Setup
 영구 Fighter Stat이 아닌 Combat Context.
