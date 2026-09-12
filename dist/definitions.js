@@ -6,7 +6,7 @@ import { ALL_BASE_PARAMETERS, DERIVED_CAPABILITIES, isBaseParameter, isDerivedCa
 
 export const CONFIG_FILES = Object.freeze([
   'derived_capability', 'effective_performance', 'action_resolution',
-  'grappling', 'combat_ai', 'knowledge', 'information_cards', 'save', 'combat_prototype', 'training'
+  'grappling', 'combat_ai', 'knowledge', 'information_cards', 'save', 'combat_prototype', 'training', 'world'
 ]);
 
 const EPSILON = 1e-9;
@@ -239,6 +239,56 @@ const validators = {
     requireNumber(file, 'placement.card_duration_range[0]', lo, { min: 1 });
     requireNumber(file, 'placement.card_duration_range[1]', hi, { min: lo, max: placement.slots });
     if (placement.overflow_policy !== 'reject') fail(file, 'placement.overflow_policy', '초과 배치는 거부해야 합니다');
+  },
+
+  // docs/design/14 through 17, roadmap Phases 6 to 11
+  world(file, cfg) {
+    const recruitment = requireObject(file, 'recruitment', cfg.recruitment);
+    if (recruitment.no_single_rating !== true) fail(file, 'recruitment.no_single_rating', '영입 추천을 단일 별점으로 압축하지 않는다');
+    if ((recruitment.report_axes ?? []).length < 3) fail(file, 'recruitment.report_axes', '복수 축으로 표현해야 합니다');
+    requireObject(file, 'recruitment.career_needs', recruitment.career_needs);
+    const contract = requireObject(file, 'contract', cfg.contract);
+    const share = requireObject(file, 'contract.management_share', contract.management_share);
+    requireNumber(file, 'contract.management_share.min', share.min, { min: 0, max: 1 });
+    requireNumber(file, 'contract.management_share.max', share.max, { min: share.min, max: 1 });
+    if (contract.promise_broken_loss <= contract.promise_kept_gain) {
+      fail(file, 'contract.promise_broken_loss', '약속 위반이 이행보다 크게 작용해야 합니다');
+    }
+    const club = requireObject(file, 'club', cfg.club);
+    if (!(club.ladder ?? []).includes('champion')) fail(file, 'club.ladder', 'champion 단계가 필요합니다');
+    requireNumber(file, 'club.pool_size', club.pool_size, { min: 2 });
+    const tp = requireObject(file, 'ticket_power', cfg.ticket_power);
+    requireNumber(file, 'ticket_power.max', tp.max, { min: 1 });
+    if (!(tp.great_loss_gain > 0)) fail(file, 'ticket_power.great_loss_gain', '명경기 패배로도 흥행이 오를 수 있어야 합니다');
+    if (!(tp.great_loss_gain > tp.dull_win_gain)) fail(file, 'ticket_power.dull_win_gain', '결과보다 경기 내용이 중요합니다');
+    const economy = requireObject(file, 'economy', cfg.economy);
+    if (economy.failure_is_constraint_not_gameover !== true) {
+      fail(file, 'economy.failure_is_constraint_not_gameover', '자금난은 즉시 Game Over가 아니라 선택지 축소입니다');
+    }
+    const staff = requireObject(file, 'staff', cfg.staff);
+    requireNumber(file, 'staff.capacity_per_staff', staff.capacity_per_staff, { min: 1 });
+    for (const mode of staff.delegation_modes ?? []) {
+      requireNumber(file, `staff.delegation_quality.${mode}`, staff.delegation_quality?.[mode], { min: 0, max: 1 });
+    }
+    if (staff.delegation_quality.manual <= staff.delegation_quality.auto_with_policy) {
+      fail(file, 'staff.delegation_quality', '위임은 완벽하지 않습니다. 직접 관리가 더 정밀해야 합니다');
+    }
+    const facility = requireObject(file, 'facility', cfg.facility);
+    requireNumber(file, 'facility.max_level', facility.max_level, { min: 1 });
+    requireNumber(file, 'facility.training_quality_per_level', facility.training_quality_per_level, { min: 0, max: 1 });
+    const ranking = requireObject(file, 'ranking', cfg.ranking);
+    requireNumber(file, 'ranking.size', ranking.size, { min: 1 });
+    if (ranking.no_player_facing_points !== true) fail(file, 'ranking.no_player_facing_points', '플레이어용 Ranking Point는 사용하지 않습니다');
+    if (ranking.champion_separate_from_first !== true) fail(file, 'ranking.champion_separate_from_first', 'Champion은 #1과 별도 상태입니다');
+    const title = requireObject(file, 'title', cfg.title);
+    requireNumber(file, 'title.eligibility_min_rank', title.eligibility_min_rank, { min: 1 });
+    requireNumber(file, 'title.eligibility_min_recent_wins', title.eligibility_min_recent_wins, { min: 1 });
+    const world = requireObject(file, 'world', cfg.world);
+    const tiers = requireObject(file, 'world.simulation_tiers', world.simulation_tiers);
+    for (const tier of ['A', 'B', 'C']) requireNumber(file, `world.simulation_tiers.${tier}`, tiers[tier], { min: 0, max: 1 });
+    if (!(tiers.A > tiers.B && tiers.B > tiers.C)) fail(file, 'world.simulation_tiers', 'Player Relevant일수록 정밀해야 합니다');
+    requireNumber(file, 'world.retirement_age', world.retirement_age, { min: 1 });
+    requireNumber(file, 'world.weeks_per_year', world.weeks_per_year, { min: 1 });
   },
 
   // docs/design/13_fight_camp_and_weekly_calendar.md, roadmap Phase 5
