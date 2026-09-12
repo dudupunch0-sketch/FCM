@@ -80,3 +80,32 @@ test('validator messages stay out of the table: they are traceability, not copy'
       `검증 메시지가 문자열 테이블에 들어왔습니다: ${key}`);
   }
 });
+
+test('the app carries no translatable copy of its own', async () => {
+  // Separators and symbols are formatting, not copy. Anything with two or more Hangul
+  // characters in a row is prose and belongs in the table.
+  const source = await readFile(new URL('../dist/app.js', import.meta.url), 'utf8');
+  const prose = source.match(/[가-힣]{2,}/g) ?? [];
+  assert.deepEqual(prose, [], `app.js에 남은 번역 대상 문구: ${prose.slice(0, 5).join(', ')}`);
+});
+
+test('every key the app asks for exists in the table', async () => {
+  const source = await readFile(new URL('../dist/app.js', import.meta.url), 'utf8');
+  // Must not also match createElement('div'): only a standalone t( call counts.
+  const used = [...source.matchAll(/(?<![\w.])t\('([\w.]+)'/g)].map(m => m[1]);
+  assert.ok(used.length > 30, `호출 지점이 너무 적습니다: ${used.length}`);
+  for (const key of new Set(used)) {
+    assert.ok(key in base.strings, `테이블에 없는 키를 부릅니다: ${key}`);
+  }
+});
+
+test('no table entry is left unused by the app or the commentary', async () => {
+  const app = await readFile(new URL('../dist/app.js', import.meta.url), 'utf8');
+  const commentary = await readFile(new URL('../dist/commentary.js', import.meta.url), 'utf8');
+  const source = app + commentary;
+  const orphans = Object.keys(base.strings).filter(key => {
+    if (key.startsWith('event.') || key.startsWith('stage.')) return false;
+    return !source.includes(`'${key}'`);
+  });
+  assert.deepEqual(orphans, [], `아무도 쓰지 않는 문자열: ${orphans.slice(0, 5).join(', ')}`);
+});

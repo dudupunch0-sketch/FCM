@@ -5,7 +5,7 @@ import {readFile} from 'node:fs/promises';
 import * as engine from '../dist/engine.js';
 import {advancePlayback} from '../dist/motion.js';
 import * as planner from '../dist/planner.js';
-import {configureStrings} from '../dist/strings.js';
+import {configureStrings,t} from '../dist/strings.js';
 import {describeEvent,stageMessage} from '../dist/commentary.js';
 import {readFile as readJson} from 'node:fs/promises';
 import './helpers/engine-setup.mjs';
@@ -25,7 +25,7 @@ async function harness(){
  const events={};let raf;
  const document={getElementById:id=>{assert.ok(ids.has(id),'missing HTML element: '+id);return ids.get(id);},querySelectorAll:q=>q==='[data-category]'?categories:q==='[data-close]'?closes:q==='#timeline .slot'?ids.get('timeline').children:[],createElement:()=>new Element(),addEventListener:(e,fn)=>events[e]=fn,activeElement:new Element()};
  const source=(await readFile(new URL('../dist/app.js',import.meta.url),'utf8')).replace(/^import .*;\r?\n/gm,'');
- const deps={...engine,...planner,advancePlayback,describeEvent,stageMessage,document,createRing:async()=>({render(){},reduced:false}),requestAnimationFrame:f=>raf=f,window:{}};
+ const deps={...engine,...planner,advancePlayback,describeEvent,stageMessage,t,document,createRing:async()=>({render(){},reduced:false}),requestAnimationFrame:f=>raf=f,window:{}};
  const factory=new (Object.getPrototypeOf(async function(){}).constructor)('deps',`const {${Object.keys(deps).join(',')}}=deps;\n${source}\nreturn {add,execute,finishPlayback,beginPlayback,edit,getState:()=>structuredClone({match,enemyPlan,draft,mode,play,last}),setSelected:i=>selected=i};`);
  const api=await factory(deps);return {...api,ids,events,step:t=>raf(t)};
 }
