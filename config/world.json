@@ -231,10 +231,15 @@
       "B": 0.5,
       "C": 0.15
     },
-    "prospect_intake_per_year": 6,
+    "prospect_intake_per_year": 8,
     "retirement_age": 36,
     "retirement_damage_threshold": 70,
     "weeks_per_year": 52,
-    "note": "NPC fighters use the same core data model and live their careers whether or not the player looks."
+    "note": "NPC fighters use the same core data model and live their careers whether or not the player looks.",
+    "damage_per_loss": 4,
+    "damage_recovery_per_week": 0.6,
+    "wear_per_loss": 0.5,
+    "retirement_wear_threshold": 40,
+    "note_wear": "Fight damage heals between fights; permanent wear does not. Without the split, damage was a monotonic countdown to a forced retirement and careers averaged under four years, so the population collapsed. Spec: docs/design/12_injury_medical_weight.md."
   }
 }

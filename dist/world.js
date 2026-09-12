@@ -156,7 +156,12 @@ export function simulateWeek(world, rng) {
     const winner = fighter.level + rng.next() * 20 >= opponent.level + rng.next() * 20 ? fighter : opponent;
     const loser = winner === fighter ? opponent : fighter;
     applyFightResult(world, { winnerId: winner.id, loserId: loser.id });
-    loser.damage = clamp(loser.damage + 4, 0, 100);
+    // Fight damage heals; permanent wear does not. Only wear shortens a career.
+    loser.damage = clamp(loser.damage + cfg.world.damage_per_loss, 0, 100);
+    loser.wear = clamp((loser.wear ?? 0) + cfg.world.wear_per_loss, 0, 100);
+  }
+  for (const fighter of active) {
+    fighter.damage = clamp(fighter.damage - cfg.world.damage_recovery_per_week, 0, 100);
   }
   if (world.week % cfg.world.weeks_per_year === 0) {
     for (const fighter of active) fighter.age++;
@@ -171,7 +176,7 @@ export function retireEligible(world) {
   const cfg = world.definitions.configs.world.world;
   for (const fighter of Object.values(world.fighters)) {
     if (!fighter.active) continue;
-    if (fighter.age >= cfg.retirement_age || fighter.damage >= cfg.retirement_damage_threshold) {
+    if (fighter.age >= cfg.retirement_age || (fighter.wear ?? 0) >= cfg.retirement_wear_threshold || fighter.damage >= cfg.retirement_damage_threshold) {
       fighter.active = false;
       world.ranking.ordered = world.ranking.ordered.filter(id => id !== fighter.id);
       world.news.push({ week: world.week, type: 'Retirement', fighter: fighter.id });
@@ -190,7 +195,7 @@ export function intakeProspects(world, rng) {
       id, name: `신인 ${id}`, level: 30 + Math.floor(rng.next() * 30),
       age: 19 + Math.floor(rng.next() * 4), ticket_power: Math.floor(rng.next() * 10),
       record: { wins: priorFights, losses: Math.floor(rng.next() * 3) },
-      recent: [], damage: 0, active: true, last_fight_week: world.week, tier: 'C'
+      recent: [], damage: 0, wear: 0, active: true, last_fight_week: world.week, tier: 'C'
     };
   }
   return world;

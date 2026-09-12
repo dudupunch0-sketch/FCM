@@ -269,7 +269,10 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       let power=c.power*staminaFactor*(counter?MODIFIERS.counter:1)*(isOpen||recovery||mismatch?MODIFIERS.exposed:1)*reach
         *ratio(attackerEffective,'impact')*setup.factor*impactVariance(match,tick,i);
       if(blocked)power/=Math.max(ratio(defenderEffective,'guard'),0.2);
-      if(blocked)power*=0.18+before[j].damage.arms/500;
+      // A long guard covers more time but is a coarser block, so it leaks more per hit.
+      // Without this the only question is whether the guard can be paid for, which makes
+      // shelling either total immunity or instant death rather than a trade.
+      if(blocked)power*=(dc.blockLeak??MODIFIERS.blockLeak)+before[j].damage.arms/MODIFIERS.blockArmScaling;
       if(impaired)power*=1+STATUS.groggyDefensePenalty;
       effects.push({type:blocked?'block':'hit',actor:i,target:j,power:round(power),targetPart:c.target,counter,guardBreak:guarding&&!blocked,setup:isOpen,read:setup.read,patternBreak:setup.broken,readConfidence:round(setup.confidence),recovery,at:impactPosition(c,before[i]),reach:round(reach)});
     }
@@ -287,12 +290,18 @@ export function resolveTurn(input,playerPlan,enemyPlan){
         }
       }
       if(e.type==='evade'){
-        f[e.actor].counterUntil=tick+RULES.counterWindow;f[e.actor].evaded=true;f[e.actor].score+=2;
+        f[e.actor].counterUntil=tick+RULES.counterWindow;f[e.actor].evaded=true;f[e.actor].score+=MODIFIERS.evadeScore;
         events.push({...e,text:`${f[e.actor].name}: 회피 성공 · 카운터 기회`});continue;
       }
-      const d=f[e.target];d.damage[e.targetPart]=round(clamp(d.damage[e.targetPart]+e.power,0,120));
-      if(e.type==='block'){d.stamina=round(Math.max(0,d.stamina-RULES.guardDrain));d.damage.arms=round(clamp(d.damage.arms+e.power*1.5,0,100));d.score+=1;}
-      else{f[e.actor].score+=e.power;if(e.targetPart==='body')d.stamina=round(Math.max(0,d.stamina-e.power*0.6));}
+      const d=f[e.target];
+      // Score follows the damage actually applied, not the damage attempted. Hitting a part
+      // that is already maxed out must not keep paying, or attacking one saturated target
+      // becomes a free win on the cards.
+      const beforeDamage=d.damage[e.targetPart];
+      d.damage[e.targetPart]=round(clamp(beforeDamage+e.power,0,RULES.maxPartDamage));
+      const applied=round(d.damage[e.targetPart]-beforeDamage);
+      if(e.type==='block'){d.stamina=round(Math.max(0,d.stamina-RULES.guardDrain));d.damage.arms=round(clamp(d.damage.arms+applied*MODIFIERS.armDamageRatio,0,100));d.score+=MODIFIERS.blockScore;}
+      else{f[e.actor].score+=applied*(MODIFIERS.scoreByTarget[e.targetPart]??1);if(e.targetPart==='body')d.stamina=round(Math.max(0,d.stamina-applied*MODIFIERS.bodyStaminaDrain));}
       if(e.counter)f[e.actor].counterUntil=-1;
       if(e.setup)d.openUntil=-1;
       struckAt[e.target]=e.at;

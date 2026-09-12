@@ -29,51 +29,92 @@ function table(rows) {
   for (const [label, ...values] of rows) console.log(`  ${String(label).padEnd(26)} ${values.join('   ')}`);
 }
 
-// Favorite win rate, upset causes, finish rate, decision rate, action usage.
-function combatBatch(runs = 400) {
-  const plans = {
-    counter: ['sway', 'cross', 'sway', 'cross'],
-    pressure: ['jab', 'cross', 'jab', 'rest', 'rest'],
-    guarded: ['shell', 'cross', 'guard', 'rest'],
-    body: ['body', 'body', 'body']
-  };
-  console.log(`\n=== Combat batch (${runs} fights per cell) ===`);
-  for (const gap of [0, 5, 10, 15, 25]) {
-    const row = [`gap ${String(gap).padStart(2)}`];
-    for (const [name, plan] of Object.entries(plans)) {
+// Favorite win rate, finish/decision split, plan viability and card usage.
+const PLANS = {
+  counter: ['sway', 'cross', 'sway', 'cross'],
+  jabbing: ['jab', 'jab', 'cross', 'jab', 'rest'],
+  hooks: ['hook', 'hook', 'rest', 'rest'],
+  bodywork: ['body', 'body', 'body'],
+  heavy: ['heavy', 'heavy', 'rest'],
+  shelled: ['shell', 'cross', 'guard', 'rest'],
+  lowguard: ['lowguard', 'cross', 'lowguard', 'jab'],
+  weaving: ['weave', 'cross', 'weave', 'cross'],
+  feinting: ['feint', 'cross', 'feint', 'jab', 'rest'],
+  flicker: ['flicker', 'flicker', 'cross', 'rest', 'rest'],
+  advancing: ['advance', 'body', 'body'],
+  mixed: ['sway', 'body', 'cross', 'rest'],
+  patient: ['guard', 'jab', 'guard', 'cross', 'rest']
+};
+
+function playMatch(plan, { seed, player, opponent, profile = 'pressure', usage = null }) {
+  let match = newMatch(profile, seed, { player, opponent });
+  while (!match.finished) {
+    const placed = makePlan(plan);
+    if (usage) for (const p of placed) usage[p.id] = (usage[p.id] ?? 0) + 1;
+    match = resolveTurn(match, placed, opponentPlan(match)).match;
+  }
+  return match;
+}
+
+function combatBatch(runs = 200) {
+  const profiles = ['pressure', 'tricky', 'turtle'];
+  console.log(`
+=== Plan viability (${runs} fights per matchup, even stats) ===`);
+  console.log('  Fixed plans resolve near-deterministically, so a single matchup lands at ~0% or');
+  console.log('  ~100%. The signal is how many PROFILES a plan beats: 1-2 is healthy, 3 is dominant.');
+  const usage = {};
+  const rows = [];
+  const beatCounts = [];
+  for (const [name, plan] of Object.entries(PLANS)) {
+    const perProfile = [];
+    let finishes = 0, turns = 0, total = 0;
+    for (const profile of profiles) {
       let wins = 0;
       for (let seed = 1; seed <= runs; seed++) {
-        let match = newMatch('pressure', seed, { player: evenly(60 - gap), opponent: evenly(60) });
-        while (!match.finished) match = resolveTurn(match, makePlan(plan), opponentPlan(match)).match;
+        const match = playMatch(plan, { seed, profile, player: evenly(60), opponent: evenly(60), usage });
+        total++;
         if (match.winner === 0) wins++;
+        if (match.method !== '판정') finishes++;
+        turns += match.turn;
       }
-      row.push(`${name} ${pct(wins, runs).padStart(6)}`);
+      perProfile.push(wins / runs);
     }
-    table([row]);
+    const beaten = perProfile.filter(r => r > 0.5).length;
+    beatCounts.push(beaten);
+    rows.push([name, perProfile.map(r => `${Math.round(r * 100)}%`.padStart(4)).join(' '), `승리 프로필 ${beaten}/3`, `피니시 ${pct(finishes, total).padStart(6)}`, `교환 ${(turns / total).toFixed(1)}`]);
   }
+  console.log(`
+  ${''.padEnd(26)} 압박  교란  수비`);
+  table(rows);
 
-  let finishes = 0, decisions = 0, draws = 0, turns = 0;
-  const usage = {};
-  for (let seed = 1; seed <= runs; seed++) {
-    let match = newMatch('tricky', seed, { player: evenly(60), opponent: evenly(60) });
-    while (!match.finished) {
-      const plan = makePlan(plans.counter);
-      for (const p of plan) usage[p.id] = (usage[p.id] ?? 0) + 1;
-      match = resolveTurn(match, plan, opponentPlan(match)).match;
-    }
-    turns += match.turn;
-    if (match.method === '판정') decisions++; else finishes++;
-    if (match.winner === null) draws++;
-  }
-  console.log('\n  결과 분포');
-  table([
-    ['Finish rate', pct(finishes, runs)],
-    ['Decision rate', pct(decisions, runs)],
-    ['Draw rate', pct(draws, runs)],
-    ['평균 교환 수', (turns / runs).toFixed(1)]
-  ]);
+  const dominant = rows.filter((_, i) => beatCounts[i] === 3).map(r => r[0]);
+  const dead = rows.filter((_, i) => beatCounts[i] === 0).map(r => r[0]);
+  console.log(`
+  분포: ${[0, 1, 2, 3].map(k => `${k}승 ${beatCounts.filter(b => b === k).length}`).join('  ')}`);
+  console.log(`  지배 전략(3/3): ${dominant.length ? dominant.join(', ') : '없음'}`);
+  console.log(`  무승 계획(0/3): ${dead.length ? dead.join(', ') : '없음'}`);
   const unused = Object.keys(CARDS).filter(id => !usage[id]);
-  if (unused.length) console.log(`  이 배치에서 미사용 카드: ${unused.join(', ')}`);
+  console.log(`  미사용 카드: ${unused.length ? unused.join(', ') : '없음'}`);
+
+  console.log(`
+=== Stat gap: can strategy erase it? ===`);
+  console.log('  Best plan found per gap. A gap must stop being strategisable as it widens.');
+  const gapRows = [];
+  for (const gap of [0, 5, 10, 15, 25]) {
+    let best = 0, bestName = '-';
+    for (const [name, plan] of Object.entries(PLANS)) {
+      let wins = 0, total = 0;
+      for (const profile of profiles) {
+        for (let seed = 1; seed <= Math.max(15, runs / 4); seed++) {
+          total++;
+          if (playMatch(plan, { seed, profile, player: evenly(60 - gap), opponent: evenly(60) }).winner === 0) wins++;
+        }
+      }
+      if (wins / total > best) { best = wins / total; bestName = name; }
+    }
+    gapRows.push([`격차 ${String(gap).padStart(2)}`, `최선의 계획 승률 ${`${Math.round(best * 100)}%`.padStart(4)}`, `(${bestName})`]);
+  }
+  table(gapRows);
 }
 
 // Prospect growth, veteran decline, and how training policy changes both.

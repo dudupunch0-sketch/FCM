@@ -325,10 +325,11 @@ const validators = {
   // docs/design/19_combat_prototype_implementation.md
   combat_prototype(file, cfg) {
     const rules = requireObject(file, 'rules', cfg.rules);
-    for (const key of ['slots', 'maxTurns', 'maxStamina', 'restRecovery', 'counterWindow', 'guardDrain', 'koDamage', 'staggerDamage', 'staggerImpact']) {
+    for (const key of ['slots', 'maxTurns', 'maxStamina', 'restRecovery', 'counterWindow', 'guardDrain', 'koDamage', 'staggerDamage', 'staggerImpact', 'maxPartDamage']) {
       requireNumber(file, `rules.${key}`, rules[key], { min: 0 });
     }
     if (rules.staggerDamage >= rules.koDamage) fail(file, 'rules.staggerDamage', 'koDamage보다 작아야 합니다');
+    if (rules.maxPartDamage < rules.koDamage) fail(file, 'rules.maxPartDamage', 'KO 임계값에 도달할 수 없습니다');
     const rounds = requireObject(file, 'rounds', cfg.rounds);
     requireNumber(file, 'rounds.count', rounds.count, { min: 1 });
     requireNumber(file, 'rounds.turnsPerRound', rounds.turnsPerRound, { min: 1 });
@@ -360,6 +361,7 @@ const validators = {
         if (!card.target || !card.trajectory) fail(file, `cards.${id}`, '공격은 target과 trajectory가 필요합니다');
       }
       if (card.kind === 'guard' && !card.protect) fail(file, `cards.${id}.protect`, '가드는 보호 부위가 필요합니다');
+      if (card.blockLeak !== undefined) requireNumber(file, `cards.${id}.blockLeak`, card.blockLeak, { min: 0, max: 1 });
       if (card.kind === 'attack') {
         requireNumber(file, `cards.${id}.subBeat`, card.subBeat, { min: 0, max: 1 });
         requireNumber(file, `cards.${id}.optimalRange`, card.optimalRange, { min: cfg.range.min, max: cfg.range.max });
@@ -370,6 +372,18 @@ const validators = {
       if (card.kind === 'evade' && !(card.dodges ?? []).length) fail(file, `cards.${id}.dodges`, '회피는 궤도 상성이 필요합니다');
     }
     if (!cards.rest || cards.rest.kind !== 'rest') fail(file, 'cards.rest', '빈칸은 호흡 정리로 처리되므로 rest 카드가 필요합니다');
+    // A longer guard must block more coarsely. Otherwise the long guard strictly dominates:
+    // it covers more time for less cost per slot with the same protection quality.
+    const guards = dataKeys(cards).filter(id => cards[id].kind === 'guard').sort((a, b) => cards[a].duration - cards[b].duration);
+    for (let i = 1; i < guards.length; i++) {
+      const short = cards[guards[i - 1]], long = cards[guards[i]];
+      if (long.duration === short.duration) continue;
+      const shortLeak = short.blockLeak ?? cfg.modifiers.blockLeak;
+      const longLeak = long.blockLeak ?? cfg.modifiers.blockLeak;
+      if (longLeak <= shortLeak) {
+        fail(file, `cards.${guards[i]}.blockLeak`, `더 긴 가드는 더 성기게 막아야 합니다: ${guards[i]} ${longLeak} vs ${guards[i - 1]} ${shortLeak}`);
+      }
+    }
     const profiles = requireObject(file, 'profiles', cfg.profiles);
     const patterns = requireObject(file, 'patterns', cfg.patterns);
     for (const profile of dataKeys(profiles)) {
@@ -420,6 +434,11 @@ const validators = {
     const modifiers = requireObject(file, 'modifiers', cfg.modifiers);
     for (const key of ['counter', 'exposed']) requireNumber(file, `modifiers.${key}`, modifiers[key], { min: 1, max: 3 });
     requireNumber(file, 'modifiers.staminaFloor', modifiers.staminaFloor, { min: 0, max: 1 });
+    for (const key of ['blockLeak', 'bodyStaminaDrain']) requireNumber(file, `modifiers.${key}`, modifiers[key], { min: 0, max: 1 });
+    for (const key of ['blockArmScaling', 'armDamageRatio', 'evadeScore', 'blockScore']) requireNumber(file, `modifiers.${key}`, modifiers[key], { min: 0 });
+    const byTarget = requireObject(file, 'modifiers.scoreByTarget', modifiers.scoreByTarget);
+    for (const key of ['head', 'body']) requireNumber(file, `modifiers.scoreByTarget.${key}`, byTarget[key], { min: 0, max: 1 });
+    if (byTarget.body >= byTarget.head) fail(file, 'modifiers.scoreByTarget.body', '몸통 공격은 가드와 회피를 모두 우회하므로 배점이 머리보다 낮아야 합니다');
     const first = requireObject(file, 'firstStrike', cfg.firstStrike);
     for (const key of ['staggerWeakensLater', 'groggyWeakensLater']) {
       const v = requireNumber(file, `firstStrike.${key}`, first[key], { min: 0, max: 1 });

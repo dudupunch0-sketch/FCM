@@ -35,7 +35,7 @@ export function startCampaign(definitions, rng, spec) {
 
 const camp = ['technical_training', 'sparring', 'tactical_drill', 'recovery'];
 // Stands in for the player's tactical choices. A campaign may supply its own.
-const DEFAULT_PLAN = ['body', 'body', 'body'];
+const DEFAULT_PLAN = ['sway', 'body', 'cross', 'rest'];
 
 function note(campaign, entry) {
   campaign.history.push({ week: campaign.week, part: campaign.part, ...entry });
@@ -45,12 +45,16 @@ function note(campaign, entry) {
 function clubFight(campaign, { titleFight = false } = {}) {
   campaign.lastFightWeek = campaign.week;
   const pool = availableOpponents(campaign.club, campaign.fighterState.rung);
+  // Match on ability rather than roster order. Picking the first name on the list made the
+  // step between fights arbitrary, so a fighter bounced between trivial and impossible cards.
+  const ability = campaign.career.fighter.base.punch_technique;
   const opponent = titleFight
     ? campaign.club.roster.find(f => f.id === campaign.club.championId)
-    : pool.find(f => f.id !== campaign.club.championId) ?? pool[0];
+    : pool.filter(f => f.id !== campaign.club.championId)
+        .sort((a, b) => Math.abs(a.level - ability) - Math.abs(b.level - ability))[0] ?? pool[0];
   const offer = makeOffer(campaign.club, opponent, { week: campaign.week, titleFight });
 
-  const result = takeFight(campaign.career, { seed: campaign.week + 1, plan: campaign.plan, opponent: { base: { punch_technique: opponent.level } } });
+  const result = takeFight(campaign.career, { seed: campaign.week + 1, profile: opponent.profile ?? 'pressure', plan: campaign.plan, opponent: { base: { punch_technique: opponent.level } } });
   campaign.career = result.career;
   const won = result.match.winner === 0;
   const finished = result.match.method === 'KO' && won;
@@ -97,7 +101,8 @@ function worldFight(campaign, { titleFight = false } = {}) {
     : world.ranking.ordered.find(id => id !== me) ?? world.ranking.champion_id;
   const opponent = world.fighters[opponentId];
 
-  const result = takeFight(campaign.career, { seed: campaign.week + 31, plan: campaign.plan, opponent: { base: { punch_technique: opponent.level } } });
+  const profiles = ['pressure', 'tricky', 'turtle'];
+  const result = takeFight(campaign.career, { seed: campaign.week + 31, profile: profiles[opponentId.length % 3], plan: campaign.plan, opponent: { base: { punch_technique: opponent.level } } });
   campaign.career = result.career;
   const won = result.match.winner === 0;
   const finished = result.match.method === 'KO' && won;

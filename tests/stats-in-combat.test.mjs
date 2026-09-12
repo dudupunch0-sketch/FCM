@@ -56,8 +56,10 @@ const winsWith=(player,opponent,plan,seeds=30)=>{
   }
   return wins;
 };
-const workingPlan=['sway','body','body','rest'];
-const poorPlan=['shell','cross','guard','rest'];
+// Measured against the 'pressure' profile: short, well-timed guards punish it, while a
+// pure jabbing exchange loses the trade. Re-check these with tools/balance.mjs after tuning.
+const workingPlan=['guard','jab','guard','cross','rest'];
+const poorPlan=['jab','jab','cross','jab','rest'];
 
 test('an upset has a cause: the same weaker fighter loses one way and wins another',()=>{
   const underdog=evenly(50),favourite=evenly(60);

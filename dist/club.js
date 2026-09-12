@@ -19,10 +19,13 @@ export function createClub(definitions, rng, { size = null } = {}) {
       ticket_power: definitions.configs.world.ticket_power.start + Math.floor(rng.next() * 20),
       record: { wins: 0, losses: 0 },
       career_need: 'prospect',
+      // Club fighters fight differently. A single profile would make one matchup decide
+      // every card on the calendar.
+      profile: ['pressure', 'tricky', 'turtle'][i % 3],
       base: { punch_technique: level }
     });
   }
-  roster[0] = { ...roster[0], rung: 'champion', level: 82, name: '클럽 챔피언' };
+  roster[0] = { ...roster[0], rung: 'champion', level: 82, name: '클럽 챔피언', profile: 'tricky' };
   return { definitions, roster, ladder: cfg.ladder, championId: roster[0].id, week: 0 };
 }
 

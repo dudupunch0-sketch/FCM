@@ -10,9 +10,10 @@
     "restRecovery": 11,
     "counterWindow": 2,
     "guardDrain": 3,
-    "koDamage": 120,
-    "staggerDamage": 72,
-    "staggerImpact": 16
+    "koDamage": 150,
+    "staggerDamage": 82,
+    "staggerImpact": 16,
+    "maxPartDamage": 165
   },
   "rounds": {
     "count": 3,
@@ -90,11 +91,11 @@
       "kind": "attack",
       "duration": 2,
       "impact": 1,
-      "cost": 12,
-      "power": 16,
+      "cost": 13,
+      "power": 13,
       "target": "body",
       "trajectory": "body",
-      "description": "상단 가드와 머리 회피를 공략. 상대 체력을 소모시킵니다.",
+      "description": "상단 가드와 머리 회피를 공략. 막히지 않는 대신 위력이 낮고 비쌉니다.",
       "subBeat": 0.55,
       "optimalRange": 1.2,
       "rangeTolerance": 0.6,
@@ -125,8 +126,9 @@
       "duration": 1,
       "cost": 2,
       "protect": "head",
-      "description": "한 박자 머리 방어. 바디 공격은 막지 못합니다.",
-      "rangeShift": 0.0
+      "description": "한 박자만 정확히 막습니다. 바디 공격은 막지 못합니다.",
+      "rangeShift": 0.0,
+      "blockLeak": 0.14
     },
     "shell": {
       "name": "상단 가드",
@@ -135,8 +137,9 @@
       "duration": 4,
       "cost": 6,
       "protect": "head",
-      "description": "오래 머리를 보호하지만 팔에 충격이 쌓입니다.",
-      "rangeShift": 0.0
+      "description": "오래 머리를 보호하지만 성기게 막혀 충격이 새고 팔에 손상이 쌓입니다.",
+      "rangeShift": 0.0,
+      "blockLeak": 0.28
     },
     "lowguard": {
       "name": "바디 가드",
@@ -146,7 +149,8 @@
       "cost": 3,
       "protect": "body",
       "description": "몸통 방어. 상대 머리 공격에는 노출됩니다.",
-      "rangeShift": 0.0
+      "rangeShift": 0.0,
+      "blockLeak": 0.2
     },
     "sway": {
       "name": "스웨이",
@@ -469,9 +473,21 @@
     "note": "How Effective Performance reaches Action Result. weight scales how far a capability ratio moves the outcome; failThreshold is the ratio below which a correctly chosen evasion can still fail."
   },
   "modifiers": {
-    "counter": 1.28,
+    "counter": 1.6,
     "exposed": 1.18,
     "staminaFloor": 0.5,
-    "note": "The last balance values that lived in code. counter rewards a successful evasion; exposed covers feint openings, recovery windows and mistimed evasions; staminaFloor is how much power survives at zero stamina."
+    "note": "The balance values that used to live in the power and effect formulas. bodyStaminaDrain was the strongest single number in the game: body shots drained the opponent to zero, where every action fails, so a body-only plan won every fight by attrition.",
+    "blockLeak": 0.18,
+    "blockArmScaling": 500,
+    "armDamageRatio": 1.5,
+    "bodyStaminaDrain": 0.35,
+    "evadeScore": 2,
+    "blockScore": 1,
+    "scoreByTarget": {
+      "head": 1.0,
+      "body": 0.55
+    },
+    "note_score": "Judges reward clean head work over body work. Without this the body attack is strictly best: it is unblockable by a head guard, undodgeable by either evasion, and scored the same.",
+    "note_leak": "Per-card block leak. A long guard covers more time but blocks coarsely, so it leaks more per hit. Tuning cost alone produced a cliff: either the guard was affordable and total, or unaffordable and fatal."
   }
 }
