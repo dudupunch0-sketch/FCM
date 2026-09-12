@@ -1044,7 +1044,9 @@ Definition Data Loader(`dist/definitions.js`)가 이 파일들을 읽고 각 설
 
 `dist/engine.js`는 `configureEngine()`으로 밸런스를 주입받으며 코드에 수치를 두지 않는다.
 `dist/config/`는 정적 서버용 생성 사본이고 `config/`가 단일 원본이다.
-`derived_capability` 등 전체 모델용 설정은 아직 계산에 연결되지 않았다. 이 구간은 명세가 코드를 앞선 상태다.
+`derived_capability`와 `effective_performance`는 실제 전투 판정에 연결되어 있다. 선수 능력치가 위력·회피·가드·타격 시점에 반영되며
+양측 기본 선수는 동일하므로 연결 자체가 밸런스를 바꾸지 않는다. 선수별 수치 차이는 코드가 아니라 Config에서 준다.
+Setup/Combat Memory와 훈련·성장 루프는 아직 미연결이며, 이 구간은 명세가 코드를 앞선 상태다.
 
 ## 저장과 재현성
 세부 기준: `docs/design/32_save_versioning_and_determinism.md`

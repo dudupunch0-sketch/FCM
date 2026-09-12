@@ -326,6 +326,16 @@ const validators = {
     if (range.min >= range.max) fail(file, 'range.min', 'max보다 작아야 합니다');
     if (range.initial < range.min || range.initial > range.max) fail(file, 'range.initial', '거리 범위를 벗어났습니다');
     requireNumber(file, 'range.maxFalloff', range.maxFalloff, { min: 0, max: 1 });
+    const defaults = requireObject(file, 'fighterDefaults', cfg.fighterDefaults);
+    requireObject(file, 'fighterDefaults.base', defaults.base);
+    requireNumber(file, 'fighterDefaults.reference', defaults.reference, { min: 1, max: 100 });
+    const influence = requireObject(file, 'statInfluence', cfg.statInfluence);
+    for (const key of ['impact', 'evasion', 'guard', 'subBeatShift']) {
+      const spec = requireObject(file, `statInfluence.${key}`, influence[key]);
+      if (!isDerivedCapability(spec.capability)) fail(file, `statInfluence.${key}.capability`, `알 수 없는 Derived Capability: ${spec.capability}`);
+    }
+    requireNumber(file, 'statInfluence.evasion.failThreshold', influence.evasion.failThreshold, { min: 0, max: 1 });
+    requireNumber(file, 'statInfluence.subBeatShift.max', influence.subBeatShift.max, { min: 0, max: 0.5 });
     const first = requireObject(file, 'firstStrike', cfg.firstStrike);
     for (const key of ['staggerWeakensLater', 'groggyWeakensLater']) {
       const v = requireNumber(file, `firstStrike.${key}`, first[key], { min: 0, max: 1 });

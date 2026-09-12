@@ -1,3 +1,5 @@
+import {createFighter,createCondition,computeDerived,computeEffective} from './fighter.js';
+
 // Pure combat rules. No DOM, animation clock, storage, or player-draft access.
 // Balance data comes from config/combat_prototype.json through configureEngine.
 // Live bindings: consumers import these names and see the configured values.
@@ -14,6 +16,9 @@ let SUBBEAT = null;
 let RANGE = null;
 let FIRST_STRIKE = null;
 let REVEAL = null;
+let DEFAULTS = null;
+let INFLUENCE = null;
+let DEFINITIONS = null;
 
 const required = () => {
   if (!RULES) throw Error('전투 엔진이 설정되지 않았습니다. configureEngine(definitions)를 먼저 호출하세요');
@@ -36,10 +41,37 @@ export function configureEngine(definitions) {
   RANGE = cfg.range;
   FIRST_STRIKE = cfg.firstStrike;
   REVEAL = cfg.reveal;
+  DEFAULTS = cfg.fighterDefaults;
+  INFLUENCE = cfg.statInfluence;
+  DEFINITIONS = definitions?.configs ? definitions : null;
   return { RULES, CARDS, SKILLS, PROFILES };
 }
 
-export function fighter(name){return {name,stamina:100,damage:{head:0,body:0,arms:0},score:0,counterUntil:-1,openUntil:-1,statusUntil:-1,status:'normal',evaded:false,ko:false};}
+// Stats reach resolution through Effective Performance. Both defaults are identical, so wiring
+// them in changes nothing until the config gives the two sides different numbers.
+export function buildCombatant(spec){
+  return createFighter({id:spec?.id??'default',name:spec?.name??'선수',
+    base:{...DEFAULTS.base,...(spec?.base??{})},
+    body:{...DEFAULTS.body,...(spec?.body??{})}});
+}
+
+function effectiveOf(state){
+  if(!DEFINITIONS||!state.stats)return null;
+  const condition=createCondition({stamina:state.stamina,stance:state.stats.body.stance,
+    body_damage:{head:state.damage.head,body:state.damage.body,left_arm:state.damage.arms,right_arm:state.damage.arms}});
+  return computeEffective(state.derived,condition,DEFINITIONS).effective;
+}
+
+// A capability at the reference value multiplies by 1.0; above it helps, below it hurts.
+function ratio(effective,key){
+  if(!effective)return 1;
+  const spec=INFLUENCE[key];
+  const value=effective[spec.capability]/DEFAULTS.reference;
+  return 1+(value-1)*(spec.weight??1);
+}
+
+export function fighter(name,spec){return {name,stamina:100,damage:{head:0,body:0,arms:0},score:0,counterUntil:-1,openUntil:-1,statusUntil:-1,status:'normal',evaded:false,ko:false,
+  stats:(spec&&DEFINITIONS)?buildCombatant(spec):null,derived:null};}
 
 const round=x=>Math.round(x*10)/10;
 // Distance needs finer precision than resources: a single card shift can be smaller than
@@ -62,7 +94,13 @@ function endRound(f){
 }
 
 // Impact position inside a slot. Priority falls out of timing rather than a separate rule.
-export function impactPosition(card){return card.subBeat??SUBBEAT.nominal;}
+export function impactPosition(card,state){
+  const base=card.subBeat??SUBBEAT.nominal;
+  const effective=state?effectiveOf(state):null;
+  if(!effective)return base;
+  const shift=(ratio(effective,'subBeatShift')-1)*INFLUENCE.subBeatShift.max;
+  return clamp(base-shift,0,1);
+}
 
 // effective_distance = gap - reach contribution. Falloff grows outside the card's tolerance.
 export function rangeFactor(gap,card){
@@ -81,10 +119,13 @@ export function bandOf(gap){
 
 export function roundOf(turn){return Math.floor((turn-1)/ROUNDS.turnsPerRound)+1;}
 export function isRoundEnd(turn){return turn%ROUNDS.turnsPerRound===0;}
-export function newMatch(profile='pressure',seed=17){
+export function newMatch(profile='pressure',seed=17,options={}){
   required();
   if(!PROFILES[profile]) throw Error('알 수 없는 상대');
-  return {turn:1,seed,profile,gap:RANGE.initial,fighters:[fighter('도전자'),fighter(PROFILES[profile].name)],lastPlans:null,lastEvaded:[false,false],roundResults:[],roundBaseline:[0,0],finished:false,winner:null,method:null};
+  const built=[fighter('도전자',options.player??{}),fighter(PROFILES[profile].name,options.opponent??{})];
+  // Without full Definition Data the engine still runs; stats simply do not participate.
+  for(const x of built)if(x.stats&&DEFINITIONS)x.derived=computeDerived(x.stats,DEFINITIONS,{referenceWeight:x.stats.body.natural_weight});
+  return {turn:1,seed,profile,gap:RANGE.initial,fighters:built,lastPlans:null,lastEvaded:[false,false],roundResults:[],roundBaseline:[0,0],finished:false,winner:null,method:null};
 }
 export function span(ids){return ids.reduce((n,id)=>n+(CARDS[id]?.duration??99),0);}
 export function makePlan(ids){
@@ -197,7 +238,8 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       if(c.kind!=='attack'||tick!==p.start+c.impact||poses[i].failed)continue;
       const isOpen=before[j].openUntil>=tick;
       const impaired=before[j].status==='groggy'&&before[j].statusUntil>=tick;
-      const dodged=!poses[j].failed&&!isOpen&&!impaired&&dc.kind==='evade'&&dc.dodges.includes(c.trajectory);
+      const defenderReady=ratio(effectiveOf(before[j]),'evasion')>=INFLUENCE.evasion.failThreshold;
+      const dodged=!poses[j].failed&&!isOpen&&!impaired&&defenderReady&&dc.kind==='evade'&&dc.dodges.includes(c.trajectory);
       if(dodged){effects.push({type:'evade',actor:j,target:i});continue;}
       const guarding=!poses[j].failed&&!isOpen&&dc.kind==='guard'&&dc.protect===c.target;
       const blocked=guarding&&before[j].stamina>=RULES.guardDrain;
@@ -205,10 +247,13 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       const recovery=dc.kind==='attack'&&tick>active[j].start+dc.impact;
       const mismatch=dc.kind==='evade'&&!dodged;
       const reach=rangeFactor(match.gap,c);
-      let power=c.power*(0.5+0.5*before[i].stamina/100)*(counter?1.4:1)*(isOpen||recovery||mismatch?1.2:1)*reach;
+      const attackerEffective=effectiveOf(before[i]),defenderEffective=effectiveOf(before[j]);
+      let power=c.power*(0.5+0.5*before[i].stamina/100)*(counter?1.4:1)*(isOpen||recovery||mismatch?1.2:1)*reach
+        *ratio(attackerEffective,'impact');
+      if(blocked)power/=Math.max(ratio(defenderEffective,'guard'),0.2);
       if(blocked)power*=0.18+before[j].damage.arms/500;
       if(impaired)power*=1+STATUS.groggyDefensePenalty;
-      effects.push({type:blocked?'block':'hit',actor:i,target:j,power:round(power),targetPart:c.target,counter,guardBreak:guarding&&!blocked,setup:isOpen,recovery,at:impactPosition(c),reach:round(reach)});
+      effects.push({type:blocked?'block':'hit',actor:i,target:j,power:round(power),targetPart:c.target,counter,guardBreak:guarding&&!blocked,setup:isOpen,recovery,at:impactPosition(c,before[i]),reach:round(reach)});
     }
     // Impacts within the tolerance share the snapshot and apply together, so a double KO stays
     // reachable. A strictly earlier one applies first and weakens the later, never erases it.

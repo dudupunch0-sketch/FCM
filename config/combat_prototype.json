@@ -414,5 +414,58 @@
     "maxExactPerTurn": 2,
     "activeLimit": 3,
     "note": "Budget shared by every equipped information card. Extra cards buy trigger coverage across situations, never more disclosure in one turn. Spec: docs/design/31_information_economy_and_placement.md."
+  },
+  "fighterDefaults": {
+    "base": {
+      "strength": 60,
+      "explosiveness": 60,
+      "agility": 60,
+      "cardio": 60,
+      "durability": 60,
+      "reflex": 60,
+      "punch_technique": 60,
+      "guard_technique": 60,
+      "kick_technique": 60,
+      "footwork_technique": 60,
+      "takedown_technique": 60,
+      "takedown_defense_technique": 60,
+      "clinch_technique": 60,
+      "ground_bottom_technique": 60,
+      "ground_top_technique": 60,
+      "submission_technique": 60,
+      "fight_iq": 60,
+      "tactical_execution": 60
+    },
+    "body": {
+      "height": 180,
+      "reach": 183,
+      "natural_weight": 75,
+      "current_weight": 75,
+      "age": 24,
+      "stance": "orthodox"
+    },
+    "reference": 50,
+    "note": "Both sides start identical so wiring fighter stats into resolution changes nothing on its own. Per-profile stat tuning is a balance step, done in config, not a code change. reference is the Derived value that maps to a 1.0 multiplier."
+  },
+  "statInfluence": {
+    "impact": {
+      "capability": "punch_impact",
+      "weight": 1.0
+    },
+    "evasion": {
+      "capability": "evasion_capability",
+      "weight": 1.0,
+      "failThreshold": 0.75
+    },
+    "guard": {
+      "capability": "guard_efficiency",
+      "weight": 1.0
+    },
+    "subBeatShift": {
+      "capability": "punch_execution_speed",
+      "max": 0.3,
+      "weight": 1.0
+    },
+    "note": "How Effective Performance reaches Action Result. weight scales how far a capability ratio moves the outcome; failThreshold is the ratio below which a correctly chosen evasion can still fail."
   }
 }
