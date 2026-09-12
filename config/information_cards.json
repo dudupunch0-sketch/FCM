@@ -5,9 +5,9 @@
 
   "active_card_limit": {
     "style": 5,
-    "information": 1,
+    "information": 3,
     "shared_pool": false,
-    "note": "Separate limits. Style cards keep the original five. Information cards get their own small limit, matching what the prototype already does.",
+    "note": "Separate limits. Style cards keep the original five. Information cards get their own pool of three, so the per-turn reveal budget — not the card limit — is what caps disclosure.",
     "note_tradeoff": "Separation accepts that an information card is effectively always equipped. In exchange the player's decision becomes 'which read do I want', which is a comparison between like things, instead of 'certainty or power', which is not.",
     "merge_back_criteria": [
       "information cards trivialise planning, making opponent reads unnecessary",
@@ -22,7 +22,8 @@
     "per_turn_total": 3,
     "cost": { "exact": 2, "cue": 1 },
     "max_exact_per_turn": 2,
-    "note_cap": "Even at maximum budget an 8-slot plan cannot be fully revealed. Partial knowledge is structural, not a tuning accident."
+    "note_cap": "Even at maximum budget an 8-slot plan cannot be fully revealed. Partial knowledge is structural, not a tuning accident.",
+    "note_binding": "With an information limit of 3 the budget binds before the card limit does: three equipped cards cannot all fire at full precision in one turn. Extra cards therefore buy trigger coverage across situations, not more disclosure in any single turn. The budget must NOT scale with card count."
   },
 
   "resolution_order": {
