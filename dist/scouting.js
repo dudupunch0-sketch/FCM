@@ -4,11 +4,12 @@
 // never searches the true database; they discover fighters and then estimate them.
 
 import { createKnowledge, addEvidence, estimate, knowledgeWidth } from './knowledge.js';
+import { adjustReach, adjustInterpreterSkill } from './difficulty.js';
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 
-export function createScoutingState(definitions) {
-  return { definitions, known: {}, watchlist: [], actionsSpent: 0 };
+export function createScoutingState(definitions, { difficulty = null } = {}) {
+  return { definitions, difficulty, known: {}, watchlist: [], actionsSpent: 0 };
 }
 
 // Fame is its own discovery channel: a fighter above the visibility threshold needs no effort.
@@ -22,7 +23,9 @@ export function discover(state, fighter, sourceId, { week = 0, rng = null } = {}
   if (!source) throw Error(`알 수 없는 발견 경로: ${sourceId}`);
   if (!isPubliclyVisible(fighter, state.definitions)) {
     const roll = rng ? rng.next() : 0;
-    if (roll > source.reach) return { found: false, cost: source.cost };
+    // Difficulty changes how far a scouting action reaches, never whether the fighter is good.
+    const reach = state.difficulty ? adjustReach(source.reach, state.difficulty) : source.reach;
+    if (roll > reach) return { found: false, cost: source.cost };
   }
   const entry = state.known[fighter.id] ?? { fighter_id: fighter.id, knowledge: createKnowledge(fighter.id, state.definitions), sources: [] };
   if (!entry.sources.includes(sourceId)) entry.sources.push(sourceId);
@@ -61,6 +64,9 @@ export function runTrial(state, fighter, { week = 0 } = {}) {
 // Multiple axes, never a single star rating.
 export function recruitmentReport(state, fighter, { interpreterSkill = 0.5, week = 0 } = {}) {
   const cfg = state.definitions.configs.world.recruitment;
+  // A generous tier does not invent truth. It raises the quality of the interpreter, so the
+  // estimate narrows and its bias shrinks — the same lever a better analyst would pull.
+  interpreterSkill = state.difficulty ? adjustInterpreterSkill(interpreterSkill, state.difficulty) : interpreterSkill;
   const entry = state.known[fighter.id];
   if (!entry) throw Error('발견하지 않은 선수의 보고서는 만들 수 없습니다');
   const level = estimate(entry.knowledge, 'punch_technique', {

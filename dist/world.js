@@ -2,6 +2,7 @@
 // Spec: docs/design/16_international_league_and_world_simulation.md, current_decisions 22 and 31.
 // One unified ranking keyed by ruleset and weight division. NPC fighters live their careers
 // whether or not the player is looking; simulation tier changes fidelity, never the data model.
+import { adjustIntake } from './difficulty.js';
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 
@@ -188,7 +189,8 @@ export function retireEligible(world) {
 // New prospects keep arriving, and they arrive with a history rather than appearing on discovery.
 export function intakeProspects(world, rng) {
   const cfg = world.definitions.configs.world.world;
-  for (let i = 0; i < cfg.prospect_intake_per_year; i++) {
+  const intake = world.difficulty ? adjustIntake(cfg.prospect_intake_per_year, world.difficulty) : cfg.prospect_intake_per_year;
+  for (let i = 0; i < intake; i++) {
     const id = `p${world.week}_${i}`;
     const priorFights = Math.floor(rng.next() * 6);
     world.fighters[id] = {

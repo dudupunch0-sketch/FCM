@@ -2,6 +2,7 @@
 // Spec: docs/design/14_staff_facilities_delegation_and_player_progression.md, docs/design/15.
 // Staff and facilities never grant a flat combat buff. They change preparation quality,
 // analysis accuracy and risk detection. Delegation is never perfect.
+import { adjustOverhead } from './difficulty.js';
 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 
@@ -95,9 +96,9 @@ export function payPurse(definitions, ledger, { fighterId, purse, share, won = f
   return { gross, managementShare: cut, fighterShare: gross - cut };
 }
 
-export function weeklyCosts(definitions, ledger, { staff = [], facilities = null, inCamp = false, damageTreated = 0, scoutingActions = 0 }) {
+export function weeklyCosts(definitions, ledger, { staff = [], facilities = null, inCamp = false, damageTreated = 0, scoutingActions = 0, difficulty = null }) {
   const cfg = definitions.configs.world.economy;
-  let total = cfg.weekly_overhead;
+  let total = difficulty ? adjustOverhead(cfg.weekly_overhead, difficulty) : cfg.weekly_overhead;
   total += staff.reduce((n, s) => n + s.salary, 0);
   if (facilities) total += maintenanceCost(definitions, facilities);
   if (inCamp) total += cfg.camp_cost_per_week;

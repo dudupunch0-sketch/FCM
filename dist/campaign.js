@@ -8,21 +8,27 @@ import { createClub, makeOffer, applyResult, availableOpponents, part1Gate, next
 import { createWorld, applyFightResult, rankOf, isChampion, titleEligibility, titleShotPriority, simulateWeek } from './world.js';
 import { createLedger, payPurse, weeklyCosts, createFacilities } from './organisation.js';
 
+import { resolveDifficulty, adjustStartCash, adjustOverhead, adjustInterpreterSkill } from './difficulty.js';
+
 export const PART1 = 'part1';
 export const PART2 = 'part2';
 export const COMPLETE = 'complete';
 
-export function startCampaign(definitions, rng, spec) {
-  const club = createClub(definitions, rng);
+export function startCampaign(definitions, rng, spec, { difficulty = null } = {}) {
+  const tier = resolveDifficulty(definitions, difficulty ?? spec.difficulty ?? null);
+  const club = createClub(definitions, rng, { difficulty: tier });
+  const ledger = createLedger(definitions);
+  ledger.management_cash = adjustStartCash(ledger.management_cash, tier);
   return {
     definitions,
+    difficulty: tier,
     rng,
     part: PART1,
     week: 0,
     career: startCareer(definitions, spec),
     club,
     world: null,
-    ledger: createLedger(definitions),
+    ledger,
     facilities: createFacilities(definitions),
     fighterState: { rung: 'newcomer', record: { wins: 0, losses: 0 }, ticket_power: definitions.configs.world.ticket_power.start, streak: 0 },
     contractShare: spec.share ?? definitions.configs.world.contract.management_share.default,
@@ -138,7 +144,7 @@ export function ladderStage(campaign) {
 export function advanceWeek(campaign) {
   campaign.week++;
   campaign.career = trainWeek(campaign.career, camp);
-  weeklyCosts(campaign.definitions, campaign.ledger, { facilities: campaign.facilities, inCamp: true });
+  weeklyCosts(campaign.definitions, campaign.ledger, { facilities: campaign.facilities, inCamp: true, difficulty: campaign.difficulty });
 
   const ready = fightReadiness(campaign.career);
   // Fights sit months apart, matching the fight camp. Fighting every week would let damage

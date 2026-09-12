@@ -3,14 +3,17 @@
 // Exactly one club is visible to the player. Ticket power is public entertainment value and
 // never a combat stat.
 
+import { resolveDifficulty, adjustOpponentLevel, adjustChampionLevel } from './difficulty.js';
+
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 
-export function createClub(definitions, rng, { size = null } = {}) {
+export function createClub(definitions, rng, { size = null, difficulty = null } = {}) {
   const cfg = definitions.configs.world.club;
+  const tier = difficulty ?? resolveDifficulty(definitions);
   const count = size ?? cfg.pool_size;
   const roster = [];
   for (let i = 0; i < count; i++) {
-    const level = 35 + Math.floor(rng.next() * 45);
+    const level = adjustOpponentLevel(35 + Math.floor(rng.next() * 45), tier);
     roster.push({
       id: `club_${i}`,
       name: `클럽 파이터 ${i + 1}`,
@@ -25,8 +28,8 @@ export function createClub(definitions, rng, { size = null } = {}) {
       base: { punch_technique: level }
     });
   }
-  roster[0] = { ...roster[0], rung: 'champion', level: 82, name: '클럽 챔피언', profile: 'tricky' };
-  return { definitions, roster, ladder: cfg.ladder, championId: roster[0].id, week: 0 };
+  roster[0] = { ...roster[0], rung: 'champion', level: adjustChampionLevel(82, tier), name: '클럽 챔피언', profile: 'tricky' };
+  return { definitions, roster, ladder: cfg.ladder, championId: roster[0].id, week: 0, difficulty: tier.id };
 }
 
 export function rungIndex(club, rung) { return club.ladder.indexOf(rung); }

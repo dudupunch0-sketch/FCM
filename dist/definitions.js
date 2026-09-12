@@ -6,7 +6,7 @@ import { ALL_BASE_PARAMETERS, DERIVED_CAPABILITIES, isBaseParameter, isDerivedCa
 
 export const CONFIG_FILES = Object.freeze([
   'derived_capability', 'effective_performance', 'action_resolution',
-  'grappling', 'combat_ai', 'knowledge', 'information_cards', 'save', 'combat_prototype', 'training', 'world'
+  'grappling', 'combat_ai', 'knowledge', 'information_cards', 'save', 'combat_prototype', 'training', 'world', 'difficulty'
 ]);
 
 const EPSILON = 1e-9;
@@ -443,6 +443,36 @@ const validators = {
     for (const key of ['staggerWeakensLater', 'groggyWeakensLater']) {
       const v = requireNumber(file, `firstStrike.${key}`, first[key], { min: 0, max: 1 });
       if (v <= 0) fail(file, `firstStrike.${key}`, '선타는 후속 타격을 약화시킬 뿐 지우지 않습니다');
+    }
+  },
+
+  // docs/design/33_difficulty.md
+  difficulty(file, cfg) {
+    const tiers = requireObject(file, 'tiers', cfg.tiers);
+    const names = dataKeys(tiers);
+    if (!names.length) fail(file, 'tiers', '난이도 등급이 비어 있습니다');
+    if (!tiers[cfg.default_tier]) fail(file, 'default_tier', `존재하지 않는 등급입니다: ${cfg.default_tier}`);
+    const principle = requireObject(file, 'principle', cfg.principle);
+    for (const key of ['combat_resolution', 'randomness', 'judging']) {
+      if (!(principle.never_adjusts ?? []).includes(key)) {
+        fail(file, 'principle.never_adjusts', `${key}는 난이도로 조절하지 않습니다`);
+      }
+    }
+    const numeric = ['opponent_level_offset', 'opponent_level_spread', 'champion_level_offset',
+      'interpreter_skill_floor', 'scouting_reach_multiplier', 'evidence_strength_multiplier',
+      'start_cash_multiplier', 'overhead_multiplier', 'prospect_intake_multiplier'];
+    for (const name of names) {
+      for (const key of numeric) requireNumber(file, `tiers.${name}.${key}`, tiers[name][key]);
+      requireNumber(file, `tiers.${name}.interpreter_skill_floor`, tiers[name].interpreter_skill_floor, { min: 0, max: 1 });
+      for (const key of ['opponent_level_spread', 'scouting_reach_multiplier', 'evidence_strength_multiplier', 'start_cash_multiplier', 'overhead_multiplier', 'prospect_intake_multiplier']) {
+        requireNumber(file, `tiers.${name}.${key}`, tiers[name][key], { min: 0.1 });
+      }
+      if (!tiers[name].name) fail(file, `tiers.${name}.name`, '표시 이름이 필요합니다');
+    }
+    // The baseline tier must be neutral, or the measured balance no longer describes any tier.
+    const base = tiers[cfg.default_tier];
+    if (base.opponent_level_offset !== 0 || base.opponent_level_spread !== 1 || base.start_cash_multiplier !== 1 || base.overhead_multiplier !== 1) {
+      fail(file, `tiers.${cfg.default_tier}`, '기준 등급은 중립이어야 합니다. 밸런스 측정이 이 등급에서 이루어집니다');
     }
   },
 
