@@ -11,6 +11,7 @@
     "calibrate": "node tools/calibrate.mjs solve",
     "calibrate:check": "node tools/calibrate.mjs check",
     "calibrate:report": "node tools/calibrate.mjs report",
+    "calibrate:policies": "node tools/calibrate.mjs policies",
     "balance": "node tools/balance.mjs all"
   }
 }

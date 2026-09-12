@@ -5,9 +5,15 @@
 // AI mixture is stale — it was the answer to a different game. Running this regenerates it,
 // and `check` fails loudly when the committed mixture no longer matches the current rules.
 //
-//   node tools/calibrate.mjs solve [rounds] [poolSize]   regenerate config/ai_strategies.json
-//   node tools/calibrate.mjs check                       fail if the committed mixture is stale
-//   node tools/calibrate.mjs report                      inspect the current mixture
+//   node tools/calibrate.mjs solve [rounds] [poolSize]     regenerate config/ai_strategies.json
+//   node tools/calibrate.mjs check                         fail if the committed mixture is stale
+//   node tools/calibrate.mjs report                        inspect the current mixture
+//   node tools/calibrate.mjs policies [rounds] [poolSize]  solve over REACTIVE policies
+//
+// `solve` works over fixed plans: one combo thrown every turn for the whole fight. That is
+// the wrong question for any card that exists to answer a read, so `policies` solves the
+// same game over per-turn decision rules instead, and reports which cards actually reach
+// the timeline. Use it to judge movement, the side step and anything else conditional.
 
 import { writeFile, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -18,11 +24,13 @@ import { loadDefinitions } from '../dist/definitions.js';
 import { configureEngine, CARDS } from '../dist/engine.js';
 import { createRngSet } from '../dist/rng.js';
 import { samplePlans, planKey } from '../dist/plan-space.js';
-import { doubleOracle, payoffMatrix, fictitiousPlay, exploitability, supportOf, duel, deviateMixture, clearDuelCache } from '../dist/equilibrium.js';
+import { doubleOracle, payoffMatrix, fictitiousPlay, exploitability, supportOf, duel, duelPolicies, deviateMixture, clearDuelCache, clearPolicyDuelCache, cardUsage, POLICY_SPACE } from '../dist/equilibrium.js';
+import { samplePolicies, policyKey, describePolicy, ROLES } from '../dist/policy.js';
 import { ALL_BASE_PARAMETERS } from '../dist/fighter-schema.js';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const OUTPUT = join(root, 'config', 'ai_strategies.json');
+const POLICY_OUTPUT = join(root, 'config', 'ai_policies.json');
 
 const definitions = await loadDefinitions(readConfig);
 configureEngine(definitions);
@@ -35,6 +43,10 @@ const MIRROR = { base: Object.fromEntries(ALL_BASE_PARAMETERS.map(k => [k, 60]))
 const CONVERGED_BELOW = 0.2;
 const SEED = 20260101;
 const OPTIONS = { stats: MIRROR, seeds: [1], profile: 'pressure' };
+// Policies need more than one seed. A single seed makes every duel a bare win or loss, so the
+// payoff matrix is a tournament of +-1 and fictitious play thrashes between cycles. Three
+// seeds give intermediate values and the mixture settles.
+const POLICY_OPTIONS = { stats: MIRROR, seeds: [1, 2, 3], profile: 'pressure' };
 
 // A fingerprint of everything that changes what a plan is worth. If this moves, the committed
 // mixture was solved for a different game and must be regenerated.
@@ -42,23 +54,32 @@ const OPTIONS = { stats: MIRROR, seeds: [1], profile: 'pressure' };
 // much as a config change can — the RNG warm-up fix did exactly that and a config-only
 // fingerprint did not notice.
 const ENGINE_SOURCE = await readSource(join(root, 'dist', 'engine.js'), 'utf8');
+// The role vocabulary is part of the policy game's rules: change what a role throws and every
+// solved policy means something else.
+const POLICY_SOURCE = await readSource(join(root, 'dist', 'policy.js'), 'utf8');
 
-function rulesFingerprint() {
+function fnv(text) {
+  let hash = 2166136261;
+  for (const ch of text) {
+    hash ^= ch.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16);
+}
+
+function ruleParts() {
   const cfg = definitions.configs.combat_prototype;
-  const parts = [
+  return [
     ENGINE_SOURCE,
     JSON.stringify(cfg.rules), JSON.stringify(cfg.modifiers), JSON.stringify(cfg.status),
     JSON.stringify(cfg.rounds), JSON.stringify(cfg.subBeat), JSON.stringify(cfg.range),
     JSON.stringify(cfg.firstStrike), JSON.stringify(cfg.intervalRecovery),
     ...Object.keys(cfg.cards).sort().map(id => `${id}:${JSON.stringify(cfg.cards[id])}`)
   ];
-  let hash = 2166136261;
-  for (const ch of parts.join('|')) {
-    hash ^= ch.charCodeAt(0);
-    hash = Math.imul(hash, 16777619);
-  }
-  return (hash >>> 0).toString(16);
 }
+
+function rulesFingerprint() { return fnv(ruleParts().join('|')); }
+function policyFingerprint() { return fnv([...ruleParts(), POLICY_SOURCE].join('|')); }
 
 // In-pool exploitability understates convergence: it only looks at plans already known.
 // The honest measure is whether a fresh search can still find something that beats the
@@ -143,13 +164,14 @@ async function solve(rounds = 8, poolSize = 28) {
   return document;
 }
 
-async function loadCommitted() {
+async function loadJson(path) {
   try {
-    return JSON.parse(await readFile(OUTPUT, 'utf8'));
+    return JSON.parse(await readFile(path, 'utf8'));
   } catch {
     return null;
   }
 }
+const loadCommitted = () => loadJson(OUTPUT);
 
 // The regression guard. Balance changes silently invalidate a solved mixture; this makes that
 // visible instead of leaving a stale AI in place.
@@ -186,6 +208,23 @@ async function check() {
     }
   }
   console.log(`AI 혼합전략이 현재 전투 규칙과 일치합니다 (fingerprint ${current}).`);
+
+  // The policy solve has its own fingerprint: it also depends on the role vocabulary, so a
+  // change to dist/policy.js stales it even when the combat rules are untouched.
+  const policies = await loadJson(POLICY_OUTPUT);
+  if (!policies) {
+    console.log('반응형 정책 해는 아직 없습니다. node tools/calibrate.mjs policies 로 계산할 수 있습니다.');
+    return;
+  }
+  const policyCurrent = policyFingerprint();
+  if (policies.generated.policy_fingerprint !== policyCurrent) {
+    console.error('전투 규칙 또는 역할 목록이 바뀌어 저장된 반응형 정책 해가 낡았습니다.');
+    console.error(`  저장 ${policies.generated.policy_fingerprint} vs 현재 ${policyCurrent}`);
+    console.error('  node tools/calibrate.mjs policies 로 다시 계산하세요.');
+    process.exitCode = 1;
+    return;
+  }
+  console.log(`반응형 정책 해도 일치합니다 (fingerprint ${policyCurrent}).`);
 }
 
 async function report() {
@@ -204,6 +243,16 @@ async function report() {
   for (const s of committed.equilibrium_support) console.log(`  ${(s.weight * 100).toFixed(1).padStart(5)}%  ${s.plan.join(' + ')}`);
   const dead = Object.keys(CARDS).filter(id => id !== 'rest' && !committed.equilibrium_support.some(s => s.plan.includes(id)));
   console.log(`\n균형에서 쓰이지 않는 카드: ${dead.length ? dead.join(', ') : '없음'}`);
+  const policies = await loadJson(POLICY_OUTPUT);
+  if (policies) {
+    // Conditional cards cannot be judged from a fixed-plan solve, so the two lists are read
+    // together: absent here but used there means the card works, just not by repetition.
+    const usedReactively = Object.entries(policies.card_usage).filter(([, share]) => share > 0).map(([id]) => id);
+    const rescued = dead.filter(id => usedReactively.includes(id));
+    console.log(`  반응형 정책 균형에서는 실제로 쓰이는 카드: ${rescued.length ? rescued.join(', ') : '없음'}`);
+    const neverUsed = dead.filter(id => !usedReactively.includes(id));
+    console.log(`  양쪽 모두에서 쓰이지 않는 카드: ${neverUsed.length ? neverUsed.join(', ') : '없음'}`);
+  }
   if (converged) {
     console.log('  (균형에 한 번도 등장하지 않는 카드는 죽은 콘텐츠 후보입니다)');
   } else {
@@ -212,8 +261,83 @@ async function report() {
   }
 }
 
+// Reactive-policy solving. Same game, same solver, different strategy space: instead of one
+// fixed combo the strategy is a short list of "when this, do that" rules re-read every turn.
+//
+// The point is the card usage table at the end. A card is only dead if it is absent from the
+// timeline when reactive play is on the table — absence from a fixed-plan equilibrium proves
+// nothing about a card whose whole purpose is to answer a read.
+function externalPolicyResponse(pool, strategy, rng, { candidates = 300 } = {}) {
+  let best = 0, bestPolicy = null;
+  const known = new Set(pool.map(policyKey));
+  for (const candidate of samplePolicies(rng, candidates)) {
+    if (known.has(policyKey(candidate))) continue;
+    let value = 0;
+    for (let j = 0; j < pool.length; j++) {
+      if (!strategy[j]) continue;
+      value += strategy[j] * duelPolicies(candidate, pool[j], POLICY_OPTIONS);
+    }
+    if (value > best) { best = value; bestPolicy = candidate; }
+  }
+  return { gain: best, policy: bestPolicy };
+}
+
+async function solvePolicies(rounds = 8, poolSize = 36) {
+  clearPolicyDuelCache();
+  const rng = createRngSet(SEED, definitions).stream('combat');
+  const started = Date.now();
+  console.log(`반응형 정책 풀 ${poolSize}, 라운드 ${rounds}. 매 턴 다시 결정하는 전략끼리 풉니다.`);
+  const result = doubleOracle(samplePolicies(rng, poolSize), rng, {
+    rounds, candidatesPerRound: 200, addPerRound: 6, options: POLICY_OPTIONS, space: POLICY_SPACE,
+    onRound: h => console.log(`  round ${h.round}  pool ${String(h.poolSize).padStart(3)}  support ${String(h.support).padStart(2)}  최적대응 이득 ${h.gain.toFixed(3)}  풀내 exploit ${h.exploitability.toFixed(3)}`)
+  });
+
+  const external = externalPolicyResponse(result.pool, result.solution.strategy, rng);
+  const support = supportOf(result.pool, result.solution.strategy);
+  const usage = cardUsage(result.pool, result.solution.strategy, { seeds: POLICY_OPTIONS.seeds, stats: MIRROR, profile: POLICY_OPTIONS.profile });
+  const unreachable = Object.keys(CARDS).filter(id => !Object.values(ROLES).some(role => role.includes(id)));
+  const unused = Object.keys(CARDS).filter(id => id !== 'rest' && !usage[id]);
+
+  const document = {
+    config_version: '0.1.0-draft',
+    description: 'Equilibrium over reactive policies. Regenerate with: node tools/calibrate.mjs policies',
+    spec_reference: 'docs/design/34_ai_equilibrium.md',
+    generated: {
+      policy_fingerprint: policyFingerprint(),
+      seed: SEED,
+      rounds,
+      pool_size: result.pool.length,
+      game_value: Number(result.solution.value.toFixed(5)),
+      in_pool_exploitability: Number(result.exploitability.toFixed(4)),
+      external_best_response_gain: Number(external.gain.toFixed(4)),
+      note: 'Strategies here are decision rules, not combos. card_usage is measured by replaying the mixture and counting what actually reached the timeline, which is the only way a conditional card can show its value.'
+    },
+    equilibrium_support: support.map(s => ({ policy: s.plan, description: describePolicy(s.plan), weight: Number(s.weight.toFixed(5)) })),
+    card_usage: Object.fromEntries(Object.entries(usage).sort((a, b) => b[1] - a[1]).map(([id, share]) => [id, Number(share.toFixed(4))])),
+    unreachable_cards: unreachable
+  };
+
+  await writeFile(POLICY_OUTPUT, `${JSON.stringify(document, null, 2)}
+`);
+  console.log(`\n게임 값 ${document.generated.game_value} (0이어야 정상)`);
+  console.log(`풀내 exploitability ${document.generated.in_pool_exploitability}  |  외부 최적대응 이득 ${document.generated.external_best_response_gain}`);
+  console.log(`지지집합 ${support.length}개, ${Date.now() - started}ms`);
+  if (external.gain > CONVERGED_BELOW) {
+    console.log(`\n  ⚠ 수렴 전입니다 (외부 이득 ${external.gain.toFixed(3)} > ${CONVERGED_BELOW}). 사용률 표를 근거로 수치를 조정하지 마세요.`);
+  }
+  console.log('\n균형 정책:');
+  for (const s of support.slice(0, 8)) console.log(`  ${(s.weight * 100).toFixed(1).padStart(5)}%  ${describePolicy(s.plan)}`);
+  console.log('\n타임라인에 실제로 나온 카드 비율:');
+  for (const [id, share] of Object.entries(document.card_usage)) console.log(`  ${id.padEnd(10)} ${(share * 100).toFixed(1).padStart(5)}%`);
+  if (unreachable.length) console.log(`\n어떤 역할에도 없어 애초에 나올 수 없는 카드: ${unreachable.join(', ')}`);
+  console.log(`균형에서 한 번도 나오지 않은 카드: ${unused.length ? unused.join(', ') : '없음'}`);
+  console.log(`\n기록: ${POLICY_OUTPUT}`);
+  return document;
+}
+
 const [mode = 'report', ...rest] = process.argv.slice(2);
 if (mode === 'solve') await solve(Number(rest[0]) || 8, Number(rest[1]) || 28);
+else if (mode === 'policies') await solvePolicies(Number(rest[0]) || 8, Number(rest[1]) || 36);
 else if (mode === 'check') await check();
 else if (mode === 'report') await report();
 else { console.error(`알 수 없는 모드: ${mode}`); process.exitCode = 1; }

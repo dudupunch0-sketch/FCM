@@ -14,13 +14,20 @@ import { CARDS, RULES, span } from './engine.js';
 
 // Named roles rather than raw card lists: a policy is a set of intentions, and the cards that
 // express each intention can be retuned without rewriting every policy.
+//
+// Every playable card must appear in some role. A card no role can express is unreachable by
+// any policy, and would then read as dead content for a reason that has nothing to do with
+// balance. A test enforces the coverage.
 export const ROLES = Object.freeze({
   pressure: ['jab', 'cross', 'hook'],
   close: ['stepin', 'advance', 'body'],
   retreat: ['backstep', 'flicker', 'flicker'],
   angle: ['sidestep', 'cross', 'rest'],
   counter: ['sway', 'cross', 'rest'],
+  slip: ['weave', 'hook', 'rest'],
+  power: ['feint', 'heavy', 'guard'],
   shell: ['shell', 'guard', 'jab'],
+  cover: ['lowguard', 'lowguard', 'jab'],
   bodywork: ['body', 'body', 'guard'],
   recover: ['rest', 'rest', 'guard', 'rest']
 });
@@ -37,10 +44,18 @@ export function validateRole(plan) {
 
 // The only state a policy is allowed to read. Built explicitly so that nothing about the
 // opponent's committed plan for THIS turn can leak in.
-export function observableView(match, side) {
+//
+// `opponentHistory` is the list of combos the opponent has already thrown, oldest first.
+// Reading "did they repeat" needs two past turns, and the match itself keeps only the last
+// one, so the caller carries the history. Falling back to match.lastPlans keeps the view
+// usable for a single-turn caller, which then simply cannot see repetition.
+export function observableView(match, side, opponentHistory = null) {
   const self = match.fighters[side];
   const other = match.fighters[1 - side];
-  const previous = match.lastPlans?.[1 - side] ?? null;
+  const history = opponentHistory
+    ?? (match.lastPlans ? [match.lastPlans[1 - side].map(p => p.id)] : []);
+  const previous = history.at(-1) ?? null;
+  const before = history.at(-2) ?? null;
   return Object.freeze({
     gap: match.gap,
     turn: match.turn,
@@ -50,8 +65,8 @@ export function observableView(match, side) {
     opponentStamina: other.stamina,
     opponentStatus: other.status,
     // Past combos only. Doc 18 makes these visible without any information card.
-    opponentLastPlan: previous ? previous.map(p => p.id) : null,
-    opponentRepeatedOpening: Boolean(previous && match.lastPlans?.[1 - side]?.[0]?.id === previous[0]?.id)
+    opponentLastPlan: previous,
+    opponentRepeatedOpening: Boolean(previous && before && previous[0] === before[0])
   });
 }
 
