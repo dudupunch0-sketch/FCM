@@ -31,7 +31,14 @@ node --test tests/*.test.mjs
 - [현재 결정과 전체 게임 범위](docs/spec/current_decisions.md)
 - [콤보 전투와 정보 카드 설계](docs/design/18_combo_turn_combat_and_information_cards.md)
 - [플랫폼 선택, 구현 범위, 임시 판정 규칙과 한계](docs/design/19_combat_prototype_implementation.md)
+- [전투 거리 모델](docs/design/22_combat_range_model.md)
+- [라운드 구조와 판정 집계](docs/design/23_round_structure_and_judging.md)
+- [Base → Derived 매핑](docs/design/24_base_to_derived_mapping.md)과 [Effective Performance 계층](docs/design/25_effective_performance.md)
 
 현재 시제품은 육성 시스템과 분리되어 있으며 상대 패턴 학습, 전체 선수 능력치 계산, MMA 확장은 아직 미구현입니다.
 
-입체 캐릭터와 관절 애니메이션의 구현 범위는 [모델·애니메이션 업그레이드](docs/design/20_fighter_visual_upgrade.md)를 참고하세요. WebGL 초기화가 불가능하면 기본 Canvas 화면으로 전환합니다.
+거리 모델, 라운드 구조, 능력치 계산 계층은 **명세가 코드를 앞선 상태**입니다. 시제품은 아직 거리와 라운드가 없고 `config/`의 밸런스 값을 읽지 않습니다.
+
+화면은 모바일 세로 레이아웃과 Canvas 도트 스프라이트를 사용합니다. 범위는 [모바일 도트 전투와 콤보 편집](docs/design/21b_mobile_pixel_combat.md)을 참고하세요.
+
+과거의 Three.js 입체 렌더러([모델·애니메이션 업그레이드](docs/design/20_fighter_visual_upgrade.md))는 도트 전환으로 대체되었습니다. 해당 코드는 저장소에 남아 있지만 현재 앱에서는 로드되지 않으며, WebGL 실패 시 Canvas로 전환하는 경로도 지금은 없습니다.
