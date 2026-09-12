@@ -23,11 +23,24 @@ export function startCareer(definitions, spec) {
   };
 }
 
+// A week always heals a little. Without this, fight damage compounds across a career and a
+// fighter degrades into a permanent loser no matter how well they train.
+function recoverWeek(career, fighter, training) {
+  const cfg = career.definitions.configs.training.weekly_recovery;
+  const debt = Math.min(training.recovery_debt / career.definitions.configs.training.recovery_debt.max, 1);
+  const rate = Math.max(1 - cfg.debt_penalty * debt, 0.2);
+  const damage = { ...career.condition.body_damage };
+  for (const part of Object.keys(damage)) damage[part] = Math.max(0, damage[part] - cfg.damage_healed * rate);
+  const target = 100 * (1 - 0.2 * debt);
+  const stamina = Math.min(target, career.condition.stamina + (target - career.condition.stamina) * cfg.stamina_fraction * rate);
+  return createCondition({ stance: fighter.body.stance, stamina, body_damage: damage });
+}
+
 export function trainWeek(career, schedule) {
   const result = runWeek(career.fighter, career.training, schedule, career.definitions, { potential: career.potential });
   const grown = applyGains(career.fighter, result.gains);
   const training = addTechniqueExp(result.state, { training: result.techniqueGain });
-  const next = { ...career, week: career.week + 1, fighter: grown, training };
+  const next = { ...career, week: career.week + 1, fighter: grown, training, condition: recoverWeek(career, grown, training) };
   next.log = [...career.log, { week: next.week, type: 'week', schedule, trace: result.trace }];
   return next;
 }

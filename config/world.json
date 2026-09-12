@@ -2,22 +2,52 @@
   "config_version": "0.1.0-draft",
   "description": "Scouting, contracts, club competition, staff, economy, ranking and world simulation. Values are initial candidates, not balanced.",
   "spec_reference": "docs/design/14_staff_facilities_delegation_and_player_progression.md, docs/design/15_economy_sponsors_and_ticket_power.md, docs/design/16_international_league_and_world_simulation.md, docs/design/17_part1_part2_progression_and_completion.md",
-
   "scouting": {
     "discovery_sources": {
-      "direct_viewing": { "cost": 1, "evidence": "observed_fight", "reach": 0.35 },
-      "gym_visit": { "cost": 1, "evidence": "training_session", "reach": 0.3 },
-      "introduction": { "cost": 0, "evidence": "rumor", "reach": 0.2 },
-      "video": { "cost": 1, "evidence": "video", "reach": 0.5 },
-      "rumor": { "cost": 0, "evidence": "rumor", "reach": 0.6 },
-      "scout_report": { "cost": 2, "evidence": "scout_report", "reach": 0.7 }
+      "direct_viewing": {
+        "cost": 1,
+        "evidence": "observed_fight",
+        "reach": 0.35
+      },
+      "gym_visit": {
+        "cost": 1,
+        "evidence": "training_session",
+        "reach": 0.3
+      },
+      "introduction": {
+        "cost": 0,
+        "evidence": "rumor",
+        "reach": 0.2
+      },
+      "video": {
+        "cost": 1,
+        "evidence": "video",
+        "reach": 0.5
+      },
+      "rumor": {
+        "cost": 0,
+        "evidence": "rumor",
+        "reach": 0.6
+      },
+      "scout_report": {
+        "cost": 2,
+        "evidence": "scout_report",
+        "reach": 0.7
+      }
     },
     "ticket_power_visibility": 45,
     "note_visibility": "Fighters above this ticket power are discoverable without any scouting effort; fame is its own discovery channel."
   },
-
   "recruitment": {
-    "report_axes": ["current_level", "growth_potential", "strategy_fit", "ruleset_fit", "ticket_power_potential", "confidence", "acquisition_difficulty"],
+    "report_axes": [
+      "current_level",
+      "growth_potential",
+      "strategy_fit",
+      "ruleset_fit",
+      "ticket_power_potential",
+      "confidence",
+      "acquisition_difficulty"
+    ],
     "no_single_rating": true,
     "note": "Never compress a recruitment recommendation into one star rating. Spec: current_decisions Superseded, Interview 09.",
     "join_interest": {
@@ -28,32 +58,69 @@
       "accept_threshold": 55
     },
     "career_needs": {
-      "prospect": { "wants": "growth_environment", "purse_weight": 0.1, "opportunity_weight": 0.5 },
-      "prime": { "wants": "title", "purse_weight": 0.25, "opportunity_weight": 0.6 },
-      "veteran": { "wants": "purse", "purse_weight": 0.6, "opportunity_weight": 0.2 },
-      "rebuilding": { "wants": "winnable_fight", "purse_weight": 0.2, "opportunity_weight": 0.3 },
-      "star": { "wants": "big_stage", "purse_weight": 0.45, "opportunity_weight": 0.5 }
+      "prospect": {
+        "wants": "growth_environment",
+        "purse_weight": 0.1,
+        "opportunity_weight": 0.5
+      },
+      "prime": {
+        "wants": "title",
+        "purse_weight": 0.25,
+        "opportunity_weight": 0.6
+      },
+      "veteran": {
+        "wants": "purse",
+        "purse_weight": 0.6,
+        "opportunity_weight": 0.2
+      },
+      "rebuilding": {
+        "wants": "winnable_fight",
+        "purse_weight": 0.2,
+        "opportunity_weight": 0.3
+      },
+      "star": {
+        "wants": "big_stage",
+        "purse_weight": 0.45,
+        "opportunity_weight": 0.5
+      }
     }
   },
-
   "contract": {
-    "management_share": { "min": 0.05, "max": 0.3, "default": 0.15 },
-    "duration_weeks": { "min": 26, "max": 156, "default": 78 },
-    "relationship": { "trust": 50, "respect": 50, "satisfaction": 50 },
+    "management_share": {
+      "min": 0.05,
+      "max": 0.3,
+      "default": 0.15
+    },
+    "duration_weeks": {
+      "min": 26,
+      "max": 156,
+      "default": 78
+    },
+    "relationship": {
+      "trust": 50,
+      "respect": 50,
+      "satisfaction": 50
+    },
     "promise_kept_gain": 12,
     "promise_broken_loss": 25,
     "note": "No fixed loyalty stat. Staying is the result of history."
   },
-
   "club": {
-    "ladder": ["newcomer", "proven", "regular", "top_challenger", "champion"],
+    "ladder": [
+      "newcomer",
+      "proven",
+      "regular",
+      "top_challenger",
+      "champion"
+    ],
     "pool_size": 12,
     "promotion_wins_required": 2,
     "demotion_losses": 2,
     "champion_defence_interval_weeks": 8,
-    "note": "Part 1 shows exactly one underground club. Other clubs exist but are not browsable."
+    "note": "Part 1 shows exactly one underground club. Other clubs exist but are not browsable.",
+    "fight_interval_weeks": 8,
+    "note_interval": "Fights are months apart, matching the eight-week fight camp. Weekly fights would let damage outrun recovery and turn every career into a decline."
   },
-
   "fight_offer": {
     "base_purse": 800,
     "purse_per_ticket_power": 45,
@@ -61,9 +128,12 @@
     "finish_bonus_ratio": 0.35,
     "short_notice_penalty_weeks": 3,
     "short_notice_purse_bonus": 0.25,
-    "risk_weights": { "opponent_level": 1.0, "short_notice": 0.6, "injury": 0.8 }
+    "risk_weights": {
+      "opponent_level": 1.0,
+      "short_notice": 0.6,
+      "injury": 0.8
+    }
   },
-
   "ticket_power": {
     "start": 5,
     "max": 100,
@@ -77,7 +147,6 @@
     "inactivity_decay_per_week": 0.25,
     "note": "A defeat in a great fight can still raise ticket power. What matters is the story, not the result."
   },
-
   "economy": {
     "management_start_cash": 4000,
     "fighter_start_cash": 0,
@@ -88,26 +157,49 @@
     "failure_is_constraint_not_gameover": true,
     "note": "Running out of money narrows options rather than ending the run."
   },
-
   "staff": {
-    "roles": ["assistant_coach", "striking_coach", "grappling_coach", "conditioning_coach", "analyst", "scout", "medical", "weight_specialist"],
+    "roles": [
+      "assistant_coach",
+      "striking_coach",
+      "grappling_coach",
+      "conditioning_coach",
+      "analyst",
+      "scout",
+      "medical",
+      "weight_specialist"
+    ],
     "capacity_per_staff": 3,
     "overload_quality_penalty": 0.3,
     "salary_per_skill_point": 6,
-    "delegation_modes": ["manual", "assisted", "delegated", "auto_with_policy"],
-    "delegation_quality": { "manual": 1.0, "assisted": 0.95, "delegated": 0.85, "auto_with_policy": 0.75 },
+    "delegation_modes": [
+      "manual",
+      "assisted",
+      "delegated",
+      "auto_with_policy"
+    ],
+    "delegation_quality": {
+      "manual": 1.0,
+      "assisted": 0.95,
+      "delegated": 0.85,
+      "auto_with_policy": 0.75
+    },
     "note": "Staff never grant a flat combat buff. They change training quality, analysis accuracy and risk detection."
   },
-
   "facility": {
-    "modules": ["core_gym", "striking", "grappling", "conditioning", "recovery_medical", "analysis"],
+    "modules": [
+      "core_gym",
+      "striking",
+      "grappling",
+      "conditioning",
+      "recovery_medical",
+      "analysis"
+    ],
     "max_level": 5,
     "upgrade_cost_per_level": 1500,
     "maintenance_per_level": 25,
     "training_quality_per_level": 0.06,
     "note": "Facilities raise preparation quality. They never add damage on fight night."
   },
-
   "ranking": {
     "size": 15,
     "win_gain_base": 18,
@@ -119,18 +211,26 @@
     "no_player_facing_points": true,
     "note": "Internal score is allowed for ordering, but it is never shown as a player resource."
   },
-
   "title": {
     "eligibility_min_rank": 5,
     "eligibility_min_recent_wins": 2,
-    "priority_weights": { "rank": 1.0, "activity": 0.5, "ticket_power": 0.7, "rivalry": 0.4, "recent_form": 0.8 },
+    "priority_weights": {
+      "rank": 1.0,
+      "activity": 0.5,
+      "ticket_power": 0.7,
+      "rivalry": 0.4,
+      "recent_form": 0.8
+    },
     "note": "Number one does not automatically receive a shot. Competitive eligibility comes first."
   },
-
   "world": {
     "promotions": 3,
     "roster_per_division": 24,
-    "simulation_tiers": { "A": 1.0, "B": 0.5, "C": 0.15 },
+    "simulation_tiers": {
+      "A": 1.0,
+      "B": 0.5,
+      "C": 0.15
+    },
     "prospect_intake_per_year": 6,
     "retirement_age": 36,
     "retirement_damage_threshold": 70,

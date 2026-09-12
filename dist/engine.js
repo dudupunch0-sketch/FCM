@@ -17,6 +17,8 @@ let SUBBEAT = null;
 let RANGE = null;
 let FIRST_STRIKE = null;
 let REVEAL = null;
+let MODIFIERS = null;
+let VARIANCE = 0;
 let DEFAULTS = null;
 let INFLUENCE = null;
 let DEFINITIONS = null;
@@ -42,6 +44,8 @@ export function configureEngine(definitions) {
   RANGE = cfg.range;
   FIRST_STRIKE = cfg.firstStrike;
   REVEAL = cfg.reveal;
+  MODIFIERS = cfg.modifiers;
+  VARIANCE = definitions?.configs?.action_resolution?.randomness?.impact_variance ?? 0;
   DEFAULTS = cfg.fighterDefaults;
   INFLUENCE = cfg.statInfluence;
   DEFINITIONS = definitions?.configs ? definitions : null;
@@ -143,6 +147,15 @@ export function validatePlan(plan){
   for(const p of plan){if(!CARDS[p.id]||p.start!==next)throw Error('잘못된 콤보 배치');next+=CARDS[p.id].duration;}
   if(next!==RULES.slots)throw Error('콤보 길이 오류');
 }
+// Randomness creates variation, not causation: it perturbs impact magnitude only, never
+// hit/miss, block, evasion, finish or the winner. Derived from the match seed so it replays.
+function impactVariance(match,tick,actor){
+  if(!VARIANCE)return 1;
+  const roll=random(match.seed*7919+match.turn*131+tick*17+actor)();
+  const second=random(match.seed*104729+match.turn*31+tick*7+actor*3)();
+  return 1+(roll+second-1)*VARIANCE;
+}
+
 function random(seed){let x=seed|0;return ()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return (x>>>0)/4294967296;};}
 // Only the match state is accepted. The current player's editable plan is never an input.
 export function opponentPlan(match){
@@ -252,8 +265,9 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       const reach=rangeFactor(match.gap,c);
       const attackerEffective=effectiveOf(before[i]),defenderEffective=effectiveOf(before[j]);
       const setup=memory?setupModifier(memory,j,active[i].start,p.id,before[j].stats?before[j].stats.base.fight_iq:60):{factor:1,read:false,broken:false,confidence:0};
-      let power=c.power*(0.5+0.5*before[i].stamina/100)*(counter?1.4:1)*(isOpen||recovery||mismatch?1.2:1)*reach
-        *ratio(attackerEffective,'impact')*setup.factor;
+      const staminaFactor=MODIFIERS.staminaFloor+(1-MODIFIERS.staminaFloor)*before[i].stamina/100;
+      let power=c.power*staminaFactor*(counter?MODIFIERS.counter:1)*(isOpen||recovery||mismatch?MODIFIERS.exposed:1)*reach
+        *ratio(attackerEffective,'impact')*setup.factor*impactVariance(match,tick,i);
       if(blocked)power/=Math.max(ratio(defenderEffective,'guard'),0.2);
       if(blocked)power*=0.18+before[j].damage.arms/500;
       if(impaired)power*=1+STATUS.groggyDefensePenalty;

@@ -10,8 +10,8 @@
     "restRecovery": 11,
     "counterWindow": 2,
     "guardDrain": 3,
-    "koDamage": 90,
-    "staggerDamage": 55,
+    "koDamage": 120,
+    "staggerDamage": 72,
     "staggerImpact": 16
   },
   "rounds": {
@@ -57,7 +57,7 @@
       "duration": 2,
       "impact": 1,
       "cost": 13,
-      "power": 19,
+      "power": 15,
       "target": "head",
       "trajectory": "straight",
       "description": "다음 박자에 타격. 회피 직후 카운터에 적합.",
@@ -74,7 +74,7 @@
       "duration": 2,
       "impact": 1,
       "cost": 14,
-      "power": 20,
+      "power": 16,
       "target": "head",
       "trajectory": "hook",
       "description": "스웨이를 잡는 곡선 공격. 위빙에는 빗나갑니다.",
@@ -108,7 +108,7 @@
       "duration": 3,
       "impact": 1,
       "cost": 22,
-      "power": 28,
+      "power": 24,
       "target": "head",
       "trajectory": "hook",
       "description": "큰 머리 충격. 타격 뒤 회수 중에는 취약합니다.",
@@ -214,7 +214,7 @@
       "duration": 2,
       "impact": 1,
       "cost": 16,
-      "power": 21,
+      "power": 17,
       "target": "head",
       "trajectory": "hook",
       "subBeat": 0.58,
@@ -467,5 +467,11 @@
       "weight": 1.0
     },
     "note": "How Effective Performance reaches Action Result. weight scales how far a capability ratio moves the outcome; failThreshold is the ratio below which a correctly chosen evasion can still fail."
+  },
+  "modifiers": {
+    "counter": 1.28,
+    "exposed": 1.18,
+    "staminaFloor": 0.5,
+    "note": "The last balance values that lived in code. counter rewards a successful evasion; exposed covers feint openings, recovery windows and mistimed evasions; staminaFloor is how much power survives at zero stamina."
   }
 }

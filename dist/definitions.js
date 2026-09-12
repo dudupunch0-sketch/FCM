@@ -257,6 +257,7 @@ const validators = {
     const club = requireObject(file, 'club', cfg.club);
     if (!(club.ladder ?? []).includes('champion')) fail(file, 'club.ladder', 'champion 단계가 필요합니다');
     requireNumber(file, 'club.pool_size', club.pool_size, { min: 2 });
+    requireNumber(file, 'club.fight_interval_weeks', club.fight_interval_weeks, { min: 1 });
     const tp = requireObject(file, 'ticket_power', cfg.ticket_power);
     requireNumber(file, 'ticket_power.max', tp.max, { min: 1 });
     if (!(tp.great_loss_gain > 0)) fail(file, 'ticket_power.great_loss_gain', '명경기 패배로도 흥행이 오를 수 있어야 합니다');
@@ -313,6 +314,9 @@ const validators = {
     requireNumber(file, 'technique_exp.match_multiplier', exp.match_multiplier, { min: 1 });
     if (exp.match_multiplier <= 1) fail(file, 'technique_exp.match_multiplier', '실전이 훈련보다 많이 줘야 합니다');
     requireNumber(file, 'technique_exp.finish_bonus', exp.finish_bonus, { min: 0 });
+    const recovery = requireObject(file, 'weekly_recovery', cfg.weekly_recovery);
+    requireNumber(file, 'weekly_recovery.damage_healed', recovery.damage_healed, { min: 1 });
+    requireNumber(file, 'weekly_recovery.stamina_fraction', recovery.stamina_fraction, { min: 0, max: 1 });
     const breakthrough = requireObject(file, 'breakthrough', cfg.breakthrough);
     requireNumber(file, 'breakthrough.threshold', breakthrough.threshold, { min: 1 });
     requireNumber(file, 'breakthrough.proximity_required', breakthrough.proximity_required, { min: 0, max: 1 });
@@ -413,6 +417,9 @@ const validators = {
     }
     requireNumber(file, 'statInfluence.evasion.failThreshold', influence.evasion.failThreshold, { min: 0, max: 1 });
     requireNumber(file, 'statInfluence.subBeatShift.max', influence.subBeatShift.max, { min: 0, max: 0.5 });
+    const modifiers = requireObject(file, 'modifiers', cfg.modifiers);
+    for (const key of ['counter', 'exposed']) requireNumber(file, `modifiers.${key}`, modifiers[key], { min: 1, max: 3 });
+    requireNumber(file, 'modifiers.staminaFloor', modifiers.staminaFloor, { min: 0, max: 1 });
     const first = requireObject(file, 'firstStrike', cfg.firstStrike);
     for (const key of ['staggerWeakensLater', 'groggyWeakensLater']) {
       const v = requireNumber(file, `firstStrike.${key}`, first[key], { min: 0, max: 1 });

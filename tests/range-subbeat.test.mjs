@@ -73,7 +73,7 @@ test('sub-beat positions differ per card and stay inside the slot',()=>{
 });
 
 test('equally timed strikes still apply together, so double KO survives sub-beat',()=>{
-  const m=newMatch();m.fighters.forEach(f=>f.damage.head=89);
+  const m=newMatch();m.fighters.forEach(f=>f.damage.head=RULES.koDamage-1);
   const r=resolveTurn(m,makePlan(['jab']),makePlan(['jab']));
   assert.ok(r.match.finished);
   assert.equal(r.match.winner,null);

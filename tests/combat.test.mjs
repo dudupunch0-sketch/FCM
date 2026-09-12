@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {CARDS,SKILLS,newMatch,makePlan,validatePlan,opponentPlan,observe,resolveTurn} from '../dist/engine.js';
+import {CARDS,SKILLS,RULES,newMatch,makePlan,validatePlan,opponentPlan,observe,resolveTurn} from '../dist/engine.js';
 import './helpers/engine-setup.mjs';
 
 test('plan validation rejects unknown, overlapping and oversized actions',()=>{
@@ -51,7 +51,7 @@ test('pattern and counter information require actual previous evidence',()=>{
   const all=Object.keys(SKILLS).map(s=>observe(p,s,m));assert(all.length);
 });
 test('same-beat attacks apply simultaneously including double knockout',()=>{
-  const m=newMatch();m.fighters.forEach(f=>f.damage.head=89);
+  const m=newMatch();m.fighters.forEach(f=>f.damage.head=RULES.koDamage-1);
   const r=resolveTurn(m,makePlan(['jab']),makePlan(['jab']));assert(r.match.finished);assert.equal(r.match.winner,null);assert.equal(r.match.method,'동시 KO');assert.equal(r.frames.length,1);
 });
 test('stamina failure skips the action without negative resources',()=>{

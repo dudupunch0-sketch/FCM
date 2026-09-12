@@ -1052,6 +1052,11 @@ Setup/Combat Memory(`dist/combat-memory.js`)와 훈련·성장 루프(`dist/grow
 `dist/career.js`가 한 선수의 훈련 → 경기 → 손상·성장 → 다음 주 루프를 잇는다.
 스카우팅·계약(`dist/scouting.js`), Part 1 클럽과 흥행(`dist/club.js`), Staff·시설·위임·경제(`dist/organisation.js`),
 국제 랭킹과 월드 시뮬레이션(`dist/world.js`)까지 로드맵 Phase 11 범위가 구현되어 있다.
+Milestone C(`dist/campaign.js`)까지 이어져 Part 1 시작에서 International Champion까지 헤드리스로 완주 가능하다.
+Phase 12 밸런스 도구는 `tools/balance.mjs`이며 `node tools/balance.mjs all`로 전투·성장·월드·캠페인 지표를 뽑는다.
+
+**밸런스는 아직 맞지 않았다.** 도구가 드러낸 현재 상태: 특정 계획이 지나치게 우세하고 카드 대부분이 배치에서 쓰이지 않는다.
+이는 구현 결함이 아니라 튜닝 전 상태이며, 로드맵이 말한 대로 도구로 반복 조정할 항목이다.
 UI는 여전히 전투 시제품만 노출하며 육성·월드 화면은 없다. 이 구간은 코드가 UI를 앞선 상태다.
 
 ## 저장과 재현성

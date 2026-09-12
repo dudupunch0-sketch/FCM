@@ -31,7 +31,13 @@ export function rungIndex(club, rung) { return club.ladder.indexOf(rung); }
 // Opponents come from the rung around the fighter: the ladder is what gates difficulty.
 export function availableOpponents(club, fighterRung, { spread = 1 } = {}) {
   const index = rungIndex(club, fighterRung);
-  return club.roster.filter(f => Math.abs(rungIndex(club, f.rung) - index) <= spread);
+  // The generated roster may have no fighter on an adjacent rung. Widen until someone is
+  // available rather than returning an empty card: a club always has a next opponent.
+  for (let reach = spread; reach <= club.ladder.length; reach++) {
+    const found = club.roster.filter(f => Math.abs(rungIndex(club, f.rung) - index) <= reach);
+    if (found.length) return found;
+  }
+  return club.roster;
 }
 
 export function makeOffer(club, opponent, { week = 0, shortNotice = false, titleFight = false } = {}) {
