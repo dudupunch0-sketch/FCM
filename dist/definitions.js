@@ -1,0 +1,321 @@
+// Definition Data Loader. Roadmap Phase 0.
+// Reads balance config, validates the invariants each design doc states, and freezes the result.
+// Transport-agnostic: callers supply read(name) so Node uses fs and the browser uses fetch.
+
+import { ALL_BASE_PARAMETERS, DERIVED_CAPABILITIES, isBaseParameter, isDerivedCapability, isBodyPart, isPosition, isRuleset, isKnowledgeDomain, STATUS_LEVELS } from './fighter-schema.js';
+
+export const CONFIG_FILES = Object.freeze([
+  'derived_capability', 'effective_performance', 'action_resolution',
+  'grappling', 'combat_ai', 'knowledge', 'information_cards', 'save'
+]);
+
+const EPSILON = 1e-9;
+
+class ConfigError extends Error {
+  constructor(file, path, message) {
+    super(`${file}.json: ${path} — ${message}`);
+    this.name = 'ConfigError';
+    this.file = file;
+    this.path = path;
+  }
+}
+
+const fail = (file, path, message) => { throw new ConfigError(file, path, message); };
+
+function requireObject(file, path, value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) fail(file, path, '객체가 필요합니다');
+  return value;
+}
+
+function requireNumber(file, path, value, { min = -Infinity, max = Infinity } = {}) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) fail(file, path, '유한한 숫자가 필요합니다');
+  if (value < min || value > max) fail(file, path, `${min}~${max} 범위를 벗어났습니다: ${value}`);
+  return value;
+}
+
+function requireRange(file, path, value) {
+  requireObject(file, path, value);
+  requireNumber(file, `${path}.min`, value.min);
+  requireNumber(file, `${path}.max`, value.max);
+  if (value.min > value.max) fail(file, path, `min이 max보다 큽니다: ${value.min} > ${value.max}`);
+  return value;
+}
+
+// "note" and "note_*" keys are inline documentation, present throughout the configs. Never data.
+const isNoteKey = key => key === 'note' || key.startsWith('note_');
+
+export function dataKeys(obj) { return Object.keys(obj).filter(key => !isNoteKey(key)); }
+
+function requireKeysIn(file, path, obj, predicate, label) {
+  for (const key of dataKeys(requireObject(file, path, obj))) {
+    if (!predicate(key)) fail(file, `${path}.${key}`, `알 수 없는 ${label}`);
+  }
+  return obj;
+}
+
+// --- per-file validators. Each mirrors the "검증 기준" section of its design doc. ---
+
+const validators = {
+  // docs/design/24_base_to_derived_mapping.md
+  derived_capability(file, cfg) {
+    const caps = requireObject(file, 'capabilities', cfg.capabilities);
+    const names = dataKeys(caps);
+    if (names.length !== DERIVED_CAPABILITIES.length) {
+      fail(file, 'capabilities', `${DERIVED_CAPABILITIES.length}개가 필요합니다: ${names.length}개`);
+    }
+    for (const name of DERIVED_CAPABILITIES) {
+      if (!caps[name]) fail(file, `capabilities.${name}`, '누락되었습니다');
+    }
+    const used = new Set();
+    for (const name of names) {
+      const spec = caps[name];
+      const weights = requireObject(file, `capabilities.${name}.weights`, spec.weights);
+      let sum = 0;
+      for (const [base, weight] of Object.entries(weights)) {
+        if (!isBaseParameter(base)) fail(file, `capabilities.${name}.weights.${base}`, '알 수 없는 Base Parameter');
+        sum += requireNumber(file, `capabilities.${name}.weights.${base}`, weight, { min: 0, max: 1 });
+        used.add(base);
+      }
+      if (Math.abs(sum - 1) > EPSILON) fail(file, `capabilities.${name}.weights`, `가중치 합이 1.0이어야 합니다: ${sum}`);
+      for (const mod of spec.body_modifiers ?? []) {
+        if (!cfg.body_sources?.[mod.source]) fail(file, `capabilities.${name}.body_modifiers`, `알 수 없는 body_source: ${mod.source}`);
+        requireNumber(file, `capabilities.${name}.body_modifiers.${mod.source}`, mod.exponent);
+      }
+    }
+    const unused = ALL_BASE_PARAMETERS.filter(b => !used.has(b));
+    if (unused.length) fail(file, 'capabilities', `사용되지 않은 Base Parameter: ${unused.join(', ')}`);
+    const formula = requireObject(file, 'formula', cfg.formula);
+    if (formula.type !== 'weighted_geometric_mean') fail(file, 'formula.type', '가중 기하평균이어야 합니다');
+    requireNumber(file, 'formula.base_floor', formula.base_floor, { min: 1, max: 100 });
+  },
+
+  // docs/design/25_effective_performance.md
+  effective_performance(file, cfg) {
+    const stamina = requireObject(file, 'stamina', cfg.stamina);
+    requireNumber(file, 'stamina.plateau', stamina.plateau, { min: 1, max: 100 });
+    requireNumber(file, 'stamina.curve_exponent', stamina.curve_exponent, { min: 1 });
+    const loss = requireObject(file, 'stamina.max_loss', stamina.max_loss);
+    for (const cap of DERIVED_CAPABILITIES) {
+      requireNumber(file, `stamina.max_loss.${cap}`, loss[cap], { min: 0, max: 1 });
+    }
+    requireKeysIn(file, 'stamina.max_loss', loss, isDerivedCapability, 'Derived Capability');
+    const parts = requireObject(file, 'body_damage.parts', cfg.body_damage?.parts);
+    requireKeysIn(file, 'body_damage.parts', parts, isBodyPart, '부위');
+    for (const part of dataKeys(parts)) {
+      const effects = parts[part];
+      requireKeysIn(file, `body_damage.parts.${part}`, effects, isDerivedCapability, 'Derived Capability');
+      for (const cap of dataKeys(effects)) requireNumber(file, `body_damage.parts.${part}.${cap}`, effects[cap], { min: 0, max: 1 });
+    }
+    const interval = requireObject(file, 'interval_recovery', cfg.interval_recovery);
+    requireNumber(file, 'interval_recovery.cap_fraction', interval.cap_fraction, { min: 0, max: 1 });
+    if (interval.cap_fraction >= 1) fail(file, 'interval_recovery.cap_fraction', '완전 회복은 허용되지 않습니다');
+  },
+
+  // docs/design/26_action_result_resolution.md, docs/design/30_combo_boundary_and_sub_beat.md
+  action_resolution(file, cfg) {
+    const rnd = requireObject(file, 'randomness', cfg.randomness);
+    requireNumber(file, 'randomness.impact_variance', rnd.impact_variance, { min: 0, max: 0.5 });
+    const forbidden = new Set(rnd.forbidden ?? []);
+    for (const roll of ['hit_or_miss_roll', 'block_success_roll', 'evasion_success_roll', 'finish_roll', 'winner_roll']) {
+      if (!forbidden.has(roll)) fail(file, 'randomness.forbidden', `금지 목록에 ${roll}이 없습니다`);
+    }
+    const order = cfg.defense_precedence?.order ?? [];
+    if (order.join(',') !== 'evasion_trajectory,guard_coverage,unprotected') {
+      fail(file, 'defense_precedence.order', '회피 → 가드 → 무방비 순서여야 합니다');
+    }
+    const status = requireObject(file, 'status', cfg.status);
+    if ((status.levels ?? []).join(',') !== STATUS_LEVELS.join(',')) fail(file, 'status.levels', `${STATUS_LEVELS.join(' → ')} 순서여야 합니다`);
+    const th = requireObject(file, 'status.impact_ratio_thresholds', status.impact_ratio_thresholds);
+    let previous = 0;
+    for (const level of ['stagger', 'groggy', 'knockdown', 'ko']) {
+      const v = requireNumber(file, `status.impact_ratio_thresholds.${level}`, th[level], { min: 0 });
+      if (v <= previous) fail(file, `status.impact_ratio_thresholds.${level}`, '임계값이 단조 증가해야 합니다');
+      previous = v;
+    }
+    const sub = requireObject(file, 'sub_beat', cfg.sub_beat);
+    requireNumber(file, 'sub_beat.nominal_impact_position', sub.nominal_impact_position, { min: 0, max: 1 });
+    requireNumber(file, 'sub_beat.speed_shift_max', sub.speed_shift_max, { min: 0, max: 0.5 });
+    requireNumber(file, 'sub_beat.simultaneity_tolerance', sub.simultaneity_tolerance, { min: 0, max: 0.5 });
+    if (sub.simultaneity_tolerance <= 0) fail(file, 'sub_beat.simultaneity_tolerance', '0이면 동시 KO가 불가능해집니다');
+    const carry = requireObject(file, 'turn_carryover', cfg.turn_carryover);
+    for (const key of ['status', 'counter_window', 'feint_opening', 'gap']) {
+      if (!(carry.carries ?? []).includes(key)) fail(file, 'turn_carryover.carries', `${key}가 이월 목록에 없습니다`);
+    }
+  },
+
+  // docs/design/27_position_and_grappling.md
+  grappling(file, cfg) {
+    requireKeysIn(file, 'positions', cfg.positions, isPosition, '포지션');
+    const avail = requireKeysIn(file, 'position_availability', cfg.position_availability, isPosition, '포지션');
+    for (const position of dataKeys(cfg.positions ?? {})) {
+      if (!avail[position]) fail(file, `position_availability.${position}`, '누락되었습니다');
+    }
+    const demotion = requireObject(file, 'demotion', cfg.demotion);
+    requireKeysIn(file, 'demotion.fundamental_by_position', demotion.fundamental_by_position, isPosition, '포지션');
+    if (demotion.proficiency_multiplier !== 0) fail(file, 'demotion.proficiency_multiplier', '강등 동작은 숙련도 보너스를 받지 않습니다');
+    requireNumber(file, 'demotion.impact_multiplier', demotion.impact_multiplier, { min: 0, max: 1 });
+    const gating = requireKeysIn(file, 'ruleset_gating', cfg.ruleset_gating, isRuleset, 'Ruleset');
+    for (const ruleset of ['boxing', 'kickboxing']) {
+      if (gating[ruleset]?.ground_allowed !== false) fail(file, `ruleset_gating.${ruleset}.ground_allowed`, '그라운드가 금지되어야 합니다');
+    }
+    const sub = requireObject(file, 'submission', cfg.submission);
+    if ((sub.stages ?? []).join(',') !== 'none,threat,locked,tap') fail(file, 'submission.stages', 'none → threat → locked → tap 순서여야 합니다');
+    if (requireNumber(file, 'submission.escape_window_slots', sub.escape_window_slots, { min: 1 }) < 1) {
+      fail(file, 'submission.escape_window_slots', '탈출 기회가 존재해야 합니다');
+    }
+  },
+
+  // docs/design/28_fighter_plan_generation.md
+  combat_ai(file, cfg) {
+    const iq = requireObject(file, 'fight_iq', cfg.fight_iq);
+    requireRange(file, 'fight_iq.search_candidates', iq.search_candidates);
+    const confidence = requireRange(file, 'fight_iq.prediction_confidence', iq.prediction_confidence);
+    if (confidence.max >= 1) fail(file, 'fight_iq.prediction_confidence.max', '완전한 예측은 허용되지 않습니다');
+    requireRange(file, 'fight_iq.memory_window_turns', iq.memory_window_turns);
+    const te = requireObject(file, 'tactical_execution', cfg.tactical_execution);
+    for (const key of ['slot_shift_chance', 'card_substitution_chance', 'order_swap_chance', 'instruction_adoption']) {
+      requireRange(file, `tactical_execution.${key}`, te[key]);
+    }
+    const evaluation = requireObject(file, 'evaluation.terms', cfg.evaluation?.terms);
+    if (!(evaluation.pattern_repetition_penalty < 0)) fail(file, 'evaluation.terms.pattern_repetition_penalty', '반복 패널티는 음수여야 합니다');
+    if (!(evaluation.expected_damage_taken < 0)) fail(file, 'evaluation.terms.expected_damage_taken', '피격 기대값은 음수여야 합니다');
+    const npc = requireObject(file, 'npc_information_cards', cfg.npc_information_cards);
+    if (npc.mode !== 'retrospective_only') fail(file, 'npc_information_cards.mode', '회고적으로만 작동해야 합니다');
+    for (const key of ['read_current_turn_plan', 'replan_after_reveal']) {
+      if (!(npc.forbidden ?? []).includes(key)) fail(file, 'npc_information_cards.forbidden', `금지 목록에 ${key}가 없습니다`);
+    }
+  },
+
+  // docs/design/29_evidence_and_knowledge.md
+  knowledge(file, cfg) {
+    const estimate = requireObject(file, 'estimate', cfg.estimate);
+    requireNumber(file, 'estimate.min_width', estimate.min_width, { min: 0 });
+    if (estimate.min_width <= 0) fail(file, 'estimate.min_width', '추정 범위는 0으로 수렴하지 않습니다');
+    if (estimate.min_width > estimate.max_width) fail(file, 'estimate.min_width', 'max_width보다 큽니다');
+    const bias = requireObject(file, 'bias', cfg.bias);
+    const sources = requireObject(file, 'bias.sources', bias.sources);
+    if (!dataKeys(sources).length) fail(file, 'bias.sources', '편향 원천이 비어 있습니다');
+    const evidenceSources = requireObject(file, 'evidence_sources', cfg.evidence_sources);
+    for (const source of dataKeys(evidenceSources)) {
+      const spec = evidenceSources[source];
+      requireNumber(file, `evidence_sources.${source}.strength`, spec.strength, { min: 0, max: 1 });
+      for (const b of spec.bias_sources ?? []) {
+        if (!(b in sources)) fail(file, `evidence_sources.${source}.bias_sources`, `알 수 없는 편향 원천: ${b}`);
+      }
+    }
+    requireKeysIn(file, 'domain_difficulty', cfg.domain_difficulty, isKnowledgeDomain, 'Knowledge Domain');
+    const potential = requireObject(file, 'potential', cfg.potential);
+    if (potential.expose_ceiling !== false) fail(file, 'potential.expose_ceiling', 'Potential 상한은 노출하지 않습니다');
+    if (potential.breakthrough_estimable !== false) fail(file, 'potential.breakthrough_estimable', 'Breakthrough는 추정 불가입니다');
+    const calibration = requireRange(file, 'confidence.calibration_by_skill', cfg.confidence?.calibration_by_skill);
+    if (calibration.max > 1) fail(file, 'confidence.calibration_by_skill.max', '1을 넘을 수 없습니다');
+  },
+
+  // docs/design/31_information_economy_and_placement.md
+  information_cards(file, cfg) {
+    const limit = requireObject(file, 'active_card_limit', cfg.active_card_limit);
+    requireNumber(file, 'active_card_limit.style', limit.style, { min: 1 });
+    requireNumber(file, 'active_card_limit.information', limit.information, { min: 1 });
+    if (limit.shared_pool !== false) fail(file, 'active_card_limit.shared_pool', '한도는 갈래별로 분리되어 있습니다');
+    if (!(limit.merge_back_criteria ?? []).length) fail(file, 'active_card_limit.merge_back_criteria', '되돌리는 조건이 필요합니다');
+    const budget = requireObject(file, 'reveal_budget', cfg.reveal_budget);
+    requireNumber(file, 'reveal_budget.per_turn_total', budget.per_turn_total, { min: 1 });
+    requireNumber(file, 'reveal_budget.cost.exact', budget.cost?.exact, { min: 1 });
+    requireNumber(file, 'reveal_budget.cost.cue', budget.cost?.cue, { min: 1 });
+    if (budget.cost.cue >= budget.cost.exact) fail(file, 'reveal_budget.cost', '확정 공개가 추정 예고보다 비싸야 합니다');
+    // Above a limit of one the budget must bind before the card limit does, otherwise
+    // extra cards would buy disclosure instead of trigger coverage.
+    if (limit.information > 1 && budget.per_turn_total >= limit.information * budget.cost.exact) {
+      fail(file, 'reveal_budget.per_turn_total', '예산이 카드 수를 구속하지 못합니다. 장착한 모든 카드가 확정 공개로 발동 가능합니다');
+    }
+    if (cfg.card_growth?.raises_budget !== false) fail(file, 'card_growth.raises_budget', '성장은 예산 상한을 올리지 않습니다');
+    const baseline = requireObject(file, 'free_baseline', cfg.free_baseline);
+    for (const key of ['past_combo_history', 'repeated_habit_markers']) {
+      if (baseline[key] !== true) fail(file, `free_baseline.${key}`, '무카드 기준선은 끌 수 없습니다');
+    }
+    const placement = requireObject(file, 'placement', cfg.placement);
+    requireNumber(file, 'placement.slots', placement.slots, { min: 1 });
+    const [lo, hi] = placement.card_duration_range ?? [];
+    requireNumber(file, 'placement.card_duration_range[0]', lo, { min: 1 });
+    requireNumber(file, 'placement.card_duration_range[1]', hi, { min: lo, max: placement.slots });
+    if (placement.overflow_policy !== 'reject') fail(file, 'placement.overflow_policy', '초과 배치는 거부해야 합니다');
+  },
+
+  // docs/design/32_save_versioning_and_determinism.md
+  save(file, cfg) {
+    const persistence = requireObject(file, 'persistence', cfg.persistence);
+    const persisted = new Set(persistence.persisted ?? []);
+    for (const forbidden of persistence.never_persisted ?? []) {
+      if (persisted.has(forbidden)) fail(file, 'persistence', `${forbidden}가 양쪽 목록에 있습니다`);
+    }
+    for (const key of ['derived_capability', 'effective_performance']) {
+      if (!(persistence.never_persisted ?? []).includes(key)) fail(file, 'persistence.never_persisted', `${key}는 저장하지 않습니다`);
+    }
+    const streams = cfg.rng_streams?.streams ?? [];
+    if (!streams.includes('combat') || !streams.includes('world_generation')) {
+      fail(file, 'rng_streams.streams', 'combat과 world_generation 스트림이 필요합니다');
+    }
+    if (cfg.rng_streams?.persist_consumption_counters !== true) {
+      fail(file, 'rng_streams.persist_consumption_counters', 'Seed만으로는 재현되지 않습니다');
+    }
+    if (cfg.combat_save?.mode !== 'replay_from_snapshot') fail(file, 'combat_save.mode', '전투는 리플레이로 복원합니다');
+    for (const key of ['evidence_source_events']) {
+      if (!(cfg.event_history?.never_summarised ?? []).includes(key)) {
+        fail(file, 'event_history.never_summarised', `${key}는 축약하지 않습니다`);
+      }
+    }
+  }
+};
+
+function deepFreeze(value) {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.freeze(value);
+    for (const child of Object.values(value)) deepFreeze(child);
+  }
+  return value;
+}
+
+export function validateConfig(name, data) {
+  if (!validators[name]) throw new ConfigError(name, '', '알 수 없는 Config 파일');
+  requireObject(name, '', data);
+  if (typeof data.config_version !== 'string') fail(name, 'config_version', '문자열이 필요합니다');
+  validators[name](name, data);
+  return data;
+}
+
+// Cross-file invariants that no single file can check on its own.
+export function crossValidate(configs) {
+  const slots = configs.information_cards.placement.slots;
+  const carryover = configs.action_resolution.turn_carryover;
+  if (configs.action_resolution.sub_beat.enabled && slots < 1) {
+    fail('action_resolution', 'sub_beat', '타임라인 칸 수가 유효하지 않습니다');
+  }
+  if (carryover.resets.length) {
+    fail('action_resolution', 'turn_carryover.resets', '콤보 경계에서는 리셋하지 않습니다. 라운드 경계 규칙은 별도입니다');
+  }
+  const grapplePositions = dataKeys(configs.grappling.positions);
+  const fundamentals = configs.grappling.demotion.fundamental_by_position;
+  for (const position of grapplePositions) {
+    if (!fundamentals[position]) fail('grappling', `demotion.fundamental_by_position.${position}`, '강등 대상 동작이 없습니다');
+  }
+  return configs;
+}
+
+export function buildDefinitions(raw) {
+  const configs = {};
+  for (const name of CONFIG_FILES) {
+    if (!(name in raw)) throw new ConfigError(name, '', '설정 파일이 없습니다');
+    configs[name] = validateConfig(name, raw[name]);
+  }
+  crossValidate(configs);
+  return deepFreeze({ configs, version: configs.save.config_version, files: [...CONFIG_FILES] });
+}
+
+// read(name) -> Promise<object>. Node supplies an fs reader, the browser a fetch reader.
+export async function loadDefinitions(read) {
+  const raw = {};
+  for (const name of CONFIG_FILES) raw[name] = await read(name);
+  return buildDefinitions(raw);
+}
+
+export { ConfigError };
