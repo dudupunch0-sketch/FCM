@@ -384,7 +384,20 @@ Stamina, Damage, Injury, Weight, Familiarity, Skill Card 등 선수의 현재 �
 - Effective는 Derived 원본을 변형하지 않는다. 캐시는 한 칸 안에서만 유효하다.
 
 ## Action Result
+세부 기준: `docs/design/26_action_result_resolution.md`
+실물 Config: `config/action_resolution.json`
+
 실제 Action 시도/성공/실패/Impact/Position/Damage를 계산.
+
+- 판정 단위는 **칸**이며 칸 시작 시점 스냅샷으로 판정한다. 같은 칸의 상호 타격은 함께 반영되므로 동시 KO가 성립한다.
+- 판정 순서: 비용 지불 → 이동 → 타격 시점 → 방어 → 상황 보정 → 결과 반영 → 상태 전이.
+- 스태미너 부족은 해당 동작만 실패시키고 후속 동작은 예정 시점에 재시도한다. 자원은 음수가 되지 않는다.
+- **난수는 최종 Impact 크기에만 좁은 대칭 편차로 들어간다.** 명중·블록·회피·피니시·승자를 뽑는 Roll은 금지 목록으로 Config에 명시한다.
+- 방어 우선순위는 회피 → 가드 → 무방비이며 먼저 성립한 방어가 교환을 종결한다. 회피는 궤도 상성과 타이밍으로, 가드는 활성 구간과 보호 부위로 결정한다.
+- Read Confidence는 방어 타이밍 허용폭을 좁히지만 상한이 있다. **읽기는 우위이지 확실성이 아니다.**
+- 상태 전이는 순간 Impact와 Effective Durability의 비율로 결정한다. 누적 손상이 분모를 깎으므로 같은 펀치가 후반에 다운을 만든다.
+- 모든 결과 이벤트는 `cause_tags`를 반드시 채운다. Debug Mode에서 전체 계산 근거를 볼 수 있어야 한다.
+- Judge Metric은 이 계층에서 칸 단위로 누적되며 라운드 집계가 이를 받는다. 별도 경기 요약을 다시 계산하지 않는다.
 
 ## 라운드 구조
 세부 기준: `docs/design/23_round_structure_and_judging.md`

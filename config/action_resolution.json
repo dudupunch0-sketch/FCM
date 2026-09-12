@@ -1,0 +1,89 @@
+{
+  "config_version": "0.1.0-draft",
+  "description": "Action Result layer. Slot-level resolution order, defense precedence, randomness bounds, status transitions. Values are initial candidates, not balanced.",
+  "spec_reference": "docs/design/26_action_result_resolution.md",
+
+  "resolution": {
+    "unit": "slot",
+    "note": "Every slot resolves from a snapshot taken at slot start. Both fighters' actions at the same slot use the same snapshot and apply together.",
+    "phases": ["pay_cost", "apply_movement", "impact_check", "defense_check", "context_modifiers", "apply_result", "status_transition"]
+  },
+
+  "randomness": {
+    "note": "Randomness creates variation, not causation. It never decides hit/miss, block, evade, or the winner. It only perturbs magnitude within a narrow band.",
+    "impact_variance": 0.07,
+    "distribution": "symmetric_triangular",
+    "forbidden": [
+      "hit_or_miss_roll",
+      "block_success_roll",
+      "evasion_success_roll",
+      "finish_roll",
+      "winner_roll"
+    ]
+  },
+
+  "defense_precedence": {
+    "note": "Evaluated in order. The first matching defense resolves the exchange; later ones are not consulted.",
+    "order": ["evasion_trajectory", "guard_coverage", "unprotected"],
+    "evasion": {
+      "trajectory_match_required": true,
+      "counter_window_slots": 2,
+      "failed_evasion_vulnerability": 1.25,
+      "note": "Evasion is decided by trajectory matching and timing overlap, never by a roll. A mistimed or mismatched evasion is struck in a compromised posture."
+    },
+    "guard": {
+      "penetration_base": 0.22,
+      "arm_damage_ratio": 1.5,
+      "contact_cost_multiplier": 0.45,
+      "break_on_unpaid_cost": true,
+      "note": "Blocking costs less stamina than the attack it absorbs, so blocking wins the exchange economically. Unprotected targets bypass guard entirely."
+    }
+  },
+
+  "range": {
+    "note": "Uses effective_distance from docs/design/22_combat_range_model.md.",
+    "falloff_exponent": 1.5,
+    "max_falloff": 0.60,
+    "affects": {
+      "impact": 1.0,
+      "guard_penetration": 0.5,
+      "recovery_vulnerability": 0.4
+    }
+  },
+
+  "context_modifiers": {
+    "feint_opening": 1.30,
+    "counter_window_bonus": 1.35,
+    "recovery_window_vulnerability": 1.40,
+    "read_confidence_defense_bonus": 0.25,
+    "pattern_break_defense_penalty": 0.30,
+    "note": "read_confidence_defense_bonus tightens the defender's timing tolerance; pattern_break undoes it. Both are bounded so reading is an edge, never certainty."
+  },
+
+  "status": {
+    "note": "No whole-body HP. Transitions come from instantaneous impact measured against effective_durability plus accumulated damage on the struck part.",
+    "levels": ["normal", "stagger", "groggy", "knockdown", "ko"],
+    "impact_ratio_thresholds": {
+      "stagger": 0.55,
+      "groggy": 0.80,
+      "knockdown": 1.00,
+      "ko": 1.30
+    },
+    "accumulated_head_damage_weight": 0.45,
+    "stagger_recovery_slots": 2,
+    "groggy_recovery_slots": 4,
+    "groggy_defense_penalty": 0.35,
+    "knockdown_count_slots": 8,
+    "ko_on_knockdown_count": 3,
+    "note_counts": "Knockdown counts are tracked per round and per fight; see docs/design/23_round_structure_and_judging.md."
+  },
+
+  "judge_metrics": {
+    "note": "Accumulated per slot, aggregated per round by the Universal Judging Core.",
+    "clean_hit": 1.0,
+    "blocked_hit": 0.25,
+    "evaded_attack_credit": 0.15,
+    "knockdown": 8.0,
+    "damage_quality_weight": 0.6
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "config_version": "0.1.0-draft",
+  "description": "Position system extending the combo timeline into clinch and ground. Values are initial candidates, not balanced.",
+  "spec_reference": "docs/design/27_position_and_grappling.md",
+
+  "positions": {
+    "standing": { "gap_band": ["inside", "mid", "outside"] },
+    "clinch": { "gap_band": ["clinch"], "entry": "gap reaches the clinch floor" },
+    "ground_top": { "gap_band": ["clinch"], "entry": "successful takedown or sweep" },
+    "ground_bottom": { "gap_band": ["clinch"], "entry": "mirror of ground_top" }
+  },
+
+  "position_availability": {
+    "note": "ActionDefinition gains position_availability alongside rule_availability. Both must pass.",
+    "standing": ["punch", "kick", "guard", "evade", "feint", "footwork", "takedown", "rest"],
+    "clinch": ["clinch_strike", "clinch_control", "takedown", "break", "guard", "rest"],
+    "ground_top": ["ground_strike", "position_advance", "submission", "posture", "rest"],
+    "ground_bottom": ["ground_strike", "escape", "sweep", "submission", "guard", "rest"]
+  },
+
+  "demotion": {
+    "note": "When a position change invalidates a planned card mid-turn, the card is demoted to the fundamental action of the new position rather than failing outright. The plan keeps flowing but loses its edge.",
+    "enabled": true,
+    "proficiency_multiplier": 0.0,
+    "impact_multiplier": 0.55,
+    "fundamental_by_position": {
+      "standing": "basic_punch",
+      "clinch": "basic_clinch_strike",
+      "ground_top": "basic_ground_strike",
+      "ground_bottom": "basic_guard_hold"
+    }
+  },
+
+  "grapple_advantage": {
+    "note": "Continuous tug-of-war resource inside clinch and ground. Drives who can act freely and who is pinned.",
+    "range": [-100, 100],
+    "clinch_inputs": { "clinch_control": 1.0, "effective_durability": 0.2 },
+    "ground_inputs": { "top_control": 1.0, "bottom_escape": -1.0 },
+    "advance_threshold": 55,
+    "escape_threshold": -55,
+    "stamina_drain_per_slot_losing": 2.5,
+    "stamina_drain_per_slot_winning": 1.2
+  },
+
+  "takedown": {
+    "note": "Resolved by takedown_capability against takedown_defense plus setup and range context. Never a roll.",
+    "setup_bonus": 1.35,
+    "against_committed_strike_bonus": 1.45,
+    "failed_takedown_vulnerability": 1.5,
+    "failed_takedown_recovery_slots": 3,
+    "sprawl_counter_window_slots": 2
+  },
+
+  "submission": {
+    "note": "Accumulating threat, never an instant-death roll. Mirrors the no-whole-body-HP finish philosophy.",
+    "stages": ["none", "threat", "locked", "tap"],
+    "threat_gain_per_slot": 18,
+    "locked_threshold": 60,
+    "tap_threshold": 100,
+    "defense_reduction_weight": 1.0,
+    "escape_window_slots": 3,
+    "stamina_cost_per_slot_defending": 4.0,
+    "damage_on_escape_from_locked": 12
+  },
+
+  "ruleset_gating": {
+    "mma": { "ground_allowed": true, "clinch_allowed": true, "break_after_stalled_slots": 12 },
+    "boxing": { "ground_allowed": false, "clinch_allowed": true, "break_after_stalled_slots": 2 },
+    "kickboxing": { "ground_allowed": false, "clinch_allowed": true, "break_after_stalled_slots": 4 },
+    "no_rules": { "ground_allowed": true, "clinch_allowed": true, "break_after_stalled_slots": null }
+  }
+}
