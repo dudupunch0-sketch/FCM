@@ -149,10 +149,10 @@
       "name": "바디 가드",
       "short": "바디 가드",
       "kind": "guard",
-      "duration": 3,
-      "cost": 3,
+      "duration": 2,
+      "cost": 2,
       "protect": "body",
-      "description": "몸통을 넓게 막습니다. 상대 머리 공격에는 그만큼 오래 노출됩니다.",
+      "description": "몸통 방어. 상대 머리 공격에는 노출됩니다.",
       "rangeShift": 0.0,
       "blockLeak": 0.2
     },
@@ -161,7 +161,7 @@
       "short": "스웨이",
       "kind": "evade",
       "duration": 1,
-      "cost": 5,
+      "cost": 3,
       "dodges": [
         "straight"
       ],
@@ -357,7 +357,8 @@
         "lowguard",
         "hook",
         "guard",
-        "cross"
+        "cross",
+        "rest"
       ],
       [
         "shell",
