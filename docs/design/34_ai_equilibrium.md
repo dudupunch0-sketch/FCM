@@ -4,6 +4,7 @@
 > 기준: [선수 계획 생성](28_fighter_plan_generation.md), [난이도](33_difficulty.md)
 > 도구: `tools/calibrate.mjs` · 구현: `dist/equilibrium.js`, `dist/plan-space.js`
 > 산출물: `config/ai_strategies.json`
+> **운영 방법: [검증·보정 환경 지침](../guide/testing_and_calibration.md)**
 
 ## 목적
 

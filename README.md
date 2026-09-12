@@ -37,8 +37,11 @@ npm test
 npm run calibrate:check
 ```
 
-지문이 어긋나면 `npm run calibrate`로 재계산합니다. 자세한 내용은
-[자가 대전 균형과 AI 난이도 보정](docs/design/34_ai_equilibrium.md)에 있습니다.
+지문이 어긋나면 `npm run calibrate`로 재계산합니다.
+
+**밸런스나 전투 코드를 건드린다면 [검증·보정 환경 지침](docs/guide/testing_and_calibration.md)을 먼저 읽으세요.**
+무엇을 바꿨을 때 무엇을 돌려야 하는지, 지표를 어떻게 읽는지, 이미 밟은 함정이 무엇인지 정리돼 있습니다.
+설계 근거는 [자가 대전 균형과 AI 난이도 보정](docs/design/34_ai_equilibrium.md)에 있습니다.
 
 ## 문서
 
