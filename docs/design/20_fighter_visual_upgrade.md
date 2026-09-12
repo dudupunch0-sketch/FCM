@@ -1,5 +1,8 @@
 # 입체 복서 모델과 애니메이션 업그레이드
 
+> **Superseded.** 모바일 도트 렌더러로 대체되어 `archive/three-renderer/`로 옮겼다.
+> 결정 기록: `docs/spec/current_decisions.md` Superseded의 "Design 20 → 21b: 렌더링".
+
 ## 범위
 
 카드 UI와 전투 판정은 유지하고 캐릭터 표현과 재생 연출을 개선한다.
@@ -23,13 +26,13 @@
 
 ## 파일
 
-- `dist/fighter-model.js`: 메시·재질과 관절 IK.
-- `dist/motion.js`: 렌더러에 독립적인 동작 곡선과 재생 시계의 타격 정지.
-- `dist/ring-3d.js`: 링·조명·카메라·입체 캐릭터와 효과.
-- `dist/ring.js`: 입체 렌더러 초기화와 기본 Canvas 전환.
-- `dist/ring-legacy.js`: WebGL 초기화가 불가능한 환경의 기본 화면.
+- `archive/three-renderer/fighter-model.js`: 메시·재질과 관절 IK.
+- `dist/motion.js` (현재도 사용 중): 렌더러에 독립적인 동작 곡선과 재생 시계의 타격 정지.
+- `archive/three-renderer/ring-3d.js`: 링·조명·카메라·입체 캐릭터와 효과.
+- `dist/ring.js`: 현재는 도트 렌더러만 로드한다.
+- `archive/three-renderer/ring-legacy.js`: WebGL 초기화가 불가능한 환경의 기본 화면.
 
-Three.js는 버전을 고정해 `dist/vendor`에 포함한다. 실행 시 CDN 접속이나 패키지 설치는 필요 없다. 라이선스는 해당 디렉터리의 `THREE-LICENSE.txt`에 보존한다.
+Three.js는 버전을 고정해 `archive/three-renderer/vendor`에 보관한다. 배포 경로에는 포함하지 않는다. 실행 시 CDN 접속이나 패키지 설치는 필요 없다. 라이선스는 해당 디렉터리의 `THREE-LICENSE.txt`에 보존한다.
 
 ## 검증과 한계
 
