@@ -45,4 +45,4 @@ npm test
 
 화면은 모바일 세로 레이아웃과 Canvas 도트 스프라이트를 사용합니다. 범위는 [모바일 도트 전투와 콤보 편집](docs/design/21b_mobile_pixel_combat.md)을 참고하세요.
 
-과거의 Three.js 입체 렌더러([모델·애니메이션 업그레이드](docs/design/20_fighter_visual_upgrade.md))는 도트 전환으로 대체되었습니다. 해당 코드는 저장소에 남아 있지만 현재 앱에서는 로드되지 않으며, WebGL 실패 시 Canvas로 전환하는 경로도 지금은 없습니다.
+과거의 Three.js 입체 렌더러([모델·애니메이션 업그레이드](docs/design/20_fighter_visual_upgrade.md))는 도트 전환으로 대체되어 [`archive/three-renderer/`](archive/three-renderer/README.md)로 옮겼습니다. 배포 경로에 포함되지 않으며, WebGL 실패 시 Canvas로 전환하는 경로도 지금은 없습니다.

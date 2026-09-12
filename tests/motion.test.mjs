@@ -1,9 +1,9 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import * as T from '../dist/vendor/three.module.min.js';
+import * as T from '../archive/three-renderer/vendor/three.module.min.js';
 import {CARDS,newMatch,makePlan,resolveTurn} from '../dist/engine.js';
 import {sampleMotion,advancePlayback} from '../dist/motion.js';
-import {solveIK,FighterModel} from '../dist/fighter-model.js';
+import {solveIK,FighterModel} from '../archive/three-renderer/fighter-model.js';
 import './helpers/engine-setup.mjs';
 const close=(a,b)=>assert(Math.abs(a-b)<1e-6,`${a} != ${b}`);
 
