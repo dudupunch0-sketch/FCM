@@ -20,6 +20,7 @@ let REVEAL = null;
 // Solved equilibrium mixtures, when calibration output is loaded. Falls back to fixed
 // patterns so the engine still runs before anyone has run the calibration tool.
 let STRATEGY_MIX = null;
+let STYLE = null;
 let MODIFIERS = null;
 let VARIANCE = 0;
 let DEFAULTS = null;
@@ -48,6 +49,7 @@ export function configureEngine(definitions) {
   FIRST_STRIKE = cfg.firstStrike;
   REVEAL = cfg.reveal;
   STRATEGY_MIX = null;
+  STYLE = cfg.style_cards;
   MODIFIERS = cfg.modifiers;
   VARIANCE = definitions?.configs?.action_resolution?.randomness?.impact_variance ?? 0;
   DEFAULTS = cfg.fighterDefaults;
@@ -126,12 +128,39 @@ export function bandOf(gap){
   return bands.at(-1)[0];
 }
 
+// Style Skill Cards are conditional passive traits, not timeline placements. Equipped before
+// the fight, they never occupy a slot. Spec: docs/design/31_information_economy_and_placement.md.
+export function styleCatalogue(){required();return STYLE.cards;}
+export function styleLimit(){required();return STYLE.active_limit;}
+
+export function resolveStyle(ids){
+  required();
+  const list=[...new Set(ids??[])];
+  if(list.length>STYLE.active_limit)throw Error(`스타일 카드는 최대 ${STYLE.active_limit}장입니다`);
+  const bundle={};
+  for(const id of list){
+    const card=STYLE.cards[id];
+    if(!card)throw Error(`알 수 없는 스타일 카드: ${id}`);
+    for(const [key,value] of Object.entries(card.effects)){
+      // Multipliers compound, flat bonuses add. Two cards on one axis is already rejected by
+      // the loader, so compounding cannot stack the same effect against itself.
+      if(key.endsWith('Bonus'))bundle[key]=(bundle[key]??0)+value;
+      else bundle[key]=(bundle[key]??1)*value;
+    }
+  }
+  return bundle;
+}
+
+const styleOf=(state,key,fallback)=>state.style?.[key]??fallback;
+
 export function roundOf(turn){return Math.floor((turn-1)/ROUNDS.turnsPerRound)+1;}
 export function isRoundEnd(turn){return turn%ROUNDS.turnsPerRound===0;}
 export function newMatch(profile='pressure',seed=17,options={}){
   required();
   if(!PROFILES[profile]) throw Error('알 수 없는 상대');
   const built=[fighter('도전자',options.player??{}),fighter(PROFILES[profile].name,options.opponent??{})];
+  built[0].style=resolveStyle(options.playerStyle);
+  built[1].style=resolveStyle(options.opponentStyle);
   // Without full Definition Data the engine still runs; stats simply do not participate.
   for(const x of built)if(x.stats&&DEFINITIONS)x.derived=computeDerived(x.stats,DEFINITIONS,{referenceWeight:x.stats.body.natural_weight});
   return {turn:1,seed,profile,gap:RANGE.initial,memory:DEFINITIONS?serializeMemory(createMemory(DEFINITIONS)):null,fighters:built,lastPlans:null,lastEvaded:[false,false],roundResults:[],roundBaseline:[0,0],finished:false,winner:null,method:null};
@@ -272,7 +301,10 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       const p=active[i],c=CARDS[p.id];
       if(p.start===tick){
         if(f[i].stamina<c.cost){failed[i].add(p.start);events.push({type:'exhausted',actor:i,text:`${f[i].name}: 스태미너 부족 · ${c.name} 실패`});}
-        else f[i].stamina=round(f[i].stamina-c.cost);
+        else{
+          const closing=(c.rangeShift??0)<0?styleOf(f[i],'closingCostMultiplier',1):1;
+          f[i].stamina=round(f[i].stamina-c.cost*closing);
+        }
       }
       poses[i].failed=failed[i].has(p.start);
       if(p.start===tick&&!poses[i].failed)match.gap=roundGap(clamp(match.gap+(c.rangeShift??0),RANGE.min,RANGE.max));
@@ -301,18 +333,23 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       const counter=before[i].counterUntil>=tick;
       const recovery=dc.kind==='attack'&&tick>active[j].start+dc.impact;
       const mismatch=dc.kind==='evade'&&!dodged;
-      const reach=rangeFactor(match.gap,c);
+      const styleReach=styleOf(before[i],'reachBonus',0);
+      const reach=rangeFactor(match.gap,styleReach?{...c,reachBonus:(c.reachBonus??0)+styleReach}:c);
+      const band=bandOf(match.gap);
+      const bandBoost=band==='clinch'||band==='inside'?styleOf(before[i],'insideImpactMultiplier',1)
+        :band==='outside'?styleOf(before[i],'outsideImpactMultiplier',1):1;
       const attackerEffective=effectiveOf(before[i]),defenderEffective=effectiveOf(before[j]);
       const setup=memory?setupModifier(memory,j,active[i].start,p.id,before[j].stats?before[j].stats.base.fight_iq:60):{factor:1,read:false,broken:false,confidence:0};
       const staminaFactor=MODIFIERS.staminaFloor+(1-MODIFIERS.staminaFloor)*before[i].stamina/100;
-      let power=c.power*staminaFactor*(counter?MODIFIERS.counter:1)*(isOpen||recovery||mismatch?MODIFIERS.exposed:1)*reach
-        *ratio(attackerEffective,'impact')*setup.factor*impactVariance(match,tick,i);
+      let power=c.power*staminaFactor*(counter?MODIFIERS.counter*styleOf(before[i],'counterMultiplier',1):1)*(isOpen||recovery||mismatch?MODIFIERS.exposed:1)*reach
+        *ratio(attackerEffective,'impact')*setup.factor*bandBoost*impactVariance(match,tick,i);
       if(blocked)power/=Math.max(ratio(defenderEffective,'guard'),0.2);
       // A long guard covers more time but is a coarser block, so it leaks more per hit.
       // Without this the only question is whether the guard can be paid for, which makes
       // shelling either total immunity or instant death rather than a trade.
-      if(blocked)power*=(dc.blockLeak??MODIFIERS.blockLeak)+before[j].damage.arms/MODIFIERS.blockArmScaling;
+      if(blocked)power*=(dc.blockLeak??MODIFIERS.blockLeak)*styleOf(before[j],'blockLeakMultiplier',1)+before[j].damage.arms/MODIFIERS.blockArmScaling;
       if(impaired)power*=1+STATUS.groggyDefensePenalty;
+      if(c.target==='head')power*=styleOf(before[j],'incomingHeadMultiplier',1);
       effects.push({type:blocked?'block':'hit',actor:i,target:j,power:round(power),targetPart:c.target,counter,guardBreak:guarding&&!blocked,setup:isOpen,read:setup.read,patternBreak:setup.broken,readConfidence:round(setup.confidence),recovery,at:impactPosition(c,before[i]),reach:round(reach)});
     }
     // Impacts within the tolerance share the snapshot and apply together, so a double KO stays
@@ -329,7 +366,7 @@ export function resolveTurn(input,playerPlan,enemyPlan){
         }
       }
       if(e.type==='evade'){
-        f[e.actor].counterUntil=tick+RULES.counterWindow;f[e.actor].evaded=true;f[e.actor].score+=MODIFIERS.evadeScore;
+        f[e.actor].counterUntil=tick+RULES.counterWindow+styleOf(f[e.actor],'counterWindowBonus',0);f[e.actor].evaded=true;f[e.actor].score+=MODIFIERS.evadeScore;
         events.push({...e,text:`${f[e.actor].name}: 회피 성공 · 카운터 기회`});continue;
       }
       const d=f[e.target];
@@ -339,16 +376,19 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       const beforeDamage=d.damage[e.targetPart];
       d.damage[e.targetPart]=round(clamp(beforeDamage+e.power,0,RULES.maxPartDamage));
       const applied=round(d.damage[e.targetPart]-beforeDamage);
-      if(e.type==='block'){d.stamina=round(Math.max(0,d.stamina-RULES.guardDrain));d.damage.arms=round(clamp(d.damage.arms+applied*MODIFIERS.armDamageRatio,0,100));d.score+=MODIFIERS.blockScore;}
-      else{f[e.actor].score+=applied*(MODIFIERS.scoreByTarget[e.targetPart]??1);if(e.targetPart==='body')d.stamina=round(Math.max(0,d.stamina-applied*MODIFIERS.bodyStaminaDrain));}
+      if(e.type==='block'){d.stamina=round(Math.max(0,d.stamina-RULES.guardDrain));d.damage.arms=round(clamp(d.damage.arms+applied*MODIFIERS.armDamageRatio*styleOf(d,'armDamageMultiplier',1),0,100));d.score+=MODIFIERS.blockScore;}
+      else{f[e.actor].score+=applied*(MODIFIERS.scoreByTarget[e.targetPart]??1);if(e.targetPart==='body')d.stamina=round(Math.max(0,d.stamina-applied*MODIFIERS.bodyStaminaDrain*styleOf(f[e.actor],'bodyStaminaDrainMultiplier',1)));}
       if(e.counter)f[e.actor].counterUntil=-1;
       if(e.setup)d.openUntil=-1;
       struckAt[e.target]=e.at;
       events.push({...e,text:`${f[e.actor].name}: ${e.counter?'카운터! ':''}${CARDS[active[e.actor].id].name} → ${e.type==='block'?'블록':e.guardBreak?'가드 붕괴':e.setup?'페이크 연계':'명중'} · ${e.power}`});
+      // Body work can finish a fight, which is what makes guarding the body worth a slot.
+      // The threshold is higher than the head's, so the head remains the primary threat.
+      if(e.type==='hit'&&e.targetPart==='body'&&d.damage.body>=RULES.bodyKoDamage&&d.stamina<=RULES.bodyKoStamina&&e.power>=RULES.bodyKoImpact*styleOf(d,'staggerResistance',1)){d.ko=true;}
       if(e.type==='hit'&&e.targetPart==='head'){
         if(d.damage.head>=RULES.koDamage||(d.damage.head>=RULES.staggerDamage&&e.power>=RULES.staggerImpact)){d.ko=true;}
-        else if(e.power>=RULES.staggerImpact){d.status='groggy';d.statusUntil=tick+STATUS.groggyRecoverySlots;events.push({type:'status',actor:e.target,level:'groggy',text:`${d.name}: 그로기`});}
-        else if(e.power>=RULES.staggerImpact*STATUS.staggerRatio){d.status='stagger';d.statusUntil=tick+STATUS.staggerRecoverySlots;events.push({type:'status',actor:e.target,level:'stagger',text:`${d.name}: 휘청임`});}
+        else if(e.power>=RULES.staggerImpact*styleOf(d,'staggerResistance',1)){d.status='groggy';d.statusUntil=tick+STATUS.groggyRecoverySlots;events.push({type:'status',actor:e.target,level:'groggy',text:`${d.name}: 그로기`});}
+        else if(e.power>=RULES.staggerImpact*STATUS.staggerRatio*styleOf(d,'staggerResistance',1)){d.status='stagger';d.statusUntil=tick+STATUS.staggerRecoverySlots;events.push({type:'status',actor:e.target,level:'stagger',text:`${d.name}: 휘청임`});}
       }
     }
     if(f.some(x=>x.ko)){

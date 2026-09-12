@@ -3,110 +3,170 @@
   "description": "Equilibrium AI mixtures solved by self-play. Regenerate with: node tools/calibrate.mjs solve",
   "spec_reference": "docs/design/34_ai_equilibrium.md",
   "generated": {
-    "rules_fingerprint": "ab3714a2",
+    "rules_fingerprint": "75d68494",
     "seed": 20260101,
     "rounds": 12,
     "pool_size": 96,
     "game_value": 0,
-    "in_pool_exploitability": 0.0283,
-    "external_best_response_gain": 0.2982,
+    "in_pool_exploitability": 0.0347,
+    "external_best_response_gain": 0.14,
     "note": "game_value must sit at zero: the game is symmetric and zero-sum, so any drift means the payoff matrix stopped being antisymmetric. external_best_response_gain is the honest convergence measure; in_pool_exploitability only sees plans already in the pool."
   },
   "equilibrium_support": [
     {
       "plan": [
-        "jab",
-        "guard",
-        "heavy"
+        "body",
+        "body"
       ],
-      "weight": 0.25058
+      "weight": 0.23426
     },
     {
       "plan": [
         "advance",
-        "feint",
-        "jab",
-        "jab"
+        "cross"
       ],
-      "weight": 0.18161
+      "weight": 0.1113
     },
     {
       "plan": [
-        "jab",
-        "body",
-        "body"
+        "advance",
+        "hook"
       ],
-      "weight": 0.0933
+      "weight": 0.06664
     },
     {
       "plan": [
         "cross",
         "jab",
-        "advance"
+        "jab",
+        "jab"
       ],
-      "weight": 0.08664
+      "weight": 0.06564
     },
     {
       "plan": [
         "shell",
-        "sway",
-        "advance"
+        "guard",
+        "guard",
+        "jab"
       ],
-      "weight": 0.0863
+      "weight": 0.05931
     },
     {
       "plan": [
         "heavy",
-        "cross"
-      ],
-      "weight": 0.07931
-    },
-    {
-      "plan": [
-        "body",
-        "guard",
-        "guard",
         "jab"
       ],
-      "weight": 0.07597
+      "weight": 0.05765
     },
     {
       "plan": [
-        "body",
-        "jab",
-        "body"
+        "feint",
+        "heavy"
       ],
-      "weight": 0.04165
+      "weight": 0.05465
     },
     {
       "plan": [
         "shell",
+        "guard",
         "advance"
       ],
-      "weight": 0.04099
+      "weight": 0.04832
+    },
+    {
+      "plan": [
+        "shell",
+        "guard",
+        "weave"
+      ],
+      "weight": 0.03432
+    },
+    {
+      "plan": [
+        "hook",
+        "hook",
+        "hook"
+      ],
+      "weight": 0.03066
+    },
+    {
+      "plan": [
+        "jab",
+        "guard",
+        "hook",
+        "jab"
+      ],
+      "weight": 0.02999
     },
     {
       "plan": [
         "weave",
-        "feint",
-        "shell"
+        "body"
       ],
-      "weight": 0.02399
+      "weight": 0.02333
+    },
+    {
+      "plan": [
+        "jab",
+        "weave",
+        "body"
+      ],
+      "weight": 0.02266
     },
     {
       "plan": [
         "shell",
         "guard",
+        "hook"
+      ],
+      "weight": 0.02233
+    },
+    {
+      "plan": [
+        "flicker",
+        "guard",
+        "heavy"
+      ],
+      "weight": 0.02199
+    },
+    {
+      "plan": [
+        "shell",
         "guard",
         "jab"
       ],
-      "weight": 0.01333
+      "weight": 0.02066
+    },
+    {
+      "plan": [
+        "jab",
+        "guard",
+        "cross",
+        "jab"
+      ],
+      "weight": 0.01766
+    },
+    {
+      "plan": [
+        "body",
+        "weave",
+        "body"
+      ],
+      "weight": 0.012
+    },
+    {
+      "plan": [
+        "jab",
+        "heavy"
+      ],
+      "weight": 0.012
     }
   ],
   "tiers": {
     "apprentice": {
       "deviation": 0.75,
-      "exploitability": 0.7483,
+      "exploitability": 0.7537,
       "mixture": [
         {
           "plan": [
@@ -138,6 +198,15 @@
             "advance"
           ],
           "weight": 0.03125
+        },
+        {
+          "plan": [
+            "shell",
+            "jab",
+            "jab",
+            "feint"
+          ],
+          "weight": 0.03133
         },
         {
           "plan": [
@@ -217,7 +286,7 @@
             "body",
             "sway",
             "lowguard",
-            "body"
+            "guard"
           ],
           "weight": 0.03125
         },
@@ -246,7 +315,22 @@
         },
         {
           "plan": [
+            "lowguard",
+            "advance",
+            "feint",
+            "jab"
+          ],
+          "weight": 0.03125
+        },
+        {
+          "plan": [
             "lowguard"
+          ],
+          "weight": 0.03125
+        },
+        {
+          "plan": [
+            "heavy"
           ],
           "weight": 0.03125
         },
@@ -268,158 +352,232 @@
         },
         {
           "plan": [
-            "weave",
-            "shell"
+            "hook",
+            "feint",
+            "jab",
+            "guard",
+            "sway"
           ],
           "weight": 0.03125
         },
         {
           "plan": [
-            "heavy",
+            "body",
+            "weave",
             "body"
           ],
-          "weight": 0.00067
-        },
-        {
-          "plan": [
-            "cross",
-            "flicker",
-            "cross"
-          ],
-          "weight": 0.001
+          "weight": 0.003
         },
         {
           "plan": [
             "weave",
-            "feint",
-            "shell"
-          ],
-          "weight": 0.03725
-        },
-        {
-          "plan": [
-            "heavy",
-            "cross"
-          ],
-          "weight": 0.01983
-        },
-        {
-          "plan": [
-            "cross",
-            "lowguard",
-            "cross"
-          ],
-          "weight": 0.00092
-        },
-        {
-          "plan": [
-            "shell",
-            "guard",
-            "jab"
-          ],
-          "weight": 0.002
-        },
-        {
-          "plan": [
-            "shell",
-            "guard",
-            "guard",
-            "jab"
-          ],
-          "weight": 0.00333
-        },
-        {
-          "plan": [
-            "advance",
-            "flicker",
             "body"
           ],
-          "weight": 0.00067
+          "weight": 0.00583
         },
         {
           "plan": [
             "body",
-            "jab",
             "body"
           ],
-          "weight": 0.01041
+          "weight": 0.05856
         },
         {
           "plan": [
-            "advance",
-            "feint",
+            "flicker",
+            "guard",
+            "body"
+          ],
+          "weight": 0.00108
+        },
+        {
+          "plan": [
+            "shell",
+            "guard",
+            "jab"
+          ],
+          "weight": 0.00516
+        },
+        {
+          "plan": [
+            "jab",
+            "heavy"
+          ],
+          "weight": 0.003
+        },
+        {
+          "plan": [
+            "shell",
+            "guard",
+            "guard",
+            "jab"
+          ],
+          "weight": 0.01483
+        },
+        {
+          "plan": [
+            "jab",
+            "weave",
+            "body"
+          ],
+          "weight": 0.00566
+        },
+        {
+          "plan": [
+            "hook",
+            "hook",
+            "hook"
+          ],
+          "weight": 0.00766
+        },
+        {
+          "plan": [
+            "hook",
+            "jab",
             "jab",
             "jab"
           ],
-          "weight": 0.0454
+          "weight": 0.00142
         },
         {
           "plan": [
-            "cross",
-            "jab",
-            "advance"
+            "feint",
+            "heavy"
           ],
-          "weight": 0.02166
+          "weight": 0.01366
         },
         {
           "plan": [
-            "jab",
+            "body",
+            "body",
+            "body"
+          ],
+          "weight": 0.0025
+        },
+        {
+          "plan": [
+            "body",
+            "guard",
+            "body"
+          ],
+          "weight": 0.00075
+        },
+        {
+          "plan": [
+            "flicker",
             "guard",
             "heavy"
           ],
-          "weight": 0.06265
-        },
-        {
-          "plan": [
-            "body",
-            "guard",
-            "guard",
-            "jab"
-          ],
-          "weight": 0.01899
-        },
-        {
-          "plan": [
-            "shell",
-            "advance"
-          ],
-          "weight": 0.01025
-        },
-        {
-          "plan": [
-            "sway",
-            "advance"
-          ],
-          "weight": 0.03125
-        },
-        {
-          "plan": [
-            "sway",
-            "advance"
-          ],
-          "weight": 0.03125
+          "weight": 0.0055
         },
         {
           "plan": [
             "jab",
-            "body",
-            "body"
+            "guard",
+            "cross",
+            "jab"
           ],
-          "weight": 0.02333
+          "weight": 0.00442
+        },
+        {
+          "plan": [
+            "jab",
+            "guard",
+            "hook",
+            "jab"
+          ],
+          "weight": 0.0075
+        },
+        {
+          "plan": [
+            "advance",
+            "cross"
+          ],
+          "weight": 0.02782
+        },
+        {
+          "plan": [
+            "advance",
+            "hook"
+          ],
+          "weight": 0.01666
+        },
+        {
+          "plan": [
+            "heavy",
+            "jab"
+          ],
+          "weight": 0.01441
         },
         {
           "plan": [
             "shell",
-            "sway",
+            "guard",
             "advance"
           ],
-          "weight": 0.02158
+          "weight": 0.01208
+        },
+        {
+          "plan": [
+            "shell",
+            "guard",
+            "cross"
+          ],
+          "weight": 0.00142
+        },
+        {
+          "plan": [
+            "shell",
+            "guard",
+            "hook"
+          ],
+          "weight": 0.00558
+        },
+        {
+          "plan": [
+            "shell",
+            "guard",
+            "body"
+          ],
+          "weight": 0.00142
+        },
+        {
+          "plan": [
+            "weave",
+            "hook",
+            "hook"
+          ],
+          "weight": 0.00183
+        },
+        {
+          "plan": [
+            "cross",
+            "jab",
+            "jab",
+            "jab"
+          ],
+          "weight": 0.01641
+        },
+        {
+          "plan": [
+            "shell",
+            "guard",
+            "weave"
+          ],
+          "weight": 0.00858
+        },
+        {
+          "plan": [
+            "shell",
+            "body"
+          ],
+          "weight": 0.00217
         }
       ]
     },
     "standard": {
       "deviation": 0.4,
-      "exploitability": 0.396,
+      "exploitability": 0.4088,
       "mixture": [
         {
           "plan": [
@@ -451,6 +609,15 @@
             "advance"
           ],
           "weight": 0.01667
+        },
+        {
+          "plan": [
+            "shell",
+            "jab",
+            "jab",
+            "feint"
+          ],
+          "weight": 0.01687
         },
         {
           "plan": [
@@ -530,7 +697,7 @@
             "body",
             "sway",
             "lowguard",
-            "body"
+            "guard"
           ],
           "weight": 0.01667
         },
@@ -559,7 +726,22 @@
         },
         {
           "plan": [
+            "lowguard",
+            "advance",
+            "feint",
+            "jab"
+          ],
+          "weight": 0.01667
+        },
+        {
+          "plan": [
             "lowguard"
+          ],
+          "weight": 0.01667
+        },
+        {
+          "plan": [
+            "heavy"
           ],
           "weight": 0.01667
         },
@@ -581,639 +763,883 @@
         },
         {
           "plan": [
-            "weave",
-            "shell"
+            "hook",
+            "feint",
+            "jab",
+            "guard",
+            "sway"
           ],
           "weight": 0.01667
         },
         {
           "plan": [
-            "heavy",
+            "body",
+            "weave",
             "body"
           ],
-          "weight": 0.0016
-        },
-        {
-          "plan": [
-            "cross",
-            "flicker",
-            "cross"
-          ],
-          "weight": 0.0024
+          "weight": 0.0072
         },
         {
           "plan": [
             "weave",
-            "sway",
-            "advance"
+            "body"
+          ],
+          "weight": 0.014
+        },
+        {
+          "plan": [
+            "body",
+            "body"
+          ],
+          "weight": 0.14055
+        },
+        {
+          "plan": [
+            "flicker",
+            "guard",
+            "body"
+          ],
+          "weight": 0.0026
+        },
+        {
+          "plan": [
+            "shell",
+            "guard",
+            "jab"
+          ],
+          "weight": 0.0124
+        },
+        {
+          "plan": [
+            "jab",
+            "heavy"
+          ],
+          "weight": 0.0072
+        },
+        {
+          "plan": [
+            "shell",
+            "guard",
+            "guard",
+            "jab"
+          ],
+          "weight": 0.03559
+        },
+        {
+          "plan": [
+            "jab",
+            "weave",
+            "body"
+          ],
+          "weight": 0.0136
+        },
+        {
+          "plan": [
+            "hook",
+            "hook",
+            "hook"
+          ],
+          "weight": 0.01839
+        },
+        {
+          "plan": [
+            "hook",
+            "jab",
+            "jab",
+            "jab"
+          ],
+          "weight": 0.0034
+        },
+        {
+          "plan": [
+            "feint",
+            "heavy"
+          ],
+          "weight": 0.03279
+        },
+        {
+          "plan": [
+            "hook",
+            "feint",
+            "jab",
+            "jab"
           ],
           "weight": 0.0008
         },
         {
           "plan": [
-            "weave",
-            "feint",
-            "shell"
-          ],
-          "weight": 0.03106
-        },
-        {
-          "plan": [
-            "heavy",
-            "cross"
-          ],
-          "weight": 0.04758
-        },
-        {
-          "plan": [
-            "cross",
-            "lowguard",
-            "cross"
-          ],
-          "weight": 0.0022
-        },
-        {
-          "plan": [
-            "shell",
-            "guard",
-            "jab"
-          ],
-          "weight": 0.0048
-        },
-        {
-          "plan": [
-            "shell",
-            "guard",
-            "guard",
-            "jab"
-          ],
-          "weight": 0.008
-        },
-        {
-          "plan": [
-            "advance",
-            "flicker",
+            "body",
+            "body",
             "body"
           ],
-          "weight": 0.0016
+          "weight": 0.006
         },
         {
           "plan": [
             "body",
-            "jab",
+            "guard",
             "body"
           ],
-          "weight": 0.02499
+          "weight": 0.0018
         },
         {
           "plan": [
-            "advance",
-            "feint",
-            "jab",
-            "jab"
-          ],
-          "weight": 0.10896
-        },
-        {
-          "plan": [
-            "cross",
-            "jab",
-            "advance"
-          ],
-          "weight": 0.05198
-        },
-        {
-          "plan": [
-            "jab",
+            "flicker",
             "guard",
             "heavy"
           ],
-          "weight": 0.15035
-        },
-        {
-          "plan": [
-            "body",
-            "guard",
-            "guard",
-            "jab"
-          ],
-          "weight": 0.04558
-        },
-        {
-          "plan": [
-            "shell",
-            "advance"
-          ],
-          "weight": 0.02459
-        },
-        {
-          "plan": [
-            "sway",
-            "advance"
-          ],
-          "weight": 0.01667
-        },
-        {
-          "plan": [
-            "sway",
-            "advance"
-          ],
-          "weight": 0.01667
+          "weight": 0.0132
         },
         {
           "plan": [
             "jab",
-            "body",
-            "body"
+            "guard",
+            "cross",
+            "jab"
           ],
-          "weight": 0.05598
+          "weight": 0.0106
         },
         {
           "plan": [
-            "shell",
-            "sway",
-            "advance"
+            "jab",
+            "guard",
+            "hook",
+            "jab"
           ],
-          "weight": 0.05178
-        }
-      ]
-    },
-    "contender": {
-      "deviation": 0.15,
-      "exploitability": 0.1485,
-      "mixture": [
+          "weight": 0.01799
+        },
         {
           "plan": [
             "advance",
-            "guard"
+            "cross"
           ],
-          "weight": 0.00653
+          "weight": 0.06678
         },
         {
           "plan": [
-            "lowguard",
-            "hook",
-            "lowguard"
+            "advance",
+            "hook"
           ],
-          "weight": 0.00625
+          "weight": 0.03999
         },
         {
           "plan": [
-            "sway",
-            "jab",
-            "sway",
+            "heavy",
             "jab"
           ],
-          "weight": 0.00625
+          "weight": 0.03459
         },
         {
           "plan": [
-            "flicker",
+            "shell",
+            "guard",
             "advance"
           ],
-          "weight": 0.00625
+          "weight": 0.02899
         },
         {
           "plan": [
-            "hook",
-            "guard"
-          ],
-          "weight": 0.00625
-        },
-        {
-          "plan": [
-            "lowguard",
-            "lowguard"
-          ],
-          "weight": 0.00625
-        },
-        {
-          "plan": [
-            "hook",
-            "guard",
-            "sway"
-          ],
-          "weight": 0.00625
-        },
-        {
-          "plan": [
-            "lowguard",
-            "guard",
-            "feint",
-            "feint"
-          ],
-          "weight": 0.00625
-        },
-        {
-          "plan": [
-            "feint",
-            "jab",
-            "guard",
-            "sway"
-          ],
-          "weight": 0.00625
-        },
-        {
-          "plan": [
-            "jab"
-          ],
-          "weight": 0.00625
-        },
-        {
-          "plan": [
-            "hook",
             "shell",
             "guard",
-            "flicker"
-          ],
-          "weight": 0.00625
-        },
-        {
-          "plan": [
-            "body",
-            "advance",
-            "flicker",
-            "body",
-            "sway"
-          ],
-          "weight": 0.00625
-        },
-        {
-          "plan": [
-            "sway",
-            "guard"
-          ],
-          "weight": 0.00625
-        },
-        {
-          "plan": [
-            "guard",
-            "body",
-            "sway",
-            "lowguard",
-            "body"
-          ],
-          "weight": 0.00625
-        },
-        {
-          "plan": [
-            "weave"
-          ],
-          "weight": 0.00625
-        },
-        {
-          "plan": [
-            "weave",
-            "heavy",
-            "heavy"
-          ],
-          "weight": 0.00625
-        },
-        {
-          "plan": [
-            "cross",
-            "heavy",
-            "feint",
-            "sway"
-          ],
-          "weight": 0.00625
-        },
-        {
-          "plan": [
-            "lowguard"
-          ],
-          "weight": 0.00625
-        },
-        {
-          "plan": [
-            "flicker",
-            "hook",
-            "shell",
-            "feint"
-          ],
-          "weight": 0.00625
-        },
-        {
-          "plan": [
-            "weave",
-            "shell"
-          ],
-          "weight": 0.00653
-        },
-        {
-          "plan": [
-            "weave",
-            "shell"
-          ],
-          "weight": 0.00625
-        },
-        {
-          "plan": [
-            "heavy",
-            "body"
-          ],
-          "weight": 0.00227
-        },
-        {
-          "plan": [
-            "cross",
-            "flicker",
             "cross"
           ],
           "weight": 0.0034
         },
         {
           "plan": [
+            "shell",
+            "guard",
+            "hook"
+          ],
+          "weight": 0.0134
+        },
+        {
+          "plan": [
+            "shell",
+            "guard",
+            "body"
+          ],
+          "weight": 0.0034
+        },
+        {
+          "plan": [
             "weave",
+            "hook",
+            "hook"
+          ],
+          "weight": 0.0044
+        },
+        {
+          "plan": [
+            "cross",
+            "jab",
+            "jab",
+            "jab"
+          ],
+          "weight": 0.03939
+        },
+        {
+          "plan": [
+            "shell",
+            "guard",
+            "weave"
+          ],
+          "weight": 0.02059
+        },
+        {
+          "plan": [
+            "shell",
+            "body"
+          ],
+          "weight": 0.0052
+        }
+      ]
+    },
+    "contender": {
+      "deviation": 0.15,
+      "exploitability": 0.1625,
+      "mixture": [
+        {
+          "plan": [
+            "advance",
+            "guard"
+          ],
+          "weight": 0.00653
+        },
+        {
+          "plan": [
+            "lowguard",
+            "hook",
+            "lowguard"
+          ],
+          "weight": 0.00625
+        },
+        {
+          "plan": [
             "sway",
+            "jab",
+            "sway",
+            "jab"
+          ],
+          "weight": 0.00625
+        },
+        {
+          "plan": [
+            "flicker",
             "advance"
+          ],
+          "weight": 0.00625
+        },
+        {
+          "plan": [
+            "shell",
+            "jab",
+            "jab",
+            "feint"
+          ],
+          "weight": 0.00653
+        },
+        {
+          "plan": [
+            "hook",
+            "guard"
+          ],
+          "weight": 0.00625
+        },
+        {
+          "plan": [
+            "lowguard",
+            "lowguard"
+          ],
+          "weight": 0.00625
+        },
+        {
+          "plan": [
+            "hook",
+            "guard",
+            "sway"
+          ],
+          "weight": 0.00625
+        },
+        {
+          "plan": [
+            "lowguard",
+            "guard",
+            "feint",
+            "feint"
+          ],
+          "weight": 0.00625
+        },
+        {
+          "plan": [
+            "feint",
+            "jab",
+            "guard",
+            "sway"
+          ],
+          "weight": 0.00625
+        },
+        {
+          "plan": [
+            "jab"
+          ],
+          "weight": 0.00625
+        },
+        {
+          "plan": [
+            "hook",
+            "shell",
+            "guard",
+            "flicker"
+          ],
+          "weight": 0.00625
+        },
+        {
+          "plan": [
+            "body",
+            "advance",
+            "flicker",
+            "body",
+            "sway"
+          ],
+          "weight": 0.00625
+        },
+        {
+          "plan": [
+            "sway",
+            "guard"
+          ],
+          "weight": 0.00625
+        },
+        {
+          "plan": [
+            "guard",
+            "body",
+            "sway",
+            "lowguard",
+            "guard"
+          ],
+          "weight": 0.00625
+        },
+        {
+          "plan": [
+            "weave"
+          ],
+          "weight": 0.00625
+        },
+        {
+          "plan": [
+            "weave",
+            "heavy",
+            "heavy"
+          ],
+          "weight": 0.00625
+        },
+        {
+          "plan": [
+            "cross",
+            "heavy",
+            "feint",
+            "sway"
+          ],
+          "weight": 0.00625
+        },
+        {
+          "plan": [
+            "lowguard",
+            "advance",
+            "feint",
+            "jab"
+          ],
+          "weight": 0.00625
+        },
+        {
+          "plan": [
+            "lowguard"
+          ],
+          "weight": 0.00625
+        },
+        {
+          "plan": [
+            "heavy"
+          ],
+          "weight": 0.00625
+        },
+        {
+          "plan": [
+            "flicker",
+            "hook",
+            "shell",
+            "feint"
+          ],
+          "weight": 0.00625
+        },
+        {
+          "plan": [
+            "weave",
+            "shell"
+          ],
+          "weight": 0.00653
+        },
+        {
+          "plan": [
+            "hook",
+            "feint",
+            "jab",
+            "guard",
+            "sway"
+          ],
+          "weight": 0.00625
+        },
+        {
+          "plan": [
+            "body",
+            "weave",
+            "body"
+          ],
+          "weight": 0.0102
+        },
+        {
+          "plan": [
+            "weave",
+            "body"
+          ],
+          "weight": 0.01983
+        },
+        {
+          "plan": [
+            "body",
+            "body"
+          ],
+          "weight": 0.19912
+        },
+        {
+          "plan": [
+            "flicker",
+            "guard",
+            "body"
+          ],
+          "weight": 0.00368
+        },
+        {
+          "plan": [
+            "shell",
+            "guard",
+            "jab"
+          ],
+          "weight": 0.01756
+        },
+        {
+          "plan": [
+            "jab",
+            "heavy"
+          ],
+          "weight": 0.0102
+        },
+        {
+          "plan": [
+            "shell",
+            "guard",
+            "guard",
+            "jab"
+          ],
+          "weight": 0.05042
+        },
+        {
+          "plan": [
+            "jab",
+            "weave",
+            "body"
+          ],
+          "weight": 0.01926
+        },
+        {
+          "plan": [
+            "hook",
+            "hook",
+            "hook"
+          ],
+          "weight": 0.02606
+        },
+        {
+          "plan": [
+            "hook",
+            "jab",
+            "jab",
+            "jab"
+          ],
+          "weight": 0.00482
+        },
+        {
+          "plan": [
+            "feint",
+            "heavy"
+          ],
+          "weight": 0.04645
+        },
+        {
+          "plan": [
+            "hook",
+            "feint",
+            "jab",
+            "jab"
           ],
           "weight": 0.00113
         },
         {
           "plan": [
-            "weave",
-            "feint",
-            "shell"
+            "body",
+            "body",
+            "body"
           ],
-          "weight": 0.02664
+          "weight": 0.0085
+        },
+        {
+          "plan": [
+            "body",
+            "guard",
+            "body"
+          ],
+          "weight": 0.00255
+        },
+        {
+          "plan": [
+            "flicker",
+            "guard",
+            "heavy"
+          ],
+          "weight": 0.01869
+        },
+        {
+          "plan": [
+            "jab",
+            "guard",
+            "cross",
+            "jab"
+          ],
+          "weight": 0.01501
+        },
+        {
+          "plan": [
+            "jab",
+            "guard",
+            "hook",
+            "jab"
+          ],
+          "weight": 0.02549
+        },
+        {
+          "plan": [
+            "advance",
+            "cross"
+          ],
+          "weight": 0.0946
+        },
+        {
+          "plan": [
+            "advance",
+            "hook"
+          ],
+          "weight": 0.05665
         },
         {
           "plan": [
             "heavy",
-            "cross"
+            "jab"
           ],
-          "weight": 0.06741
+          "weight": 0.049
         },
         {
           "plan": [
-            "cross",
+            "shell",
+            "guard",
+            "advance"
+          ],
+          "weight": 0.04107
+        },
+        {
+          "plan": [
+            "shell",
+            "guard",
+            "cross"
+          ],
+          "weight": 0.00482
+        },
+        {
+          "plan": [
+            "shell",
+            "guard",
+            "hook"
+          ],
+          "weight": 0.01898
+        },
+        {
+          "plan": [
+            "shell",
+            "guard",
+            "body"
+          ],
+          "weight": 0.00482
+        },
+        {
+          "plan": [
+            "weave",
             "hook",
-            "cross"
+            "hook"
           ],
-          "weight": 0.00057
-        },
-        {
-          "plan": [
-            "cross",
-            "lowguard",
-            "cross"
-          ],
-          "weight": 0.00312
-        },
-        {
-          "plan": [
-            "shell",
-            "guard",
-            "jab"
-          ],
-          "weight": 0.0068
-        },
-        {
-          "plan": [
-            "shell",
-            "guard",
-            "guard",
-            "jab"
-          ],
-          "weight": 0.01133
-        },
-        {
-          "plan": [
-            "advance",
-            "flicker",
-            "body"
-          ],
-          "weight": 0.00227
-        },
-        {
-          "plan": [
-            "body",
-            "jab",
-            "body"
-          ],
-          "weight": 0.0354
-        },
-        {
-          "plan": [
-            "advance",
-            "feint",
-            "jab",
-            "jab"
-          ],
-          "weight": 0.15437
+          "weight": 0.00623
         },
         {
           "plan": [
             "cross",
             "jab",
-            "advance"
-          ],
-          "weight": 0.07364
-        },
-        {
-          "plan": [
             "jab",
-            "guard",
-            "heavy"
-          ],
-          "weight": 0.213
-        },
-        {
-          "plan": [
-            "body",
-            "guard",
-            "guard",
             "jab"
           ],
-          "weight": 0.06458
+          "weight": 0.0558
         },
         {
           "plan": [
             "shell",
-            "advance"
+            "guard",
+            "weave"
           ],
-          "weight": 0.03484
+          "weight": 0.02917
         },
         {
           "plan": [
-            "sway",
-            "advance"
-          ],
-          "weight": 0.00625
-        },
-        {
-          "plan": [
-            "sway",
-            "advance"
-          ],
-          "weight": 0.00625
-        },
-        {
-          "plan": [
-            "jab",
-            "body",
+            "shell",
             "body"
           ],
-          "weight": 0.07931
-        },
-        {
-          "plan": [
-            "shell",
-            "sway",
-            "advance"
-          ],
-          "weight": 0.07336
+          "weight": 0.00736
         }
       ]
     },
     "brutal": {
       "deviation": 0,
-      "exploitability": 0.0283,
+      "exploitability": 0.0347,
       "mixture": [
         {
           "plan": [
-            "heavy",
+            "body",
+            "weave",
             "body"
           ],
-          "weight": 0.00267
-        },
-        {
-          "plan": [
-            "cross",
-            "flicker",
-            "cross"
-          ],
-          "weight": 0.004
+          "weight": 0.012
         },
         {
           "plan": [
             "weave",
-            "sway",
-            "advance"
+            "body"
+          ],
+          "weight": 0.02333
+        },
+        {
+          "plan": [
+            "body",
+            "body"
+          ],
+          "weight": 0.23426
+        },
+        {
+          "plan": [
+            "flicker",
+            "guard",
+            "body"
+          ],
+          "weight": 0.00433
+        },
+        {
+          "plan": [
+            "shell",
+            "guard",
+            "jab"
+          ],
+          "weight": 0.02066
+        },
+        {
+          "plan": [
+            "jab",
+            "heavy"
+          ],
+          "weight": 0.012
+        },
+        {
+          "plan": [
+            "shell",
+            "guard",
+            "guard",
+            "jab"
+          ],
+          "weight": 0.05931
+        },
+        {
+          "plan": [
+            "jab",
+            "weave",
+            "body"
+          ],
+          "weight": 0.02266
+        },
+        {
+          "plan": [
+            "hook",
+            "hook",
+            "hook"
+          ],
+          "weight": 0.03066
+        },
+        {
+          "plan": [
+            "hook",
+            "jab",
+            "jab",
+            "jab"
+          ],
+          "weight": 0.00566
+        },
+        {
+          "plan": [
+            "feint",
+            "heavy"
+          ],
+          "weight": 0.05465
+        },
+        {
+          "plan": [
+            "hook",
+            "feint",
+            "jab",
+            "jab"
           ],
           "weight": 0.00133
         },
         {
           "plan": [
-            "weave",
-            "feint",
-            "shell"
+            "body",
+            "body",
+            "body"
           ],
-          "weight": 0.02399
+          "weight": 0.01
+        },
+        {
+          "plan": [
+            "body",
+            "guard",
+            "body"
+          ],
+          "weight": 0.003
+        },
+        {
+          "plan": [
+            "flicker",
+            "guard",
+            "heavy"
+          ],
+          "weight": 0.02199
+        },
+        {
+          "plan": [
+            "jab",
+            "guard",
+            "cross",
+            "jab"
+          ],
+          "weight": 0.01766
+        },
+        {
+          "plan": [
+            "jab",
+            "guard",
+            "hook",
+            "jab"
+          ],
+          "weight": 0.02999
+        },
+        {
+          "plan": [
+            "advance",
+            "cross"
+          ],
+          "weight": 0.1113
+        },
+        {
+          "plan": [
+            "advance",
+            "hook"
+          ],
+          "weight": 0.06664
         },
         {
           "plan": [
             "heavy",
-            "cross"
+            "jab"
           ],
-          "weight": 0.07931
+          "weight": 0.05765
         },
         {
           "plan": [
-            "cross",
+            "shell",
+            "guard",
+            "advance"
+          ],
+          "weight": 0.04832
+        },
+        {
+          "plan": [
+            "shell",
+            "guard",
+            "cross"
+          ],
+          "weight": 0.00566
+        },
+        {
+          "plan": [
+            "shell",
+            "guard",
+            "hook"
+          ],
+          "weight": 0.02233
+        },
+        {
+          "plan": [
+            "shell",
+            "guard",
+            "body"
+          ],
+          "weight": 0.00566
+        },
+        {
+          "plan": [
+            "weave",
             "hook",
-            "cross"
+            "hook"
           ],
-          "weight": 0.00067
-        },
-        {
-          "plan": [
-            "cross",
-            "lowguard",
-            "cross"
-          ],
-          "weight": 0.00367
-        },
-        {
-          "plan": [
-            "shell",
-            "guard",
-            "jab"
-          ],
-          "weight": 0.008
-        },
-        {
-          "plan": [
-            "shell",
-            "guard",
-            "guard",
-            "jab"
-          ],
-          "weight": 0.01333
-        },
-        {
-          "plan": [
-            "advance",
-            "flicker",
-            "body"
-          ],
-          "weight": 0.00267
-        },
-        {
-          "plan": [
-            "body",
-            "jab",
-            "body"
-          ],
-          "weight": 0.04165
-        },
-        {
-          "plan": [
-            "advance",
-            "feint",
-            "jab",
-            "jab"
-          ],
-          "weight": 0.18161
+          "weight": 0.00733
         },
         {
           "plan": [
             "cross",
             "jab",
-            "advance"
-          ],
-          "weight": 0.08664
-        },
-        {
-          "plan": [
             "jab",
-            "guard",
-            "heavy"
-          ],
-          "weight": 0.25058
-        },
-        {
-          "plan": [
-            "body",
-            "guard",
-            "guard",
             "jab"
           ],
-          "weight": 0.07597
+          "weight": 0.06564
         },
         {
           "plan": [
             "shell",
-            "advance"
+            "guard",
+            "weave"
           ],
-          "weight": 0.04099
+          "weight": 0.03432
         },
         {
           "plan": [
-            "jab",
-            "body",
+            "shell",
             "body"
           ],
-          "weight": 0.0933
-        },
-        {
-          "plan": [
-            "shell",
-            "sway",
-            "advance"
-          ],
-          "weight": 0.0863
+          "weight": 0.00866
         }
       ]
     }

@@ -13,7 +13,10 @@
     "koDamage": 150,
     "staggerDamage": 82,
     "staggerImpact": 16,
-    "maxPartDamage": 165
+    "maxPartDamage": 165,
+    "bodyKoDamage": 120,
+    "bodyKoImpact": 9,
+    "bodyKoStamina": 35
   },
   "rounds": {
     "count": 3,
@@ -26,7 +29,8 @@
     "staggerRecoverySlots": 2,
     "groggyRecoverySlots": 4,
     "groggyDefensePenalty": 0.35,
-    "groggyPlanBias": true
+    "groggyPlanBias": true,
+    "note_body": "A body finish comes from accumulation, not an impact spike. Gating on the target being worn down as well as damaged avoids the all-or-nothing cliff that a pure impact threshold produced, and matches what body work actually does: drain first, finish second."
   },
   "intervalRecovery": {
     "fraction": 0.35,
@@ -74,7 +78,7 @@
       "kind": "attack",
       "duration": 2,
       "impact": 1,
-      "cost": 14,
+      "cost": 12,
       "power": 16,
       "target": "head",
       "trajectory": "hook",
@@ -145,10 +149,10 @@
       "name": "바디 가드",
       "short": "바디 가드",
       "kind": "guard",
-      "duration": 2,
+      "duration": 3,
       "cost": 3,
       "protect": "body",
-      "description": "몸통 방어. 상대 머리 공격에는 노출됩니다.",
+      "description": "몸통을 넓게 막습니다. 상대 머리 공격에는 그만큼 오래 노출됩니다.",
       "rangeShift": 0.0,
       "blockLeak": 0.2
     },
@@ -200,7 +204,7 @@
       "kind": "attack",
       "duration": 1,
       "impact": 0,
-      "cost": 8,
+      "cost": 6,
       "power": 7,
       "target": "head",
       "trajectory": "straight",
@@ -209,7 +213,7 @@
       "rangeTolerance": 0.7,
       "rangeShift": 0.0,
       "reachBonus": 0.35,
-      "description": "더 먼 거리에서 닿는 잽. 위력은 낮지만 거리를 유지합니다."
+      "description": "더 먼 거리에서 닿는 가벼운 잽. 위력은 낮지만 싸고 거리를 유지합니다."
     },
     "advance": {
       "name": "전진 훅",
@@ -353,8 +357,7 @@
         "lowguard",
         "hook",
         "guard",
-        "cross",
-        "rest"
+        "cross"
       ],
       [
         "shell",
@@ -489,5 +492,64 @@
     },
     "note_score": "Judges reward clean head work over body work. Without this the body attack is strictly best: it is unblockable by a head guard, undodgeable by either evasion, and scored the same.",
     "note_leak": "Per-card block leak. A long guard covers more time but blocks coarsely, so it leaks more per hit. Tuning cost alone produced a cliff: either the guard was affordable and total, or unaffordable and fatal."
+  },
+  "style_cards": {
+    "note": "Style Skill Cards: conditional passive traits, not timeline placements. Spec: docs/design/31_information_economy_and_placement.md. Each must express a different axis, or it is not a choice.",
+    "active_limit": 5,
+    "cards": {
+      "liver_hunter": {
+        "name": "리버 헌터",
+        "axis": "body",
+        "description": "몸통 공격이 상대 스태미너를 더 크게 깎습니다.",
+        "effects": {
+          "bodyStaminaDrainMultiplier": 1.6
+        }
+      },
+      "counter_puncher": {
+        "name": "카운터 펀처",
+        "axis": "counter",
+        "description": "회피 후 카운터 기회가 한 칸 길고 위력이 큽니다.",
+        "effects": {
+          "counterWindowBonus": 1,
+          "counterMultiplier": 1.25
+        }
+      },
+      "iron_chin": {
+        "name": "아이언 친",
+        "axis": "durability",
+        "description": "머리 충격을 견디는 힘이 큽니다. 그로기에 덜 빠집니다.",
+        "effects": {
+          "incomingHeadMultiplier": 0.82,
+          "staggerResistance": 1.3
+        }
+      },
+      "pressure_fighter": {
+        "name": "프레셔 파이터",
+        "axis": "range_close",
+        "description": "거리를 좁히는 동작이 쌉니다. 근거리에서 강합니다.",
+        "effects": {
+          "closingCostMultiplier": 0.7,
+          "insideImpactMultiplier": 1.15
+        }
+      },
+      "out_boxer": {
+        "name": "아웃 복서",
+        "axis": "range_far",
+        "description": "먼 거리에서 유효 리치가 늘어납니다.",
+        "effects": {
+          "reachBonus": 0.3,
+          "outsideImpactMultiplier": 1.12
+        }
+      },
+      "iron_guard": {
+        "name": "아이언 가드",
+        "axis": "guard",
+        "description": "막을 때 새는 충격이 적고 팔 손상이 덜합니다.",
+        "effects": {
+          "blockLeakMultiplier": 0.72,
+          "armDamageMultiplier": 0.7
+        }
+      }
+    }
   }
 }

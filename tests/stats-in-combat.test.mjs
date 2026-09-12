@@ -63,7 +63,9 @@ const workingPlan=['guard','jab','guard','cross','rest'];
 const poorPlan=['shell','cross','guard','rest'];
 
 test('an upset has a cause: the same weaker fighter loses one way and wins another',()=>{
-  const underdog=evenly(50),favourite=evenly(60);
+  // Five points, not ten: beyond that the gap stops being strategisable, which the next test
+  // asserts. Re-derive the deficit and the two plans with tools/balance.mjs after tuning.
+  const underdog=evenly(55),favourite=evenly(60);
   assert.equal(winsWith(underdog,favourite,poorPlan),0,'약자가 아무 계획으로나 이깁니다');
   assert.ok(winsWith(underdog,favourite,workingPlan)>=15,'전략으로 뒤집을 방법이 없습니다');
 });

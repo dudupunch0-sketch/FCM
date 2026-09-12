@@ -325,11 +325,22 @@ const validators = {
   // docs/design/19_combat_prototype_implementation.md
   combat_prototype(file, cfg) {
     const rules = requireObject(file, 'rules', cfg.rules);
-    for (const key of ['slots', 'maxTurns', 'maxStamina', 'restRecovery', 'counterWindow', 'guardDrain', 'koDamage', 'staggerDamage', 'staggerImpact', 'maxPartDamage']) {
+    for (const key of ['slots', 'maxTurns', 'maxStamina', 'restRecovery', 'counterWindow', 'guardDrain', 'koDamage', 'staggerDamage', 'staggerImpact', 'maxPartDamage', 'bodyKoDamage', 'bodyKoImpact', 'bodyKoStamina']) {
       requireNumber(file, `rules.${key}`, rules[key], { min: 0 });
     }
     if (rules.staggerDamage >= rules.koDamage) fail(file, 'rules.staggerDamage', 'koDamage보다 작아야 합니다');
     if (rules.maxPartDamage < rules.koDamage) fail(file, 'rules.maxPartDamage', 'KO 임계값에 도달할 수 없습니다');
+    if (rules.maxPartDamage < rules.bodyKoDamage) fail(file, 'rules.bodyKoDamage', '부위 손상 상한을 넘어 도달할 수 없습니다');
+    // A body finish needs real accumulation and a real shot on top of it. Demanding a higher
+    // damage total than the head does would double-punish body work, which already hits softer
+    // per landed shot; requiring a solid impact is what keeps the finish rare.
+    if (rules.bodyKoDamage < rules.koDamage * 0.7) fail(file, 'rules.bodyKoDamage', 'koDamage의 70% 이상이어야 합니다');
+    requireNumber(file, 'rules.bodyKoStamina', rules.bodyKoStamina, { min: 1, max: rules.maxStamina });
+    // The target must be worn down as well as damaged, or a body finish becomes an impact
+    // spike and lands all-or-nothing on whichever side of the threshold late-fight power sits.
+    if (rules.bodyKoStamina >= rules.maxStamina * 0.6) {
+      fail(file, 'rules.bodyKoStamina', '지치지 않은 상대가 바디로 끝나면 안 됩니다');
+    }
     const rounds = requireObject(file, 'rounds', cfg.rounds);
     requireNumber(file, 'rounds.count', rounds.count, { min: 1 });
     requireNumber(file, 'rounds.turnsPerRound', rounds.turnsPerRound, { min: 1 });
@@ -400,6 +411,28 @@ const validators = {
     }
     for (const id of cfg.low_stamina_plan?.actions ?? []) {
       if (!cards[id]) fail(file, 'low_stamina_plan.actions', `알 수 없는 카드: ${id}`);
+    }
+    const style = requireObject(file, 'style_cards', cfg.style_cards);
+    requireNumber(file, 'style_cards.active_limit', style.active_limit, { min: 1 });
+    const styleCards = requireObject(file, 'style_cards.cards', style.cards);
+    const axes = new Set();
+    const knownEffects = new Set(['bodyStaminaDrainMultiplier', 'counterWindowBonus', 'counterMultiplier',
+      'incomingHeadMultiplier', 'staggerResistance', 'closingCostMultiplier', 'insideImpactMultiplier',
+      'reachBonus', 'outsideImpactMultiplier', 'blockLeakMultiplier', 'armDamageMultiplier']);
+    for (const id of dataKeys(styleCards)) {
+      const card = styleCards[id];
+      if (!card.name) fail(file, `style_cards.cards.${id}.name`, '표시 이름이 필요합니다');
+      if (!card.axis) fail(file, `style_cards.cards.${id}.axis`, '어떤 축의 선택인지 밝혀야 합니다');
+      // Two cards on the same axis are not a choice; one is simply the better version of the
+      // other. Spec: docs/design/31 section 1.
+      if (axes.has(card.axis)) fail(file, `style_cards.cards.${id}.axis`, `축이 겹칩니다: ${card.axis}`);
+      axes.add(card.axis);
+      const effects = requireObject(file, `style_cards.cards.${id}.effects`, card.effects);
+      if (!dataKeys(effects).length) fail(file, `style_cards.cards.${id}.effects`, '효과가 비어 있습니다');
+      for (const key of dataKeys(effects)) {
+        if (!knownEffects.has(key)) fail(file, `style_cards.cards.${id}.effects.${key}`, '엔진이 모르는 효과입니다');
+        requireNumber(file, `style_cards.cards.${id}.effects.${key}`, effects[key], { min: 0 });
+      }
     }
     const skills = requireObject(file, 'skills', cfg.skills);
     for (const id of dataKeys(skills)) requireNumber(file, `skills.${id}.specificity`, skills[id].specificity, { min: 0 });
