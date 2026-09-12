@@ -11,7 +11,7 @@
 
 import { readConfig } from './config_source.mjs';
 import { loadDefinitions } from '../dist/definitions.js';
-import { configureEngine, newMatch, makePlan, opponentPlan, resolveTurn, CARDS } from '../dist/engine.js';
+import { configureEngine, configureStrategies, newMatch, makePlan, opponentPlan, resolveTurn, CARDS } from '../dist/engine.js';
 import { createFighter } from '../dist/fighter.js';
 import { createTrainingState, runWeek, applyGains } from '../dist/growth.js';
 import { createRngSet } from '../dist/rng.js';
@@ -21,6 +21,20 @@ import { ALL_BASE_PARAMETERS } from '../dist/fighter-schema.js';
 
 const definitions = await loadDefinitions(readConfig);
 configureEngine(definitions);
+
+// `node tools/balance.mjs combat 40 equilibrium` measures against the solved AI instead of
+// the hand-written patterns. A plan that dominates the fixed patterns often does not survive
+// an opponent that mixes.
+if (process.argv.includes('equilibrium')) {
+  const { readFile } = await import('node:fs/promises');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+  const root = dirname(dirname(fileURLToPath(import.meta.url)));
+  const tier = process.argv.find(a => ['apprentice', 'standard', 'contender', 'brutal'].includes(a)) ?? 'brutal';
+  const document = JSON.parse(await readFile(join(root, 'config', 'ai_strategies.json'), 'utf8'));
+  configureStrategies(document, tier);
+  console.log(`균형 AI(${tier})를 상대로 측정합니다.`);
+}
 
 const pct = (n, total) => total ? `${(100 * n / total).toFixed(1)}%` : '0%';
 const evenly = v => ({ base: Object.fromEntries(ALL_BASE_PARAMETERS.map(k => [k, v])) });

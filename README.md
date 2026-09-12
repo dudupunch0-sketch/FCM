@@ -28,6 +28,18 @@ npm test
 
 `config/`가 밸런스 데이터의 단일 원본입니다. 전투 수치는 코드가 아니라 `config/combat_prototype.json`에 있고, 값을 바꾸면 코드 수정 없이 결과가 바뀝니다. 로더가 각 설계 문서의 검증 기준을 실행하므로 잘못된 값은 파일과 경로를 지목하며 거부됩니다.
 
+## AI 보정
+
+전투 AI는 자가 대전으로 푼 균형 혼합전략입니다. 밸런스나 전투 코드가 바뀌면 저장된 전략은
+다른 게임의 정답이 되므로, 아래로 다시 계산합니다.
+
+```bash
+npm run calibrate:check
+```
+
+지문이 어긋나면 `npm run calibrate`로 재계산합니다. 자세한 내용은
+[자가 대전 균형과 AI 난이도 보정](docs/design/34_ai_equilibrium.md)에 있습니다.
+
 ## 문서
 
 - [독립 캐릭터 모델 초안과 미리보기](assets/characters/rook/README.md)
@@ -36,6 +48,7 @@ npm test
 - [콤보 전투와 정보 카드 설계](docs/design/18_combo_turn_combat_and_information_cards.md)
 - [플랫폼 선택, 구현 범위, 임시 판정 규칙과 한계](docs/design/19_combat_prototype_implementation.md)
 - [전투 거리 모델](docs/design/22_combat_range_model.md)
+- [난이도](docs/design/33_difficulty.md)와 [자가 대전 균형 보정](docs/design/34_ai_equilibrium.md)
 - [라운드 구조와 판정 집계](docs/design/23_round_structure_and_judging.md)
 - [Base → Derived 매핑](docs/design/24_base_to_derived_mapping.md)과 [Effective Performance 계층](docs/design/25_effective_performance.md)
 

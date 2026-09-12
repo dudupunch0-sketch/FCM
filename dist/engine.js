@@ -17,6 +17,9 @@ let SUBBEAT = null;
 let RANGE = null;
 let FIRST_STRIKE = null;
 let REVEAL = null;
+// Solved equilibrium mixtures, when calibration output is loaded. Falls back to fixed
+// patterns so the engine still runs before anyone has run the calibration tool.
+let STRATEGY_MIX = null;
 let MODIFIERS = null;
 let VARIANCE = 0;
 let DEFAULTS = null;
@@ -44,6 +47,7 @@ export function configureEngine(definitions) {
   RANGE = cfg.range;
   FIRST_STRIKE = cfg.firstStrike;
   REVEAL = cfg.reveal;
+  STRATEGY_MIX = null;
   MODIFIERS = cfg.modifiers;
   VARIANCE = definitions?.configs?.action_resolution?.randomness?.impact_variance ?? 0;
   DEFAULTS = cfg.fighterDefaults;
@@ -156,11 +160,46 @@ function impactVariance(match,tick,actor){
   return 1+(roll+second-1)*VARIANCE;
 }
 
-function random(seed){let x=seed|0;return ()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return (x>>>0)/4294967296;};}
+// xorshift32 is strongly correlated across nearby seeds on its first outputs: consecutive
+// seeds alternated between roughly 0.94 and 0.47, so plan selection was effectively binary.
+// Discarding a few outputs decorrelates the stream before anything reads it.
+function random(seed){
+  let x=(seed|0)||0x9e3779b9;
+  const next=()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return (x>>>0)/4294967296;};
+  next();next();next();
+  return next;
+}
 // Only the match state is accepted. The current player's editable plan is never an input.
+// Loads a solved mixture for one difficulty tier. Spec: docs/design/34_ai_equilibrium.md.
+export function configureStrategies(document, tier){
+  required();
+  if(!document){STRATEGY_MIX=null;return null;}
+  const spec=document.tiers?.[tier];
+  if(!spec)throw Error(`전략 문서에 ${tier} 등급이 없습니다`);
+  const entries=spec.mixture.filter(e=>e.weight>0);
+  if(!entries.length)throw Error(`${tier} 혼합전략이 비어 있습니다`);
+  for(const entry of entries)for(const id of entry.plan)if(!CARDS[id])throw Error(`전략이 사라진 카드를 참조합니다: ${id}`);
+  const total=entries.reduce((n,e)=>n+e.weight,0);
+  STRATEGY_MIX={tier,entries,total};
+  return STRATEGY_MIX;
+}
+
+export function activeStrategy(){return STRATEGY_MIX?{tier:STRATEGY_MIX.tier,size:STRATEGY_MIX.entries.length}:null;}
+
 export function opponentPlan(match){
   required();
   const rng=random(match.seed+match.turn*7919);
+  // A solved mixture replaces the fixed patterns when one is loaded. Sampling still comes
+  // from the match seed, so the plan stays reproducible and is still committed before any
+  // information is revealed.
+  if(STRATEGY_MIX&&!(STATUS.groggyPlanBias&&match.fighters[1].status==='groggy')&&match.fighters[1].stamina>=LOW_STAMINA.threshold){
+    let roll=rng()*STRATEGY_MIX.total;
+    for(const entry of STRATEGY_MIX.entries){
+      roll-=entry.weight;
+      if(roll<=0)return makePlan([...entry.plan]);
+    }
+    return makePlan([...STRATEGY_MIX.entries.at(-1).plan]);
+  }
   const patterns=PATTERNS[match.profile];
   const ids=[...patterns[match.turn===1?0:Math.floor(rng()*patterns.length)]];
   // The opponent plans knowing its own carried-over state. Without this the carryover from

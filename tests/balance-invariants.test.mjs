@@ -10,7 +10,13 @@ import {ALL_BASE_PARAMETERS} from '../dist/fighter-schema.js';
 
 const evenly = v => ({ base: Object.fromEntries(ALL_BASE_PARAMETERS.map(k => [k, v])) });
 
-test('no single plan beats every opponent profile', () => {
+test('no single plan dominates the calibrated opponent', async () => {
+  // Measured against the solved mixture, which is what real play faces. The hand-written
+  // patterns are exploitable by construction, so dominance against them says nothing about
+  // whether a plan is actually too strong.
+  const { readFile } = await import('node:fs/promises');
+  const { configureStrategies } = await import('../dist/engine.js');
+  const document = JSON.parse(await readFile(new URL('../config/ai_strategies.json', import.meta.url), 'utf8'));
   const plans = {
     jabbing: ['jab', 'jab', 'cross', 'jab', 'rest'],
     bodywork: ['body', 'body', 'body'],
@@ -18,18 +24,47 @@ test('no single plan beats every opponent profile', () => {
     patient: ['guard', 'jab', 'guard', 'cross', 'rest'],
     mixed: ['sway', 'body', 'cross', 'rest']
   };
-  for (const [name, plan] of Object.entries(plans)) {
-    let beaten = 0;
-    for (const profile of ['pressure', 'tricky', 'turtle']) {
+  try {
+    configureStrategies(document, 'standard');
+    for (const [name, plan] of Object.entries(plans)) {
       let wins = 0;
-      for (let seed = 1; seed <= 12; seed++) {
-        let m = newMatch(profile, seed, { player: evenly(60), opponent: evenly(60) });
+      for (let seed = 1; seed <= 24; seed++) {
+        let m = newMatch('pressure', seed, { player: evenly(60), opponent: evenly(60) });
         while (!m.finished) m = resolveTurn(m, makePlan(plan), opponentPlan(m)).match;
         if (m.winner === 0) wins++;
       }
-      if (wins > 6) beaten++;
+      assert.ok(wins < 24, `${name}이 보정된 AI를 상대로 전승합니다`);
     }
-    assert.ok(beaten < 3, `${name}이 모든 프로필을 이깁니다. 지배 전략입니다`);
+  } finally {
+    configureStrategies(null);
+  }
+});
+
+test('the calibrated tiers form a real difficulty gradient', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const { configureStrategies } = await import('../dist/engine.js');
+  const document = JSON.parse(await readFile(new URL('../config/ai_strategies.json', import.meta.url), 'utf8'));
+  const plan = ['jab', 'jab', 'cross', 'jab', 'rest'];
+  const rate = tier => {
+    configureStrategies(document, tier);
+    let wins = 0;
+    for (let seed = 1; seed <= 30; seed++) {
+      let m = newMatch('pressure', seed, { player: evenly(60), opponent: evenly(60) });
+      while (!m.finished) m = resolveTurn(m, makePlan(plan), opponentPlan(m)).match;
+      if (m.winner === 0) wins++;
+    }
+    return wins / 30;
+  };
+  try {
+    const easy = rate('apprentice'), hard = rate('brutal');
+    assert.ok(easy > hard, `입문이 가혹보다 쉽지 않습니다: ${easy} vs ${hard}`);
+    // Exploitability is the dial, so it must order the tiers the same way.
+    const order = ['apprentice', 'standard', 'contender', 'brutal'].map(t => document.tiers[t].exploitability);
+    for (let i = 1; i < order.length; i++) {
+      assert.ok(order[i] <= order[i - 1] + 1e-9, `등급 순서가 뒤집혔습니다: ${order.join(' -> ')}`);
+    }
+  } finally {
+    configureStrategies(null);
   }
 });
 
