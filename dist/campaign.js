@@ -9,13 +9,17 @@ import { createWorld, applyFightResult, rankOf, isChampion, titleEligibility, ti
 import { createLedger, payPurse, weeklyCosts, createFacilities } from './organisation.js';
 
 import { resolveDifficulty, adjustStartCash, adjustOverhead, adjustInterpreterSkill } from './difficulty.js';
+import { configureStrategies } from './engine.js';
 
 export const PART1 = 'part1';
 export const PART2 = 'part2';
 export const COMPLETE = 'complete';
 
-export function startCampaign(definitions, rng, spec, { difficulty = null } = {}) {
+export function startCampaign(definitions, rng, spec, { difficulty = null, strategies = null } = {}) {
   const tier = resolveDifficulty(definitions, difficulty ?? spec.difficulty ?? null);
+  // A campaign must face the opponent the game actually ships. Leaving it on the hand-written
+  // patterns measured the career against a weaker AI than a player ever meets.
+  if (strategies) configureStrategies(strategies, tier.id);
   const club = createClub(definitions, rng, { difficulty: tier });
   const ledger = createLedger(definitions);
   ledger.management_cash = adjustStartCash(ledger.management_cash, tier);
@@ -33,15 +37,32 @@ export function startCampaign(definitions, rng, spec, { difficulty = null } = {}
     fighterState: { rung: 'newcomer', record: { wins: 0, losses: 0 }, ticket_power: definitions.configs.world.ticket_power.start, streak: 0 },
     contractShare: spec.share ?? definitions.configs.world.contract.management_share.default,
     plan: spec.plan ?? DEFAULT_PLAN,
+    // A career is not one plan repeated for years. When a solved mixture is available the
+    // fighter draws from it each bout, so the campaign measures career development rather
+    // than the quality of a single sequence — which otherwise decides every run outright.
+    heroMixture: spec.plan ? null : (strategies?.tiers?.[tier.id]?.mixture ?? null),
     history: [],
     lastFightWeek: -definitions.configs.world.club.fight_interval_weeks,
     completedWeek: null
   };
 }
 
+// Draws the fighter's plan for one bout. Deterministic: the campaign's own stream decides.
+function planFor(campaign) {
+  const mixture = campaign.heroMixture;
+  if (!mixture?.length) return campaign.plan;
+  const total = mixture.reduce((n, e) => n + e.weight, 0);
+  let roll = campaign.rng.next() * total;
+  for (const entry of mixture) {
+    roll -= entry.weight;
+    if (roll <= 0) return entry.plan;
+  }
+  return mixture.at(-1).plan;
+}
+
 const camp = ['technical_training', 'sparring', 'tactical_drill', 'recovery'];
 // Stands in for the player's tactical choices. A campaign may supply its own.
-const DEFAULT_PLAN = ['sway', 'body', 'cross', 'rest'];
+const DEFAULT_PLAN = ['sway','body','cross','rest'];
 
 function note(campaign, entry) {
   campaign.history.push({ week: campaign.week, part: campaign.part, ...entry });
@@ -60,7 +81,7 @@ function clubFight(campaign, { titleFight = false } = {}) {
         .sort((a, b) => Math.abs(a.level - ability) - Math.abs(b.level - ability))[0] ?? pool[0];
   const offer = makeOffer(campaign.club, opponent, { week: campaign.week, titleFight });
 
-  const result = takeFight(campaign.career, { seed: campaign.week + 1, profile: opponent.profile ?? 'pressure', plan: campaign.plan, opponent: { base: { punch_technique: opponent.level } } });
+  const result = takeFight(campaign.career, { seed: campaign.week + 1, profile: opponent.profile ?? 'pressure', plan: planFor(campaign), opponent: { base: { punch_technique: opponent.level } } });
   campaign.career = result.career;
   const won = result.match.winner === 0;
   const finished = result.match.method === 'KO' && won;
@@ -76,7 +97,7 @@ function clubFight(campaign, { titleFight = false } = {}) {
 // The reveal fight is what first shows the wider world.
 function revealFight(campaign) {
   campaign.lastFightWeek = campaign.week;
-  const result = takeFight(campaign.career, { seed: campaign.week + 77, plan: campaign.plan, opponent: { base: { punch_technique: 78 } } });
+  const result = takeFight(campaign.career, { seed: campaign.week + 77, plan: planFor(campaign), opponent: { base: { punch_technique: 78 } } });
   campaign.career = result.career;
   const won = result.match.winner === 0;
   note(campaign, { type: 'reveal_fight', won });
@@ -108,7 +129,7 @@ function worldFight(campaign, { titleFight = false } = {}) {
   const opponent = world.fighters[opponentId];
 
   const profiles = ['pressure', 'tricky', 'turtle'];
-  const result = takeFight(campaign.career, { seed: campaign.week + 31, profile: profiles[opponentId.length % 3], plan: campaign.plan, opponent: { base: { punch_technique: opponent.level } } });
+  const result = takeFight(campaign.career, { seed: campaign.week + 31, profile: profiles[opponentId.length % 3], plan: planFor(campaign), opponent: { base: { punch_technique: opponent.level } } });
   campaign.career = result.career;
   const won = result.match.winner === 0;
   const finished = result.match.method === 'KO' && won;

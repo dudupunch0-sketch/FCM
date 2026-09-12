@@ -480,19 +480,20 @@
     "counter": 1.6,
     "exposed": 1.18,
     "staminaFloor": 0.5,
-    "note": "The balance values that used to live in the power and effect formulas. bodyStaminaDrain was the strongest single number in the game: body shots drained the opponent to zero, where every action fails, so a body-only plan won every fight by attrition.",
+    "note": "Head work is the damage and KO path; body work is the attrition path. A body shot takes stamina, so an opponent who neglects body defence gradually cannot act: costs go unpaid, actions fail, guards break. This was briefly tuned down to 0.35 while chasing a body plan that won every fight, but that turned out to be the saturated-part scoring bug, and the lower value had quietly cost body work its identity.",
     "blockLeak": 0.18,
     "blockArmScaling": 500,
     "armDamageRatio": 1.5,
-    "bodyStaminaDrain": 0.35,
+    "bodyStaminaDrain": 0.5,
     "evadeScore": 2,
     "blockScore": 1,
     "scoreByTarget": {
       "head": 1.0,
       "body": 0.55
     },
-    "note_score": "Judges reward clean head work over body work. Without this the body attack is strictly best: it is unblockable by a head guard, undodgeable by either evasion, and scored the same.",
-    "note_leak": "Per-card block leak. A long guard covers more time but blocks coarsely, so it leaks more per hit. Tuning cost alone produced a cliff: either the guard was affordable and total, or unaffordable and fatal."
+    "note_score": "Judges reward clean head work over body work, which is why head scores higher. Body earns its place through the stamina it takes, not through points.",
+    "note_leak": "Per-card block leak. A long guard covers more time but blocks coarsely, so it leaks more per hit. Tuning cost alone produced a cliff: either the guard was affordable and total, or unaffordable and fatal.",
+    "note_drain": "Tuning this is a narrow band. At 0.35 body work took nothing worth noticing; at 0.7 body plans took roughly half the equilibrium and killed four cards. 0.5 leaves an opponent who ignores body defence visibly drained without making body the answer to everything."
   },
   "style_cards": {
     "note": "Style Skill Cards: conditional passive traits, not timeline placements. Spec: docs/design/31_information_economy_and_placement.md. Each must express a different axis, or it is not a choice.",

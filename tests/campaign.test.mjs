@@ -12,7 +12,9 @@ const talent=()=>({
   body:{natural_weight:75,current_weight:75,age:22,stance:'orthodox'},
   potential:{overall_talent:88,physical_aptitude:85,striking_aptitude:92,grappling_aptitude:70,combat_intelligence_aptitude:85}
 });
-const start=seed=>startCampaign(definitions,createRngSet(seed,definitions).stream('world_generation'),talent());
+// The campaign must face the opponent the game ships, not the fallback patterns.
+const strategies=JSON.parse(await (await import('node:fs/promises')).readFile(new URL('../config/ai_strategies.json',import.meta.url),'utf8'));
+const start=seed=>startCampaign(definitions,createRngSet(seed,definitions).stream('world_generation'),talent(),{strategies});
 // Completion is no longer guaranteed, so tests that need a finished run find one rather than
 // assuming a fixed seed always wins.
 const completedRun=()=>{
@@ -118,8 +120,12 @@ test('the ladder label tracks the real stage rather than a stored string',()=>{
 });
 
 test('narrative completion is an achievement, not a guarantee',()=>{
+  // Both sides draw competent plans, so the career decides rather than one fixed sequence.
+  // The rate is low enough that a ten-seed sample would sometimes read zero; twenty-four is
+  // the smallest window that distinguishes "rare" from "impossible".
+  const seeds=24;
   let completed=0;
-  for(let seed=1;seed<=10;seed++)if(runCampaign(start(seed)).part===COMPLETE)completed++;
+  for(let seed=1;seed<=seeds;seed++)if(runCampaign(start(seed)).part===COMPLETE)completed++;
   assert.ok(completed>0,'어떤 시드도 완주하지 못합니다');
-  assert.ok(completed<10,'모든 시드가 완주합니다. 완료가 성취가 아닙니다');
+  assert.ok(completed<seeds,'모든 시드가 완주합니다. 완료가 성취가 아닙니다');
 });

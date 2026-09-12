@@ -183,6 +183,16 @@ function worldBatch(years = 10) {
 }
 
 // How long a full narrative completion takes, and how often it fails to arrive.
+const solvedStrategies = await (async () => {
+  try {
+    const { readFile } = await import('node:fs/promises');
+    const { fileURLToPath } = await import('node:url');
+    const { dirname, join } = await import('node:path');
+    const root = dirname(dirname(fileURLToPath(import.meta.url)));
+    return JSON.parse(await readFile(join(root, 'config', 'ai_strategies.json'), 'utf8'));
+  } catch { return null; }
+})();
+
 function campaignBatch(runs = 12) {
   const spec = {
     id: 'hero', name: 'hero', base: evenly(62).base,
@@ -191,7 +201,7 @@ function campaignBatch(runs = 12) {
   };
   let completed = 0, totalWeeks = 0, losses = 0;
   for (let seed = 1; seed <= runs; seed++) {
-    const campaign = runCampaign(startCampaign(definitions, createRngSet(seed, definitions).stream('world_generation'), spec));
+    const campaign = runCampaign(startCampaign(definitions, createRngSet(seed, definitions).stream('world_generation'), spec, { strategies: solvedStrategies }));
     if (campaign.part === COMPLETE) { completed++; totalWeeks += campaign.week; }
     losses += campaign.career.record.losses;
   }

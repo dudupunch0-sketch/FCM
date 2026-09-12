@@ -102,3 +102,28 @@ test('the world population survives a decade instead of collapsing', () => {
   assert.ok(active / all > 0.4, `10년 뒤 생존 ${active}/${all}. 인구가 붕괴합니다`);
   assert.ok(Object.values(world.fighters).some(f => !f.active), '아무도 은퇴하지 않습니다');
 });
+
+test('body work is the attrition path: neglecting body defence costs you the ability to act', () => {
+  // Head attacks carry damage and the KO; body attacks take stamina. A fighter who ignores
+  // body defence must gradually run out of the resource that pays for actions.
+  const drain = enemy => {
+    let m = newMatch('pressure', 3, { player: evenly(60), opponent: evenly(60) });
+    let failures = 0;
+    for (let t = 0; t < 6 && !m.finished; t++) {
+      const r = resolveTurn(m, makePlan(['flicker', 'body', 'body']), makePlan(enemy));
+      failures += r.frames.flatMap(f => f.events).filter(e => e.type === 'exhausted' && e.actor === 1).length;
+      m = r.match;
+    }
+    return { stamina: m.fighters[1].stamina, failures };
+  };
+  const ignored = drain(['shell', 'shell']);
+  const guarded = drain(['lowguard', 'guard', 'guard']);
+  assert.ok(ignored.stamina < guarded.stamina - 20,
+    `바디를 무시해도 스태미너가 버팁니다: ${ignored.stamina} vs ${guarded.stamina}`);
+  assert.ok(guarded.stamina > 60, `바디 가드가 소모를 막지 못합니다: ${guarded.stamina}`);
+});
+
+test('head work still outscores body work, so body is not simply better', () => {
+  const byTarget = definitions.configs.combat_prototype.modifiers.scoreByTarget;
+  assert.ok(byTarget.body < byTarget.head, '몸통이 머리보다 높은 배점을 받습니다');
+});
