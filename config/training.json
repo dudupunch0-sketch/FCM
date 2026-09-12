@@ -1,0 +1,56 @@
+{
+  "config_version": "0.1.0-draft",
+  "description": "Weekly calendar, training load, recovery debt and growth. Values are initial candidates, not balanced.",
+  "spec_reference": "docs/design/13_fight_camp_and_weekly_calendar.md",
+
+  "week": {
+    "slots": 6,
+    "note": "Activity slots per week. Training is limited by schedule, load and recovery rather than an arbitrary count."
+  },
+
+  "activities": {
+    "growth_training":  { "load": 3.0, "stress": 0.6, "recovery": -0.2, "growth": 1.0, "techniqueExp": 0.3, "sharpness": 0.1, "injuryRisk": 0.5 },
+    "technical_training": { "load": 2.0, "stress": 0.3, "recovery": -0.1, "growth": 0.4, "techniqueExp": 1.0, "sharpness": 0.5, "injuryRisk": 0.2 },
+    "sparring":         { "load": 4.0, "stress": 1.0, "recovery": -0.4, "growth": 0.6, "techniqueExp": 1.6, "sharpness": 1.0, "injuryRisk": 1.5 },
+    "tactical_drill":   { "load": 1.5, "stress": 0.3, "recovery": -0.1, "growth": 0.2, "techniqueExp": 0.4, "sharpness": 0.6, "injuryRisk": 0.1 },
+    "video_analysis":   { "load": 0.5, "stress": 0.2, "recovery": 0.0,  "growth": 0.1, "techniqueExp": 0.1, "sharpness": 0.2, "injuryRisk": 0.0 },
+    "recovery":         { "load": 0.0, "stress": -0.8, "recovery": 1.5, "growth": 0.0, "techniqueExp": 0.0, "sharpness": -0.1, "injuryRisk": 0.0 },
+    "weight_management":{ "load": 1.0, "stress": 0.8, "recovery": -0.2, "growth": 0.0, "techniqueExp": 0.0, "sharpness": 0.0, "injuryRisk": 0.2 },
+    "personal":         { "load": 0.0, "stress": -1.2, "recovery": 0.6, "growth": 0.0, "techniqueExp": 0.0, "sharpness": -0.2, "injuryRisk": 0.0 }
+  },
+
+  "recovery_debt": {
+    "weekly_capacity_base": 8.0,
+    "cardio_weight": 0.5,
+    "age_penalty_per_year_over": 0.12,
+    "age_threshold": 30,
+    "max": 20,
+    "note": "Load beyond capacity accumulates. Debt suppresses growth, raises injury risk and worsens readiness."
+  },
+
+  "growth": {
+    "base_rate": 0.55,
+    "aptitude_weight": 1.0,
+    "age_decline_start": 31,
+    "age_decline_per_year": 0.06,
+    "debt_penalty": 0.05,
+    "stress_penalty": 0.03,
+    "proximity_exponent": 2.4,
+    "note": "proximity_exponent shapes the curve near the potential ceiling: efficiency collapses but never reaches zero, so a ceiling is soft rather than hard."
+  },
+
+  "technique_exp": {
+    "training_unit": 1.0,
+    "match_multiplier": 10.0,
+    "finish_bonus": 45.0,
+    "note": "Real fights teach far more than training. The 10x ratio is the documented starting point, kept as a parameter."
+  },
+
+  "breakthrough": {
+    "threshold": 100,
+    "proximity_required": 0.85,
+    "adversity_gain": 28,
+    "upset_gain": 40,
+    "note": "Progress is tracked internally and never shown directly in the UI."
+  }
+}

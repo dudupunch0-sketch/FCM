@@ -1038,6 +1038,7 @@ Definition Data이므로 `dist/`가 아니라 저장소 루트 `config/`에 둔�
 | `information_cards.json` | 공개 예산, 중첩 상한, 배치 규칙 | `docs/design/31_*.md` |
 | `save.json` | 저장 대상, 버전 정책, RNG 스트림, 히스토리 보존 | `docs/design/32_*.md` |
 | `combat_prototype.json` | 시제품 전투 수치·카드·상대 패턴 | `docs/design/19_*.md` |
+| `training.json` | 주간 활동, 회복 부채, 성장 곡선, 기술 EXP | `docs/design/13_*.md` |
 
 Definition Data Loader(`dist/definitions.js`)가 이 파일들을 읽고 각 설계 문서의 검증 기준을 실행한 뒤
 결과를 깊게 동결한다. 잘못된 값은 파일과 경로를 지목하며 거부된다.
@@ -1046,7 +1047,9 @@ Definition Data Loader(`dist/definitions.js`)가 이 파일들을 읽고 각 설
 `dist/config/`는 정적 서버용 생성 사본이고 `config/`가 단일 원본이다.
 `derived_capability`와 `effective_performance`는 실제 전투 판정에 연결되어 있다. 선수 능력치가 위력·회피·가드·타격 시점에 반영되며
 양측 기본 선수는 동일하므로 연결 자체가 밸런스를 바꾸지 않는다. 선수별 수치 차이는 코드가 아니라 Config에서 준다.
-Setup/Combat Memory와 훈련·성장 루프는 아직 미연결이며, 이 구간은 명세가 코드를 앞선 상태다.
+Setup/Combat Memory(`dist/combat-memory.js`)와 훈련·성장 루프(`dist/growth.js`)도 연결되었고,
+`dist/career.js`가 한 선수의 훈련 → 경기 → 손상·성장 → 다음 주 루프를 잇는다.
+아직 미연결: 스카우팅·계약, Staff/위임, 경제, Part 1 클럽 구조, Part 2 월드. 이 구간은 명세가 코드를 앞선 상태다.
 
 ## 저장과 재현성
 세부 기준: `docs/design/32_save_versioning_and_determinism.md`

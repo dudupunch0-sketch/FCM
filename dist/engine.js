@@ -1,4 +1,5 @@
 import {createFighter,createCondition,computeDerived,computeEffective} from './fighter.js';
+import {createMemory,recordPlan,setupModifier,serializeMemory,restoreMemory} from './combat-memory.js';
 
 // Pure combat rules. No DOM, animation clock, storage, or player-draft access.
 // Balance data comes from config/combat_prototype.json through configureEngine.
@@ -125,7 +126,7 @@ export function newMatch(profile='pressure',seed=17,options={}){
   const built=[fighter('도전자',options.player??{}),fighter(PROFILES[profile].name,options.opponent??{})];
   // Without full Definition Data the engine still runs; stats simply do not participate.
   for(const x of built)if(x.stats&&DEFINITIONS)x.derived=computeDerived(x.stats,DEFINITIONS,{referenceWeight:x.stats.body.natural_weight});
-  return {turn:1,seed,profile,gap:RANGE.initial,fighters:built,lastPlans:null,lastEvaded:[false,false],roundResults:[],roundBaseline:[0,0],finished:false,winner:null,method:null};
+  return {turn:1,seed,profile,gap:RANGE.initial,memory:DEFINITIONS?serializeMemory(createMemory(DEFINITIONS)):null,fighters:built,lastPlans:null,lastEvaded:[false,false],roundResults:[],roundBaseline:[0,0],finished:false,winner:null,method:null};
 }
 export function span(ids){return ids.reduce((n,id)=>n+(CARDS[id]?.duration??99),0);}
 export function makePlan(ids){
@@ -208,6 +209,8 @@ export function resolveTurn(input,playerPlan,enemyPlan){
   validatePlan(playerPlan);validatePlan(enemyPlan);
   if(input.finished)throw Error('종료된 경기');
   const match=structuredClone(input),plans=structuredClone([playerPlan,enemyPlan]),frames=[];
+  // Memory carries across combos like every other observation; a round boundary does not clear it.
+  const memory=DEFINITIONS&&match.memory?restoreMemory(DEFINITIONS,match.memory):null;
   const f=match.fighters,failed=[new Set(),new Set()];
   f.forEach(x=>{x.evaded=false;x.counterUntil=-1;x.openUntil=-1;});
   for(let tick=0;tick<RULES.slots;tick++){
@@ -248,12 +251,13 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       const mismatch=dc.kind==='evade'&&!dodged;
       const reach=rangeFactor(match.gap,c);
       const attackerEffective=effectiveOf(before[i]),defenderEffective=effectiveOf(before[j]);
+      const setup=memory?setupModifier(memory,j,active[i].start,p.id,before[j].stats?before[j].stats.base.fight_iq:60):{factor:1,read:false,broken:false,confidence:0};
       let power=c.power*(0.5+0.5*before[i].stamina/100)*(counter?1.4:1)*(isOpen||recovery||mismatch?1.2:1)*reach
-        *ratio(attackerEffective,'impact');
+        *ratio(attackerEffective,'impact')*setup.factor;
       if(blocked)power/=Math.max(ratio(defenderEffective,'guard'),0.2);
       if(blocked)power*=0.18+before[j].damage.arms/500;
       if(impaired)power*=1+STATUS.groggyDefensePenalty;
-      effects.push({type:blocked?'block':'hit',actor:i,target:j,power:round(power),targetPart:c.target,counter,guardBreak:guarding&&!blocked,setup:isOpen,recovery,at:impactPosition(c,before[i]),reach:round(reach)});
+      effects.push({type:blocked?'block':'hit',actor:i,target:j,power:round(power),targetPart:c.target,counter,guardBreak:guarding&&!blocked,setup:isOpen,read:setup.read,patternBreak:setup.broken,readConfidence:round(setup.confidence),recovery,at:impactPosition(c,before[i]),reach:round(reach)});
     }
     // Impacts within the tolerance share the snapshot and apply together, so a double KO stays
     // reachable. A strictly earlier one applies first and weakens the later, never erases it.
@@ -292,6 +296,7 @@ export function resolveTurn(input,playerPlan,enemyPlan){
     frames.push({tick,poses,events,fighters:structuredClone(f),finished:match.finished});
     if(match.finished)break;
   }
+  if(memory){recordPlan(memory,0,plans[1],match.turn);recordPlan(memory,1,plans[0],match.turn);match.memory=serializeMemory(memory);}
   match.lastPlans=plans;match.lastEvaded=f.map(x=>x.evaded);
   if(!match.finished){
     const roundEnd=isRoundEnd(match.turn);

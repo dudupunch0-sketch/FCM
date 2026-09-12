@@ -6,7 +6,7 @@ import { ALL_BASE_PARAMETERS, DERIVED_CAPABILITIES, isBaseParameter, isDerivedCa
 
 export const CONFIG_FILES = Object.freeze([
   'derived_capability', 'effective_performance', 'action_resolution',
-  'grappling', 'combat_ai', 'knowledge', 'information_cards', 'save', 'combat_prototype'
+  'grappling', 'combat_ai', 'knowledge', 'information_cards', 'save', 'combat_prototype', 'training'
 ]);
 
 const EPSILON = 1e-9;
@@ -239,6 +239,33 @@ const validators = {
     requireNumber(file, 'placement.card_duration_range[0]', lo, { min: 1 });
     requireNumber(file, 'placement.card_duration_range[1]', hi, { min: lo, max: placement.slots });
     if (placement.overflow_policy !== 'reject') fail(file, 'placement.overflow_policy', '초과 배치는 거부해야 합니다');
+  },
+
+  // docs/design/13_fight_camp_and_weekly_calendar.md, roadmap Phase 5
+  training(file, cfg) {
+    requireNumber(file, 'week.slots', cfg.week?.slots, { min: 1 });
+    const activities = requireObject(file, 'activities', cfg.activities);
+    if (!dataKeys(activities).length) fail(file, 'activities', '활동이 비어 있습니다');
+    for (const id of dataKeys(activities)) {
+      for (const key of ['load', 'stress', 'recovery', 'growth', 'techniqueExp', 'injuryRisk']) {
+        requireNumber(file, `activities.${id}.${key}`, activities[id][key]);
+      }
+      if (activities[id].load < 0) fail(file, `activities.${id}.load`, '음수 부하는 허용되지 않습니다');
+    }
+    if (!activities.recovery || activities.recovery.recovery <= 0) fail(file, 'activities.recovery', '회복 활동이 필요합니다');
+    const debt = requireObject(file, 'recovery_debt', cfg.recovery_debt);
+    requireNumber(file, 'recovery_debt.weekly_capacity_base', debt.weekly_capacity_base, { min: 0.1 });
+    requireNumber(file, 'recovery_debt.max', debt.max, { min: 1 });
+    const growth = requireObject(file, 'growth', cfg.growth);
+    requireNumber(file, 'growth.base_rate', growth.base_rate, { min: 0 });
+    requireNumber(file, 'growth.proximity_exponent', growth.proximity_exponent, { min: 1 });
+    const exp = requireObject(file, 'technique_exp', cfg.technique_exp);
+    requireNumber(file, 'technique_exp.match_multiplier', exp.match_multiplier, { min: 1 });
+    if (exp.match_multiplier <= 1) fail(file, 'technique_exp.match_multiplier', '실전이 훈련보다 많이 줘야 합니다');
+    requireNumber(file, 'technique_exp.finish_bonus', exp.finish_bonus, { min: 0 });
+    const breakthrough = requireObject(file, 'breakthrough', cfg.breakthrough);
+    requireNumber(file, 'breakthrough.threshold', breakthrough.threshold, { min: 1 });
+    requireNumber(file, 'breakthrough.proximity_required', breakthrough.proximity_required, { min: 0, max: 1 });
   },
 
   // docs/design/19_combat_prototype_implementation.md
