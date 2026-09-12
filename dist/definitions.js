@@ -248,6 +248,24 @@ const validators = {
       requireNumber(file, `rules.${key}`, rules[key], { min: 0 });
     }
     if (rules.staggerDamage >= rules.koDamage) fail(file, 'rules.staggerDamage', 'koDamage보다 작아야 합니다');
+    const rounds = requireObject(file, 'rounds', cfg.rounds);
+    requireNumber(file, 'rounds.count', rounds.count, { min: 1 });
+    requireNumber(file, 'rounds.turnsPerRound', rounds.turnsPerRound, { min: 1 });
+    if (rounds.count * rounds.turnsPerRound !== rules.maxTurns) {
+      fail(file, 'rounds', `count × turnsPerRound가 maxTurns와 달라서는 안 됩니다: ${rounds.count}×${rounds.turnsPerRound} vs ${rules.maxTurns}`);
+    }
+    const status = requireObject(file, 'status', cfg.status);
+    requireNumber(file, 'status.staggerRatio', status.staggerRatio, { min: 0, max: 1 });
+    requireNumber(file, 'status.groggyRecoverySlots', status.groggyRecoverySlots, { min: 1, max: rules.slots });
+    requireNumber(file, 'status.staggerRecoverySlots', status.staggerRecoverySlots, { min: 1, max: rules.slots });
+    requireNumber(file, 'status.groggyDefensePenalty', status.groggyDefensePenalty, { min: 0, max: 1 });
+    if (status.groggyPlanBias !== true) {
+      fail(file, 'status.groggyPlanBias', '이월과 그로기 방어 편향은 함께 있어야 합니다. 없으면 이월이 일방적으로 기웁니다');
+    }
+    const interval = requireObject(file, 'intervalRecovery', cfg.intervalRecovery);
+    requireNumber(file, 'intervalRecovery.fraction', interval.fraction, { min: 0, max: 1 });
+    requireNumber(file, 'intervalRecovery.cap', interval.cap, { min: 1, max: rules.maxStamina });
+    if (interval.cap >= rules.maxStamina) fail(file, 'intervalRecovery.cap', '완전 회복은 허용되지 않습니다');
     const cards = requireObject(file, 'cards', cfg.cards);
     const kinds = new Set(['attack', 'guard', 'evade', 'feint', 'rest']);
     for (const id of dataKeys(cards)) {

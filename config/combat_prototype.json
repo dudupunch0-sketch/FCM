@@ -16,6 +16,27 @@
     "staggerImpact": 16
   },
 
+  "rounds": {
+    "count": 3,
+    "turnsPerRound": 4,
+    "note": "A round is a fixed number of combo turns per docs/design/23_round_structure_and_judging.md. count * turnsPerRound must equal rules.maxTurns."
+  },
+
+  "status": {
+    "note": "Prototype status model. The full model compares impact against effective_durability; here absolute damage stands in until fighter stats are wired into combat.",
+    "staggerRatio": 0.6,
+    "staggerRecoverySlots": 2,
+    "groggyRecoverySlots": 4,
+    "groggyDefensePenalty": 0.35,
+    "groggyPlanBias": true
+  },
+
+  "intervalRecovery": {
+    "fraction": 0.35,
+    "cap": 85,
+    "note": "Between-round recovery. Larger than betweenRecovery and capped below full, per docs/design/23 section 3."
+  },
+
   "cards": {
     "jab": { "name": "잽", "short": "잽", "kind": "attack", "duration": 1, "impact": 0, "cost": 7, "power": 8, "target": "head", "trajectory": "straight", "description": "빠른 머리 공격. 빈틈을 찌르세요." },
     "cross": { "name": "크로스", "short": "크로스", "kind": "attack", "duration": 2, "impact": 1, "cost": 13, "power": 19, "target": "head", "trajectory": "straight", "description": "다음 박자에 타격. 회피 직후 카운터에 적합." },

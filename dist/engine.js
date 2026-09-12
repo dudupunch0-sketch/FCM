@@ -7,6 +7,9 @@ export let SKILLS = null;
 export let PROFILES = null;
 let PATTERNS = null;
 let LOW_STAMINA = null;
+let ROUNDS = null;
+let STATUS = null;
+let INTERVAL = null;
 
 const required = () => {
   if (!RULES) throw Error('전투 엔진이 설정되지 않았습니다. configureEngine(definitions)를 먼저 호출하세요');
@@ -22,14 +25,34 @@ export function configureEngine(definitions) {
   PROFILES = Object.freeze(cfg.profiles);
   PATTERNS = cfg.patterns;
   LOW_STAMINA = cfg.low_stamina_plan;
+  ROUNDS = cfg.rounds;
+  STATUS = cfg.status;
+  INTERVAL = cfg.intervalRecovery;
   return { RULES, CARDS, SKILLS, PROFILES };
 }
 
-export function fighter(name){return {name,stamina:100,damage:{head:0,body:0,arms:0},score:0,counterUntil:-1,openUntil:-1,evaded:false,ko:false};}
+export function fighter(name){return {name,stamina:100,damage:{head:0,body:0,arms:0},score:0,counterUntil:-1,openUntil:-1,statusUntil:-1,status:'normal',evaded:false,ko:false};}
+
+// A combo boundary is uninterrupted action, so short-lived effects are not truncated by it:
+// a window opened at slot 7 continues into the next combo. Spec: docs/design/30 section 2.
+const carryTick=v=>v>=RULES.slots?v-RULES.slots:-1;
+
+// A round boundary is real rest. Windows expire and stamina partially recovers, never fully.
+function endRound(f){
+  for(const x of f){
+    x.counterUntil=-1;x.openUntil=-1;x.statusUntil=-1;x.status='normal';
+    // The cap limits how far recovery can take you, it does not drag a healthier fighter down.
+    const recovered=x.stamina+RULES.maxStamina*INTERVAL.fraction*(1-x.damage.body/200);
+    x.stamina=round(clamp(Math.max(x.stamina,Math.min(recovered,INTERVAL.cap)),0,RULES.maxStamina));
+  }
+}
+
+export function roundOf(turn){return Math.floor((turn-1)/ROUNDS.turnsPerRound)+1;}
+export function isRoundEnd(turn){return turn%ROUNDS.turnsPerRound===0;}
 export function newMatch(profile='pressure',seed=17){
   required();
   if(!PROFILES[profile]) throw Error('알 수 없는 상대');
-  return {turn:1,seed,profile,fighters:[fighter('도전자'),fighter(PROFILES[profile].name)],lastPlans:null,lastEvaded:[false,false],finished:false,winner:null,method:null};
+  return {turn:1,seed,profile,fighters:[fighter('도전자'),fighter(PROFILES[profile].name)],lastPlans:null,lastEvaded:[false,false],roundResults:[],roundBaseline:[0,0],finished:false,winner:null,method:null};
 }
 export function span(ids){return ids.reduce((n,id)=>n+(CARDS[id]?.duration??99),0);}
 export function makePlan(ids){
@@ -53,6 +76,9 @@ export function opponentPlan(match){
   const rng=random(match.seed+match.turn*7919);
   const patterns=PATTERNS[match.profile];
   const ids=[...patterns[match.turn===1?0:Math.floor(rng()*patterns.length)]];
+  // The opponent plans knowing its own carried-over state. Without this the carryover from
+  // doc 30 hands over free hits; the two rules only balance together.
+  if(STATUS.groggyPlanBias&&match.fighters[1].status==='groggy'){return makePlan([...LOW_STAMINA.actions]);}
   if(match.fighters[1].stamina<LOW_STAMINA.threshold){return makePlan([...LOW_STAMINA.actions]);}
   return makePlan(ids);
 }
@@ -105,7 +131,8 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       const p=active[i],c=CARDS[p.id],j=1-i,dc=CARDS[active[j].id];
       if(c.kind!=='attack'||tick!==p.start+c.impact||poses[i].failed)continue;
       const isOpen=before[j].openUntil>=tick;
-      const dodged=!poses[j].failed&&!isOpen&&dc.kind==='evade'&&dc.dodges.includes(c.trajectory);
+      const impaired=before[j].status==='groggy'&&before[j].statusUntil>=tick;
+      const dodged=!poses[j].failed&&!isOpen&&!impaired&&dc.kind==='evade'&&dc.dodges.includes(c.trajectory);
       if(dodged){effects.push({type:'evade',actor:j,target:i});continue;}
       const guarding=!poses[j].failed&&!isOpen&&dc.kind==='guard'&&dc.protect===c.target;
       const blocked=guarding&&before[j].stamina>=RULES.guardDrain;
@@ -114,6 +141,7 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       const mismatch=dc.kind==='evade'&&!dodged;
       let power=c.power*(0.5+0.5*before[i].stamina/100)*(counter?1.4:1)*(isOpen||recovery||mismatch?1.2:1);
       if(blocked)power*=0.18+before[j].damage.arms/500;
+      if(impaired)power*=1+STATUS.groggyDefensePenalty;
       effects.push({type:blocked?'block':'hit',actor:i,target:j,power:round(power),targetPart:c.target,counter,guardBreak:guarding&&!blocked,setup:isOpen,recovery});
     }
     for(const e of effects){
@@ -127,7 +155,11 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       if(e.counter)f[e.actor].counterUntil=-1;
       if(e.setup)d.openUntil=-1;
       events.push({...e,text:`${f[e.actor].name}: ${e.counter?'카운터! ':''}${CARDS[active[e.actor].id].name} → ${e.type==='block'?'블록':e.guardBreak?'가드 붕괴':e.setup?'페이크 연계':'명중'} · ${e.power}`});
-      if(e.type==='hit'&&e.targetPart==='head'&&(d.damage.head>=RULES.koDamage||(d.damage.head>=RULES.staggerDamage&&e.power>=RULES.staggerImpact))){d.ko=true;}
+      if(e.type==='hit'&&e.targetPart==='head'){
+        if(d.damage.head>=RULES.koDamage||(d.damage.head>=RULES.staggerDamage&&e.power>=RULES.staggerImpact)){d.ko=true;}
+        else if(e.power>=RULES.staggerImpact){d.status='groggy';d.statusUntil=tick+STATUS.groggyRecoverySlots;events.push({type:'status',actor:e.target,level:'groggy',text:`${d.name}: 그로기`});}
+        else if(e.power>=RULES.staggerImpact*STATUS.staggerRatio){d.status='stagger';d.statusUntil=tick+STATUS.staggerRecoverySlots;events.push({type:'status',actor:e.target,level:'stagger',text:`${d.name}: 휘청임`});}
+      }
     }
     if(f.some(x=>x.ko)){
       match.finished=true;match.winner=f[0].ko&&f[1].ko?null:f[0].ko?1:0;match.method=match.winner===null?'동시 KO':'KO';
@@ -137,8 +169,29 @@ export function resolveTurn(input,playerPlan,enemyPlan){
     if(match.finished)break;
   }
   match.lastPlans=plans;match.lastEvaded=f.map(x=>x.evaded);
-  f.forEach(x=>{x.counterUntil=-1;x.openUntil=-1;if(!match.finished)x.stamina=round(clamp(x.stamina+RULES.betweenRecovery,0,100));});
-  if(!match.finished&&match.turn>=RULES.maxTurns){match.finished=true;const diff=f[0].score-f[1].score;match.winner=Math.abs(diff)<1?null:diff>0?0:1;match.method='판정';}
+  if(!match.finished){
+    const roundEnd=isRoundEnd(match.turn);
+    if(roundEnd){
+      // Judge metrics accumulate per turn and aggregate per round; the match decision is the
+      // sum of round results, never a separately recomputed summary. Spec: docs/design/23 section 5.
+      const margin=round(f[0].score-(match.roundBaseline?.[0]??0)-(f[1].score-(match.roundBaseline?.[1]??0)));
+      match.roundResults.push({round:roundOf(match.turn),margin,winner:Math.abs(margin)<1?null:margin>0?0:1});
+      match.roundBaseline=[f[0].score,f[1].score];
+      endRound(f);
+    } else {
+      f.forEach(x=>{
+        x.counterUntil=carryTick(x.counterUntil);x.openUntil=carryTick(x.openUntil);
+        x.statusUntil=carryTick(x.statusUntil);
+        if(x.statusUntil<0)x.status='normal';
+        x.stamina=round(clamp(x.stamina+RULES.betweenRecovery,0,RULES.maxStamina));
+      });
+    }
+  }
+  if(!match.finished&&match.turn>=RULES.maxTurns){
+    match.finished=true;
+    const won=match.roundResults.reduce((n,r)=>n+(r.winner===0?1:r.winner===1?-1:0),0);
+    match.winner=won===0?null:won>0?0:1;match.method='판정';
+  }
   if(!match.finished)match.turn++;
   return {match,frames,plans};
 }
