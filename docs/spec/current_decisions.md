@@ -465,6 +465,17 @@ Tactical Execution이 Player가 지시한 Setup 수행에 영향.
 
 AI 자동 활용과 Player 직접 지시 모두 가능.
 
+## 선수 계획 생성
+세부 기준: `docs/design/28_fighter_plan_generation.md`
+실물 Config: `config/combat_ai.json`
+
+- **모든 난수는 계획 확정 이전에만 존재한다.** 확정 후 판정은 완전히 결정론적이다. 난수가 승패가 아니라 시도를 흔든다.
+- Fight IQ는 숨겨진 정보를 사지 않는다. 예측 정확도·탐색 폭·기억 창을 산다. 낮으면 직전 한 턴에 과반응하고 그것이 읽힌다. 예측 신뢰도 상한은 1.0 미만이다.
+- Tactical Execution은 선택한 계획의 충실도와 코치 지시 반영률을 결정한다. 좋은 지시가 곧 좋은 실행이 아니다.
+- 성향은 평가 함수의 가중치 세트이며 고정 Personality 데이터가 아니다. 저스태미너·그로기의 회복 전환은 성격이 아니라 상태 반응이다.
+- 평가 함수에 반복 패널티를 둔다. 없으면 평가가 정확해질수록 하나의 최적 루프로 수렴해 완전히 읽히는 상대가 된다.
+- **NPC 정보 카드는 회고적으로만 작동한다.** 현재 턴 계획 열람과 공개 후 재계획은 금지 목록으로 Config에 명시한다. 확정 순서를 깨지 않기 위한 구조적 비대칭이다.
+
 별도 Momentum / Flow State 게이지는 사용하지 않는다.
 
 ---
@@ -609,6 +620,18 @@ Player는 처음부터 모든 Fighter를 볼 수 없다.
 Player/Scout/Coach는 실제 행동을 잘못 해석할 수 있다.
 
 소속 Fighter도 해당 능력과 관련된 훈련/경기 Evidence가 쌓여야 추정 범위가 좁아진다.
+
+## Evidence → Knowledge 변환
+세부 기준: `docs/design/29_evidence_and_knowledge.md`
+실물 Config: `config/knowledge.json`
+
+- 추정이 틀리는 형태를 **범위의 넓음(모른다)** 과 **중심의 치우침(잘못 안다)** 으로 분리한다. 원인이 다르다. 범위는 Evidence 부족·오래됨·영역 난이도에서, 치우침은 해석자 능력 부족과 편향된 Evidence에서 나온다.
+- **편향은 무작위가 아니라 방향이 있다.** 약한 상대 활약은 과대평가, 유리한 상성은 실력으로 오해, 신체 조건은 기술보다 과대 반영된다. 플레이어가 학습할 수 있어야 한다. 전투의 Randomness 원칙에 대응하는 정보 버전이다.
+- **`confidence`는 정확도가 아니라 해석자가 믿는 정도다.** 능력이 낮으면 좁은 범위를 자신 있게 제시하고 틀린다. 나쁜 Scout는 쓸모없는 게 아니라 위험하다.
+- 모순되는 Evidence는 추정을 뒤집지 않고 넓힌다. 믿음이 진동하면 플레이어가 정보 시스템을 무시하게 된다.
+- 오래된 정보는 넓어지는 동시에 중심이 과거에 고정된다. 관찰 후 성장한 선수는 모르는 선수가 아니라 **과소평가된 선수**가 되며 이것이 발굴 기회가 된다.
+- 추정 범위는 0으로 수렴하지 않는다. Potential은 상한 수치를 노출하지 않으며 **Breakthrough 가능성은 추정 자체가 불가능하다.**
+- `EvidenceRecord.raw_fact`는 변조하지 않는다. 편향은 해석 단계에서만 적용되므로 더 좋은 해석자로 과거 자료를 재분석할 수 있다.
 
 ---
 
@@ -966,6 +989,22 @@ Definition Data와 Runtime State도 분리.
 - Facility
 
 모든 주요 Weight / Curve / Threshold / Multiplier는 Data/Config로 조절 가능해야 한다.
+
+## 현재 존재하는 Config
+
+Definition Data이므로 `dist/`가 아니라 저장소 루트 `config/`에 둔다.
+
+| 파일 | 대상 | 명세 |
+|---|---|---|
+| `derived_capability.json` | Base → Derived 가중치 | `docs/design/24_*.md` |
+| `effective_performance.json` | 상태 민감도, 스태미너 경제, 인터벌 회복 | `docs/design/25_*.md` |
+| `action_resolution.json` | 칸 판정 순서, 난수 경계, 상태 전이 | `docs/design/26_*.md` |
+| `grappling.json` | 포지션, 그래플 우위, 서브미션, Ruleset 게이팅 | `docs/design/27_*.md` |
+| `combat_ai.json` | 계획 생성, Fight IQ / Tactical Execution | `docs/design/28_*.md` |
+| `knowledge.json` | Evidence 변환, 편향, Confidence 보정 | `docs/design/29_*.md` |
+
+**아직 어떤 코드도 이 파일들을 읽지 않는다.** Definition Data Loader는 로드맵 Phase 0 항목이며
+시제품 `dist/engine.js`는 여전히 자체 상수를 쓴다. 이 구간은 명세가 코드를 앞선 상태다.
 
 ---
 
