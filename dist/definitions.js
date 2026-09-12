@@ -360,7 +360,7 @@ const validators = {
     requireNumber(file, 'intervalRecovery.cap', interval.cap, { min: 1, max: rules.maxStamina });
     if (interval.cap >= rules.maxStamina) fail(file, 'intervalRecovery.cap', '완전 회복은 허용되지 않습니다');
     const cards = requireObject(file, 'cards', cfg.cards);
-    const kinds = new Set(['attack', 'guard', 'evade', 'feint', 'rest']);
+    const kinds = new Set(['attack', 'guard', 'evade', 'feint', 'rest', 'move']);
     for (const id of dataKeys(cards)) {
       const card = cards[id];
       if (!kinds.has(card.kind)) fail(file, `cards.${id}.kind`, `알 수 없는 종류: ${card.kind}`);
@@ -381,6 +381,7 @@ const validators = {
       }
       requireNumber(file, `cards.${id}.rangeShift`, card.rangeShift ?? 0, { min: -1, max: 1 });
       if (card.kind === 'evade' && !(card.dodges ?? []).length) fail(file, `cards.${id}.dodges`, '회피는 궤도 상성이 필요합니다');
+      if (card.kind === 'move' && !card.rangeShift) fail(file, `cards.${id}.rangeShift`, '이동 카드는 거리를 움직여야 합니다');
     }
     if (!cards.rest || cards.rest.kind !== 'rest') fail(file, 'cards.rest', '빈칸은 호흡 정리로 처리되므로 rest 카드가 필요합니다');
     // A longer guard must block more coarsely. Otherwise the long guard strictly dominates:
@@ -411,6 +412,27 @@ const validators = {
     }
     for (const id of cfg.low_stamina_plan?.actions ?? []) {
       if (!cards[id]) fail(file, 'low_stamina_plan.actions', `알 수 없는 카드: ${id}`);
+    }
+    // An angle grant is a lasting advantage, so it has to cost more than the one-shot counter
+    // window the other evasions give. Stated as a rule so tuning cannot quietly invert it.
+    const evades = dataKeys(cards).filter(id => cards[id].kind === 'evade');
+    const angled = evades.filter(id => cards[id].grantsAngle);
+    const plain = evades.filter(id => !cards[id].grantsAngle);
+    for (const a of angled) for (const b of plain) {
+      if (cards[a].cost <= cards[b].cost) {
+        fail(file, `cards.${a}.cost`, `각도 이점을 주는 회피는 ${b}보다 비싸야 합니다: ${cards[a].cost} vs ${cards[b].cost}`);
+      }
+    }
+    if (angled.length) {
+      const angle = requireObject(file, 'angle', cfg.angle);
+      requireNumber(file, 'angle.slots', angle.slots, { min: 1, max: rules.slots });
+      requireNumber(file, 'angle.attackPenalty', angle.attackPenalty, { min: 0, max: 1 });
+      requireNumber(file, 'angle.incomingBonus', angle.incomingBonus, { min: 1 });
+      requireNumber(file, 'angle.hookPunish', angle.hookPunish, { min: 1 });
+      // The angle must be earned, not handed over: an opponent doing nothing can simply turn
+      // with you, so stepping around them gains nothing.
+      if (angle.requiresCommitment !== true) fail(file, 'angle.requiresCommitment', '무방비 상대에게 각도 이점을 주면 안 됩니다');
+      if (angle.hookPunish <= 1) fail(file, 'angle.hookPunish', '스텝한 방향의 훅은 더 아프게 맞아야 합니다');
     }
     const style = requireObject(file, 'style_cards', cfg.style_cards);
     requireNumber(file, 'style_cards.active_limit', style.active_limit, { min: 1 });

@@ -17,6 +17,7 @@ let SUBBEAT = null;
 let RANGE = null;
 let FIRST_STRIKE = null;
 let REVEAL = null;
+let ANGLE = null;
 // Solved equilibrium mixtures, when calibration output is loaded. Falls back to fixed
 // patterns so the engine still runs before anyone has run the calibration tool.
 let STRATEGY_MIX = null;
@@ -48,6 +49,7 @@ export function configureEngine(definitions) {
   RANGE = cfg.range;
   FIRST_STRIKE = cfg.firstStrike;
   REVEAL = cfg.reveal;
+  ANGLE = cfg.angle ?? null;
   STRATEGY_MIX = null;
   STYLE = cfg.style_cards;
   MODIFIERS = cfg.modifiers;
@@ -81,7 +83,7 @@ function ratio(effective,key){
   return 1+(value-1)*(spec.weight??1);
 }
 
-export function fighter(name,spec){return {name,stamina:100,damage:{head:0,body:0,arms:0},score:0,counterUntil:-1,openUntil:-1,statusUntil:-1,status:'normal',evaded:false,ko:false,
+export function fighter(name,spec){return {name,stamina:100,damage:{head:0,body:0,arms:0},score:0,counterUntil:-1,openUntil:-1,statusUntil:-1,offAngleUntil:-1,status:'normal',evaded:false,ko:false,
   stats:(spec&&DEFINITIONS)?buildCombatant(spec):null,derived:null};}
 
 const round=x=>Math.round(x*10)/10;
@@ -97,7 +99,7 @@ const carryTick=v=>v>=RULES.slots?v-RULES.slots:-1;
 // A round boundary is real rest. Windows expire and stamina partially recovers, never fully.
 function endRound(f){
   for(const x of f){
-    x.counterUntil=-1;x.openUntil=-1;x.statusUntil=-1;x.status='normal';
+    x.counterUntil=-1;x.openUntil=-1;x.statusUntil=-1;x.offAngleUntil=-1;x.status='normal';
     // The cap limits how far recovery can take you, it does not drag a healthier fighter down.
     const recovered=x.stamina+RULES.maxStamina*INTERVAL.fraction*(1-x.damage.body/200);
     x.stamina=round(clamp(Math.max(x.stamina,Math.min(recovered,INTERVAL.cap)),0,RULES.maxStamina));
@@ -293,7 +295,7 @@ export function resolveTurn(input,playerPlan,enemyPlan){
   // Memory carries across combos like every other observation; a round boundary does not clear it.
   const memory=DEFINITIONS&&match.memory?restoreMemory(DEFINITIONS,match.memory):null;
   const f=match.fighters,failed=[new Set(),new Set()];
-  f.forEach(x=>{x.evaded=false;x.counterUntil=-1;x.openUntil=-1;});
+  f.forEach(x=>{x.evaded=false;});
   for(let tick=0;tick<RULES.slots;tick++){
     const events=[],active=plans.map(plan=>plan.find(p=>tick>=p.start&&tick<p.start+CARDS[p.id].duration));
     const poses=active.map(p=>({id:p.id,phase:(tick-p.start),duration:CARDS[p.id].duration,failed:false}));
@@ -307,6 +309,12 @@ export function resolveTurn(input,playerPlan,enemyPlan){
         }
       }
       poses[i].failed=failed[i].has(p.start);
+      // Stepping around someone who is merely breathing gains nothing — they would turn with
+      // you. The angle is only earned against an opponent committed to a guard, or to an
+      // attack the step slips (handled where the evade resolves).
+      if(ANGLE&&CARDS[p.id].grantsAngle&&!poses[i].failed&&CARDS[active[1-i].id].kind==='guard'&&!poses[1-i].failed){
+        f[1-i].offAngleUntil=Math.max(f[1-i].offAngleUntil,tick+ANGLE.slots);
+      }
       if(p.start===tick&&!poses[i].failed)match.gap=roundGap(clamp(match.gap+(c.rangeShift??0),RANGE.min,RANGE.max));
       if(c.kind==='rest'){f[i].stamina=round(clamp(f[i].stamina+RULES.restRecovery*(1-f[i].damage.body/200),0,100));events.push({type:'rest',actor:i});}
     }
@@ -333,6 +341,11 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       const counter=before[i].counterUntil>=tick;
       const recovery=dc.kind==='attack'&&tick>active[j].start+dc.impact;
       const mismatch=dc.kind==='evade'&&!dodged;
+      // A hook wraps round into the side the fighter stepped toward, so it is not merely
+      // unevaded — it catches them turned away.
+      const steppedInto=ANGLE&&dc.grantsAngle&&!dodged&&c.trajectory==='hook';
+      const attackerOffAngle=ANGLE&&before[i].offAngleUntil>=tick;
+      const defenderOffAngle=ANGLE&&before[j].offAngleUntil>=tick;
       const styleReach=styleOf(before[i],'reachBonus',0);
       const reach=rangeFactor(match.gap,styleReach?{...c,reachBonus:(c.reachBonus??0)+styleReach}:c);
       const band=bandOf(match.gap);
@@ -342,7 +355,7 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       const setup=memory?setupModifier(memory,j,active[i].start,p.id,before[j].stats?before[j].stats.base.fight_iq:60):{factor:1,read:false,broken:false,confidence:0};
       const staminaFactor=MODIFIERS.staminaFloor+(1-MODIFIERS.staminaFloor)*before[i].stamina/100;
       let power=c.power*staminaFactor*(counter?MODIFIERS.counter*styleOf(before[i],'counterMultiplier',1):1)*(isOpen||recovery||mismatch?MODIFIERS.exposed:1)*reach
-        *ratio(attackerEffective,'impact')*setup.factor*bandBoost*impactVariance(match,tick,i);
+        *ratio(attackerEffective,'impact')*setup.factor*bandBoost*(attackerOffAngle?ANGLE.attackPenalty:1)*(defenderOffAngle?ANGLE.incomingBonus:1)*(steppedInto?ANGLE.hookPunish:1)*impactVariance(match,tick,i);
       if(blocked)power/=Math.max(ratio(defenderEffective,'guard'),0.2);
       // A long guard covers more time but is a coarser block, so it leaks more per hit.
       // Without this the only question is whether the guard can be paid for, which makes
@@ -350,7 +363,7 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       if(blocked)power*=(dc.blockLeak??MODIFIERS.blockLeak)*styleOf(before[j],'blockLeakMultiplier',1)+before[j].damage.arms/MODIFIERS.blockArmScaling;
       if(impaired)power*=1+STATUS.groggyDefensePenalty;
       if(c.target==='head')power*=styleOf(before[j],'incomingHeadMultiplier',1);
-      effects.push({type:blocked?'block':'hit',actor:i,target:j,power:round(power),targetPart:c.target,counter,guardBreak:guarding&&!blocked,setup:isOpen,read:setup.read,patternBreak:setup.broken,readConfidence:round(setup.confidence),recovery,at:impactPosition(c,before[i]),reach:round(reach)});
+      effects.push({type:blocked?'block':'hit',actor:i,target:j,power:round(power),targetPart:c.target,counter,guardBreak:guarding&&!blocked,setup:isOpen,offAngle:!!defenderOffAngle,steppedInto:!!steppedInto,read:setup.read,patternBreak:setup.broken,readConfidence:round(setup.confidence),recovery,at:impactPosition(c,before[i]),reach:round(reach)});
     }
     // Impacts within the tolerance share the snapshot and apply together, so a double KO stays
     // reachable. A strictly earlier one applies first and weakens the later, never erases it.
@@ -367,6 +380,10 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       }
       if(e.type==='evade'){
         f[e.actor].counterUntil=tick+RULES.counterWindow+styleOf(f[e.actor],'counterWindowBonus',0);f[e.actor].evaded=true;f[e.actor].score+=MODIFIERS.evadeScore;
+        // An attack that the step slipped is commitment by definition, so the angle is earned.
+        if(ANGLE&&CARDS[active[e.actor].id].grantsAngle){
+          f[e.target].offAngleUntil=Math.max(f[e.target].offAngleUntil,tick+ANGLE.slots);
+        }
         events.push({...e});continue;
       }
       const d=f[e.target];
@@ -412,7 +429,7 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       endRound(f);
     } else {
       f.forEach(x=>{
-        x.counterUntil=carryTick(x.counterUntil);x.openUntil=carryTick(x.openUntil);
+        x.counterUntil=carryTick(x.counterUntil);x.openUntil=carryTick(x.openUntil);x.offAngleUntil=carryTick(x.offAngleUntil);
         x.statusUntil=carryTick(x.statusUntil);
         if(x.statusUntil<0)x.status='normal';
         x.stamina=round(clamp(x.stamina+RULES.betweenRecovery,0,RULES.maxStamina));

@@ -29,6 +29,10 @@ configureEngine(definitions);
 
 // Identical stats on both sides: the payoff then measures strategy alone.
 const MIRROR = { base: Object.fromEntries(ALL_BASE_PARAMETERS.map(k => [k, 60])) };
+// Above this, a best responder still beats the mixture easily and the solution is provisional.
+// The dead-card list in particular must not be read from an unconverged solve: a card can be
+// absent simply because the search never reached the plans that use it well.
+const CONVERGED_BELOW = 0.2;
 const SEED = 20260101;
 const OPTIONS = { stats: MIRROR, seeds: [1], profile: 'pressure' };
 
@@ -128,6 +132,12 @@ async function solve(rounds = 8, poolSize = 28) {
   console.log(`\n게임 값 ${document.generated.game_value} (0이어야 정상)`);
   console.log(`풀내 exploitability ${document.generated.in_pool_exploitability}  |  외부 최적대응 이득 ${document.generated.external_best_response_gain}`);
   console.log(`지지집합 ${support.length}개, ${Date.now() - started}ms`);
+  if (external.gain > CONVERGED_BELOW) {
+    console.log(`
+  ⚠ 수렴 전입니다 (외부 이득 ${external.gain.toFixed(3)} > ${CONVERGED_BELOW}).`);
+    console.log('    이 해의 지지집합과 미사용 카드 목록은 신뢰할 수 없습니다.');
+    console.log('    풀 크기와 라운드를 늘려 다시 풀어야 합니다.');
+  }
   for (const s of support.slice(0, 8)) console.log(`  ${(s.weight * 100).toFixed(1).padStart(5)}%  ${s.plan.join(' + ')}`);
   console.log(`\n기록: ${OUTPUT}`);
   return document;
@@ -182,7 +192,10 @@ async function report() {
   const committed = await loadCommitted();
   if (!committed) { console.error('아직 계산된 전략이 없습니다.'); process.exitCode = 1; return; }
   console.log(`fingerprint ${committed.generated.rules_fingerprint}  게임 값 ${committed.generated.game_value}`);
-  console.log(`외부 최적대응 이득 ${committed.generated.external_best_response_gain} (0에 가까울수록 수렴)\n`);
+  const gain = committed.generated.external_best_response_gain;
+  const converged = gain <= CONVERGED_BELOW;
+  console.log(`외부 최적대응 이득 ${gain} ${converged ? '(수렴)' : `(수렴 전, 기준 ${CONVERGED_BELOW})`}
+`);
   console.log('등급별 이탈과 착취 가능성:');
   for (const [tier, spec] of Object.entries(committed.tiers)) {
     console.log(`  ${tier.padEnd(11)} 이탈 ${String(spec.deviation).padEnd(5)} exploitability ${spec.exploitability.toFixed(4)}  계획 ${spec.mixture.length}개`);
@@ -191,7 +204,12 @@ async function report() {
   for (const s of committed.equilibrium_support) console.log(`  ${(s.weight * 100).toFixed(1).padStart(5)}%  ${s.plan.join(' + ')}`);
   const dead = Object.keys(CARDS).filter(id => id !== 'rest' && !committed.equilibrium_support.some(s => s.plan.includes(id)));
   console.log(`\n균형에서 쓰이지 않는 카드: ${dead.length ? dead.join(', ') : '없음'}`);
-  console.log('  (균형에 한 번도 등장하지 않는 카드는 죽은 콘텐츠 후보입니다)');
+  if (converged) {
+    console.log('  (균형에 한 번도 등장하지 않는 카드는 죽은 콘텐츠 후보입니다)');
+  } else {
+    console.log('  이 목록은 신뢰할 수 없습니다. 수렴 전 해라 탐색이 닿지 않아 빠졌을 수 있습니다.');
+    console.log('  더 큰 풀로 다시 푼 뒤 판단하세요. 이 목록을 보고 수치를 조정하면 안 됩니다.');
+  }
 }
 
 const [mode = 'report', ...rest] = process.argv.slice(2);

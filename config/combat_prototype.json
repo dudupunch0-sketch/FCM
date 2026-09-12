@@ -231,6 +231,37 @@
       "rangeShift": -0.6,
       "reachBonus": 0.0,
       "description": "파고들며 치는 훅. 거리를 좁히지만 회수가 깁니다."
+    },
+    "backstep": {
+      "name": "백스텝",
+      "short": "백스텝",
+      "kind": "move",
+      "duration": 1,
+      "cost": 4,
+      "rangeShift": 0.4,
+      "description": "물러서며 간격을 벌립니다. 공격도 방어도 하지 않습니다."
+    },
+    "stepin": {
+      "name": "스텝 인",
+      "short": "스텝인",
+      "kind": "move",
+      "duration": 1,
+      "cost": 4,
+      "rangeShift": -0.4,
+      "description": "파고들어 간격을 좁힙니다. 공격도 방어도 하지 않습니다."
+    },
+    "sidestep": {
+      "name": "사이드 스텝",
+      "short": "사이드",
+      "kind": "evade",
+      "duration": 2,
+      "cost": 11,
+      "dodges": [
+        "straight"
+      ],
+      "rangeShift": 0.05,
+      "grantsAngle": true,
+      "description": "옆으로 빠져 각을 틉니다. 비싸지만 상대가 정면을 잃은 상태가 잠시 이어집니다."
     }
   },
   "skills": {
@@ -553,5 +584,13 @@
         }
       }
     }
+  },
+  "angle": {
+    "slots": 4,
+    "attackPenalty": 0.75,
+    "incomingBonus": 1.2,
+    "requiresCommitment": true,
+    "hookPunish": 1.6,
+    "note": "Off-angle is a lasting positional state, unlike the one-shot counter window from sway and weave. It is only earned against an opponent who is committed to something — an attack that the step slipped, or a guard they are holding. Against someone simply breathing there is nothing to step around: they would just turn with you. And a hook follows you into the direction you stepped, so it is not evaded and lands harder than an ordinary mistimed evasion."
   }
 }
