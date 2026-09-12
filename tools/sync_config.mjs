@@ -15,4 +15,14 @@ for (const name of files) {
   JSON.parse(text);
   await writeFile(join(target, name), text);
 }
-console.log(`synced ${files.length} config files to dist/config/`);
+// String tables live in a subdirectory and are fetched by the browser the same way.
+const stringsSource = join(source, 'strings');
+const stringsTarget = join(target, 'strings');
+await mkdir(stringsTarget, { recursive: true });
+const tables = (await readdir(stringsSource)).filter(name => name.endsWith('.json'));
+for (const name of tables) {
+  const text = await readFile(join(stringsSource, name), 'utf8');
+  JSON.parse(text);
+  await writeFile(join(stringsTarget, name), text);
+}
+console.log(`synced ${files.length} config files and ${tables.length} string tables to dist/config/`);

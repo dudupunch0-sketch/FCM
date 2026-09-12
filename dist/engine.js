@@ -300,7 +300,7 @@ export function resolveTurn(input,playerPlan,enemyPlan){
     for(let i=0;i<2;i++){
       const p=active[i],c=CARDS[p.id];
       if(p.start===tick){
-        if(f[i].stamina<c.cost){failed[i].add(p.start);events.push({type:'exhausted',actor:i,text:`${f[i].name}: 스태미너 부족 · ${c.name} 실패`});}
+        if(f[i].stamina<c.cost){failed[i].add(p.start);events.push({type:'exhausted',actor:i,card:p.id});}
         else{
           const closing=(c.rangeShift??0)<0?styleOf(f[i],'closingCostMultiplier',1):1;
           f[i].stamina=round(f[i].stamina-c.cost*closing);
@@ -308,14 +308,14 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       }
       poses[i].failed=failed[i].has(p.start);
       if(p.start===tick&&!poses[i].failed)match.gap=roundGap(clamp(match.gap+(c.rangeShift??0),RANGE.min,RANGE.max));
-      if(c.kind==='rest'){f[i].stamina=round(clamp(f[i].stamina+RULES.restRecovery*(1-f[i].damage.body/200),0,100));events.push({type:'rest',actor:i,text:`${f[i].name}: 호흡 정리`});}
+      if(c.kind==='rest'){f[i].stamina=round(clamp(f[i].stamina+RULES.restRecovery*(1-f[i].damage.body/200),0,100));events.push({type:'rest',actor:i});}
     }
     for(let i=0;i<2;i++){
       const p=active[i],other=CARDS[active[1-i].id];
       if(CARDS[p.id].kind==='feint'&&p.start===tick&&!poses[i].failed){
         const baited=['guard','evade'].includes(other.kind)&&!poses[1-i].failed;
         if(baited)f[1-i].openUntil=tick+2;
-        events.push({type:'feint',actor:i,target:1-i,success:baited,text:`${f[i].name}: 페이크 ${baited?'성공 · 방어에 빈틈':'무반응'}`});
+        events.push({type:'feint',actor:i,target:1-i,success:baited});
       }
     }
     // Compute both attacks against one snapshot, then apply together (double KO is possible).
@@ -367,7 +367,7 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       }
       if(e.type==='evade'){
         f[e.actor].counterUntil=tick+RULES.counterWindow+styleOf(f[e.actor],'counterWindowBonus',0);f[e.actor].evaded=true;f[e.actor].score+=MODIFIERS.evadeScore;
-        events.push({...e,text:`${f[e.actor].name}: 회피 성공 · 카운터 기회`});continue;
+        events.push({...e});continue;
       }
       const d=f[e.target];
       // Score follows the damage actually applied, not the damage attempted. Hitting a part
@@ -381,19 +381,19 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       if(e.counter)f[e.actor].counterUntil=-1;
       if(e.setup)d.openUntil=-1;
       struckAt[e.target]=e.at;
-      events.push({...e,text:`${f[e.actor].name}: ${e.counter?'카운터! ':''}${CARDS[active[e.actor].id].name} → ${e.type==='block'?'블록':e.guardBreak?'가드 붕괴':e.setup?'페이크 연계':'명중'} · ${e.power}`});
+      events.push({...e,card:active[e.actor].id});
       // Body work can finish a fight, which is what makes guarding the body worth a slot.
       // The threshold is higher than the head's, so the head remains the primary threat.
       if(e.type==='hit'&&e.targetPart==='body'&&d.damage.body>=RULES.bodyKoDamage&&d.stamina<=RULES.bodyKoStamina&&e.power>=RULES.bodyKoImpact*styleOf(d,'staggerResistance',1)){d.ko=true;}
       if(e.type==='hit'&&e.targetPart==='head'){
         if(d.damage.head>=RULES.koDamage||(d.damage.head>=RULES.staggerDamage&&e.power>=RULES.staggerImpact)){d.ko=true;}
-        else if(e.power>=RULES.staggerImpact*styleOf(d,'staggerResistance',1)){d.status='groggy';d.statusUntil=tick+STATUS.groggyRecoverySlots;events.push({type:'status',actor:e.target,level:'groggy',text:`${d.name}: 그로기`});}
-        else if(e.power>=RULES.staggerImpact*STATUS.staggerRatio*styleOf(d,'staggerResistance',1)){d.status='stagger';d.statusUntil=tick+STATUS.staggerRecoverySlots;events.push({type:'status',actor:e.target,level:'stagger',text:`${d.name}: 휘청임`});}
+        else if(e.power>=RULES.staggerImpact*styleOf(d,'staggerResistance',1)){d.status='groggy';d.statusUntil=tick+STATUS.groggyRecoverySlots;events.push({type:'status',actor:e.target,level:'groggy'});}
+        else if(e.power>=RULES.staggerImpact*STATUS.staggerRatio*styleOf(d,'staggerResistance',1)){d.status='stagger';d.statusUntil=tick+STATUS.staggerRecoverySlots;events.push({type:'status',actor:e.target,level:'stagger'});}
       }
     }
     if(f.some(x=>x.ko)){
       match.finished=true;match.winner=f[0].ko&&f[1].ko?null:f[0].ko?1:0;match.method=match.winner===null?'동시 KO':'KO';
-      events.push({type:'finish',text:match.winner===null?'동시 KO · 무승부':`${f[match.winner].name} KO 승리`});
+      events.push({type:'finish',winner:match.winner,method:match.method});
     }
     frames.push({tick,poses,events,fighters:structuredClone(f),finished:match.finished});
     if(match.finished)break;

@@ -1,4 +1,5 @@
 import './boot.js';
+import {describeEvent,stageMessage} from './commentary.js';
 import {CARDS,SKILLS,PROFILES,RULES,newMatch,makePlan,span,opponentPlan,observe,resolveTurn} from './engine.js';
 import {createRing} from './ring.js';
 import {advancePlayback} from './motion.js';
@@ -58,7 +59,7 @@ function add(id){edit({type:selected>=0?'replace':'add',id,index:selected});}
 function execute(){if(match.finished&&mode!=='playing'){start();return;}if(!canEdit())return;selected=-1;const result=resolveTurn(match,makePlan(draft),enemyPlan);last={...result,before:structuredClone(match),turn:match.turn,draft:[...draft]};beginPlayback(false);}
 function beginPlayback(replaying){play={cursor:0,lastTime:0,replaying,turn:last.turn,paused:false};mode='playing';selected=-1;lastLogged=-1;$('menu').close();$('log').innerHTML='';$('result').hidden=true;$('playbackLabel').textContent=replaying?'직전 교환 다시 보기':'양측 콤보 동시 실행';hud(last.before.fighters);renderControls();notice(replaying?'다시 보기는 결과를 바꾸지 않습니다.':'양측 콤보를 동시에 실행합니다.');}
 function appendEvents(frame,audible=true){
-  for(const e of frame.events.filter(e=>e.type!=='rest')){const row=document.createElement('div');row.className=`log-entry ${e.actor===1?'enemy':''}`;const tick=document.createElement('span');tick.className='tick';tick.textContent=`${frame.tick+1}박`;row.append(tick);const label=document.createElement(e.counter?'strong':'span');label.textContent=e.text;row.append(label);$('log').prepend(row);}
+  for(const e of frame.events.filter(e=>e.type!=='rest')){const row=document.createElement('div');row.className=`log-entry ${e.actor===1?'enemy':''}`;const tick=document.createElement('span');tick.className='tick';tick.textContent=`${frame.tick+1}박`;row.append(tick);const label=document.createElement(e.counter?'strong':'span');label.textContent=describeEvent(e,{fighters:frame.fighters});row.append(label);$('log').prepend(row);}
   if(sound&&audible)beep(frame.events);$('logCount').textContent=`${frame.tick+1}/${last.frames.length}박`;
 }
 function finishPlayback(){
@@ -82,7 +83,7 @@ function loop(now){
     if(!play.paused){advancePlayback(play,last.frames,dt,speed,ring.reduced);play.renderTime=now;}
     if(play.cursor>=last.frames.length){finishPlayback();ring.render(now,null,0,match.fighters);}
     else{const tick=Math.floor(play.cursor),p=play.cursor-tick,frame=last.frames[tick];ring.render(play.renderTime??now,frame,p);
-      if(p>=.5&&lastLogged<tick){for(let t=lastLogged+1;t<=tick;t++)appendEvents(last.frames[t]);lastLogged=tick;hud(frame.fighters);$('stageMessage').textContent=frame.events.find(e=>e.type==='hit'&&e.counter)?.text??frame.events.find(e=>e.type!=='rest')?.text??'호흡 정리';}
+      if(p>=.5&&lastLogged<tick){for(let t=lastLogged+1;t<=tick;t++)appendEvents(last.frames[t]);lastLogged=tick;hud(frame.fighters);$('stageMessage').textContent=stageMessage(frame);}
       // Replay reveals only what has executed, never the next committed enemy plan.
       if(play.visualTick!==tick){play.visualTick=tick;
       renderIntel(last.plans[1].filter(a=>a.start<=tick).map(a=>({...a,kind:'exact',label:CARDS[a.id].name})));

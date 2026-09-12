@@ -1,0 +1,25 @@
+{
+  "config_version": "0.1.0-draft",
+  "language": "ko",
+  "base_language": true,
+  "description": "User-facing strings. Validator and exception messages are deliberately absent: they map one-to-one onto the verification criteria in the design docs, so the original wording is what makes them traceable.",
+  "spec_reference": "docs/design/37_accessibility_localization_performance.md",
+  "strings": {
+    "event.exhausted": "{fighter}: 스태미너 부족 · {card} 실패",
+    "event.rest": "{fighter}: 호흡 정리",
+    "event.feint.success": "{fighter}: 페이크 성공 · 방어에 빈틈",
+    "event.feint.ignored": "{fighter}: 페이크 무반응",
+    "event.evade": "{fighter}: 회피 성공 · 카운터 기회",
+    "event.status.stagger": "{fighter}: 휘청임",
+    "event.status.groggy": "{fighter}: 그로기",
+    "event.hit": "{fighter}: {counter}{card} → {outcome} · {power}",
+    "event.outcome.block": "블록",
+    "event.outcome.guardBreak": "가드 붕괴",
+    "event.outcome.setup": "페이크 연계",
+    "event.outcome.clean": "명중",
+    "event.counterPrefix": "카운터! ",
+    "event.finish.ko": "{fighter} KO 승리",
+    "event.finish.doubleKo": "동시 KO · 무승부",
+    "stage.idle": "호흡 정리"
+  }
+}
