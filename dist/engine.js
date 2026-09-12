@@ -10,6 +10,9 @@ let LOW_STAMINA = null;
 let ROUNDS = null;
 let STATUS = null;
 let INTERVAL = null;
+let SUBBEAT = null;
+let RANGE = null;
+let FIRST_STRIKE = null;
 
 const required = () => {
   if (!RULES) throw Error('전투 엔진이 설정되지 않았습니다. configureEngine(definitions)를 먼저 호출하세요');
@@ -28,10 +31,19 @@ export function configureEngine(definitions) {
   ROUNDS = cfg.rounds;
   STATUS = cfg.status;
   INTERVAL = cfg.intervalRecovery;
+  SUBBEAT = cfg.subBeat;
+  RANGE = cfg.range;
+  FIRST_STRIKE = cfg.firstStrike;
   return { RULES, CARDS, SKILLS, PROFILES };
 }
 
 export function fighter(name){return {name,stamina:100,damage:{head:0,body:0,arms:0},score:0,counterUntil:-1,openUntil:-1,statusUntil:-1,status:'normal',evaded:false,ko:false};}
+
+const round=x=>Math.round(x*10)/10;
+// Distance needs finer precision than resources: a single card shift can be smaller than
+// the 0.1 step, and rounding each application away would make small movement vanish.
+const roundGap=x=>Math.round(x*100)/100;
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 
 // A combo boundary is uninterrupted action, so short-lived effects are not truncated by it:
 // a window opened at slot 7 continues into the next combo. Spec: docs/design/30 section 2.
@@ -47,12 +59,30 @@ function endRound(f){
   }
 }
 
+// Impact position inside a slot. Priority falls out of timing rather than a separate rule.
+export function impactPosition(card){return card.subBeat??SUBBEAT.nominal;}
+
+// effective_distance = gap - reach contribution. Falloff grows outside the card's tolerance.
+export function rangeFactor(gap,card){
+  const effective=gap-(card.reachBonus??0);
+  const error=Math.abs(effective-card.optimalRange);
+  if(error<=card.rangeTolerance)return 1;
+  const excess=(error-card.rangeTolerance)/Math.max(RANGE.max-RANGE.min,1e-9);
+  return clamp(1-RANGE.maxFalloff*Math.pow(clamp(excess,0,1),1/RANGE.falloffExponent),1-RANGE.maxFalloff,1);
+}
+
+export function bandOf(gap){
+  const bands=Object.entries(RANGE.bands).sort((a,b)=>a[1]-b[1]);
+  for(const [name,limit] of bands)if(gap<=limit)return name;
+  return bands.at(-1)[0];
+}
+
 export function roundOf(turn){return Math.floor((turn-1)/ROUNDS.turnsPerRound)+1;}
 export function isRoundEnd(turn){return turn%ROUNDS.turnsPerRound===0;}
 export function newMatch(profile='pressure',seed=17){
   required();
   if(!PROFILES[profile]) throw Error('알 수 없는 상대');
-  return {turn:1,seed,profile,fighters:[fighter('도전자'),fighter(PROFILES[profile].name)],lastPlans:null,lastEvaded:[false,false],roundResults:[],roundBaseline:[0,0],finished:false,winner:null,method:null};
+  return {turn:1,seed,profile,gap:RANGE.initial,fighters:[fighter('도전자'),fighter(PROFILES[profile].name)],lastPlans:null,lastEvaded:[false,false],roundResults:[],roundBaseline:[0,0],finished:false,winner:null,method:null};
 }
 export function span(ids){return ids.reduce((n,id)=>n+(CARDS[id]?.duration??99),0);}
 export function makePlan(ids){
@@ -96,8 +126,6 @@ export function observe(plan,skill,match){
   return reveals;
 }
 export function costOf(ids){return ids.reduce((n,id)=>n+CARDS[id].cost,0);}
-const round=x=>Math.round(x*10)/10;
-const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 export function resolveTurn(input,playerPlan,enemyPlan){
   required();
   validatePlan(playerPlan);validatePlan(enemyPlan);
@@ -115,6 +143,7 @@ export function resolveTurn(input,playerPlan,enemyPlan){
         else f[i].stamina=round(f[i].stamina-c.cost);
       }
       poses[i].failed=failed[i].has(p.start);
+      if(p.start===tick&&!poses[i].failed)match.gap=roundGap(clamp(match.gap+(c.rangeShift??0),RANGE.min,RANGE.max));
       if(c.kind==='rest'){f[i].stamina=round(clamp(f[i].stamina+RULES.restRecovery*(1-f[i].damage.body/200),0,100));events.push({type:'rest',actor:i,text:`${f[i].name}: 호흡 정리`});}
     }
     for(let i=0;i<2;i++){
@@ -139,12 +168,25 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       const counter=before[i].counterUntil>=tick;
       const recovery=dc.kind==='attack'&&tick>active[j].start+dc.impact;
       const mismatch=dc.kind==='evade'&&!dodged;
-      let power=c.power*(0.5+0.5*before[i].stamina/100)*(counter?1.4:1)*(isOpen||recovery||mismatch?1.2:1);
+      const reach=rangeFactor(match.gap,c);
+      let power=c.power*(0.5+0.5*before[i].stamina/100)*(counter?1.4:1)*(isOpen||recovery||mismatch?1.2:1)*reach;
       if(blocked)power*=0.18+before[j].damage.arms/500;
       if(impaired)power*=1+STATUS.groggyDefensePenalty;
-      effects.push({type:blocked?'block':'hit',actor:i,target:j,power:round(power),targetPart:c.target,counter,guardBreak:guarding&&!blocked,setup:isOpen,recovery});
+      effects.push({type:blocked?'block':'hit',actor:i,target:j,power:round(power),targetPart:c.target,counter,guardBreak:guarding&&!blocked,setup:isOpen,recovery,at:impactPosition(c),reach:round(reach)});
     }
+    // Impacts within the tolerance share the snapshot and apply together, so a double KO stays
+    // reachable. A strictly earlier one applies first and weakens the later, never erases it.
+    effects.sort((a,b)=>(a.at??SUBBEAT.nominal)-(b.at??SUBBEAT.nominal));
+    const struckAt={};
     for(const e of effects){
+      if(e.type!=='evade'&&typeof e.at==='number'){
+        const earlier=struckAt[e.actor];
+        if(typeof earlier==='number'&&e.at-earlier>SUBBEAT.tolerance){
+          const level=f[e.actor].status;
+          if(level==='groggy')e.power=round(e.power*FIRST_STRIKE.groggyWeakensLater);
+          else if(level==='stagger')e.power=round(e.power*FIRST_STRIKE.staggerWeakensLater);
+        }
+      }
       if(e.type==='evade'){
         f[e.actor].counterUntil=tick+RULES.counterWindow;f[e.actor].evaded=true;f[e.actor].score+=2;
         events.push({...e,text:`${f[e.actor].name}: 회피 성공 · 카운터 기회`});continue;
@@ -154,6 +196,7 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       else{f[e.actor].score+=e.power;if(e.targetPart==='body')d.stamina=round(Math.max(0,d.stamina-e.power*0.6));}
       if(e.counter)f[e.actor].counterUntil=-1;
       if(e.setup)d.openUntil=-1;
+      struckAt[e.target]=e.at;
       events.push({...e,text:`${f[e.actor].name}: ${e.counter?'카운터! ':''}${CARDS[active[e.actor].id].name} → ${e.type==='block'?'블록':e.guardBreak?'가드 붕괴':e.setup?'페이크 연계':'명중'} · ${e.power}`});
       if(e.type==='hit'&&e.targetPart==='head'){
         if(d.damage.head>=RULES.koDamage||(d.damage.head>=RULES.staggerDamage&&e.power>=RULES.staggerImpact)){d.ko=true;}
@@ -177,6 +220,7 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       const margin=round(f[0].score-(match.roundBaseline?.[0]??0)-(f[1].score-(match.roundBaseline?.[1]??0)));
       match.roundResults.push({round:roundOf(match.turn),margin,winner:Math.abs(margin)<1?null:margin>0?0:1});
       match.roundBaseline=[f[0].score,f[1].score];
+      match.gap=RANGE.initial;
       endRound(f);
     } else {
       f.forEach(x=>{

@@ -279,6 +279,13 @@ const validators = {
         if (!card.target || !card.trajectory) fail(file, `cards.${id}`, '공격은 target과 trajectory가 필요합니다');
       }
       if (card.kind === 'guard' && !card.protect) fail(file, `cards.${id}.protect`, '가드는 보호 부위가 필요합니다');
+      if (card.kind === 'attack') {
+        requireNumber(file, `cards.${id}.subBeat`, card.subBeat, { min: 0, max: 1 });
+        requireNumber(file, `cards.${id}.optimalRange`, card.optimalRange, { min: cfg.range.min, max: cfg.range.max });
+        requireNumber(file, `cards.${id}.rangeTolerance`, card.rangeTolerance, { min: 0 });
+        requireNumber(file, `cards.${id}.reachBonus`, card.reachBonus, { min: 0 });
+      }
+      requireNumber(file, `cards.${id}.rangeShift`, card.rangeShift ?? 0, { min: -1, max: 1 });
       if (card.kind === 'evade' && !(card.dodges ?? []).length) fail(file, `cards.${id}.dodges`, '회피는 궤도 상성이 필요합니다');
     }
     if (!cards.rest || cards.rest.kind !== 'rest') fail(file, 'cards.rest', '빈칸은 호흡 정리로 처리되므로 rest 카드가 필요합니다');
@@ -300,6 +307,20 @@ const validators = {
       if (!cards[id]) fail(file, 'low_stamina_plan.actions', `알 수 없는 카드: ${id}`);
     }
     requireObject(file, 'skills', cfg.skills);
+    const sub = requireObject(file, 'subBeat', cfg.subBeat);
+    requireNumber(file, 'subBeat.nominal', sub.nominal, { min: 0, max: 1 });
+    requireNumber(file, 'subBeat.tolerance', sub.tolerance, { min: 0, max: 0.5 });
+    if (sub.tolerance <= 0) fail(file, 'subBeat.tolerance', '0이면 동시 KO가 불가능해집니다');
+    const range = requireObject(file, 'range', cfg.range);
+    for (const key of ['initial', 'min', 'max', 'falloffExponent', 'maxFalloff']) requireNumber(file, `range.${key}`, range[key]);
+    if (range.min >= range.max) fail(file, 'range.min', 'max보다 작아야 합니다');
+    if (range.initial < range.min || range.initial > range.max) fail(file, 'range.initial', '거리 범위를 벗어났습니다');
+    requireNumber(file, 'range.maxFalloff', range.maxFalloff, { min: 0, max: 1 });
+    const first = requireObject(file, 'firstStrike', cfg.firstStrike);
+    for (const key of ['staggerWeakensLater', 'groggyWeakensLater']) {
+      const v = requireNumber(file, `firstStrike.${key}`, first[key], { min: 0, max: 1 });
+      if (v <= 0) fail(file, `firstStrike.${key}`, '선타는 후속 타격을 약화시킬 뿐 지우지 않습니다');
+    }
   },
 
   // docs/design/32_save_versioning_and_determinism.md
