@@ -52,9 +52,7 @@ npm run calibrate:check
 - [라운드 구조와 판정 집계](docs/design/23_round_structure_and_judging.md)
 - [Base → Derived 매핑](docs/design/24_base_to_derived_mapping.md)과 [Effective Performance 계층](docs/design/25_effective_performance.md)
 
-현재 시제품은 육성 시스템과 분리되어 있으며 상대 패턴 학습, 전체 선수 능력치 계산, MMA 확장은 아직 미구현입니다.
-
-거리 모델, 라운드 구조, 능력치 계산 계층은 **명세가 코드를 앞선 상태**입니다. 시제품은 아직 거리와 라운드가 없고 `config/`의 밸런스 값을 읽지 않습니다.
+거리 모델, 라운드 구조, 능력치 계산 계층, 정보 공개 예산, 자가 대전 AI는 구현되어 있습니다. MMA·그래플링 확장은 명세만 있고 미구현입니다.
 
 화면은 모바일 세로 레이아웃과 Canvas 도트 스프라이트를 사용합니다. 범위는 [모바일 도트 전투와 콤보 편집](docs/design/21b_mobile_pixel_combat.md)을 참고하세요.
 
