@@ -1,0 +1,109 @@
+{
+  "config_version": "0.1.0-draft",
+  "description": "Derived Capability -> Effective Performance. Per-capability sensitivity multipliers for current fighter state. Values are initial candidates, not balanced.",
+  "spec_reference": "docs/design/25_effective_performance.md",
+
+  "formula": {
+    "type": "multiplicative_modifiers",
+    "note": "effective_d = derived_d * product(factor_k_d), each factor clamped to [factor_floor, 1.0]",
+    "factor_floor": 0.15
+  },
+
+  "stamina": {
+    "plateau": 80,
+    "floor": 0,
+    "curve_exponent": 1.6,
+    "note": "deficit = clamp((plateau - stamina) / (plateau - floor), 0, 1); factor = 1 - max_loss * deficit^curve_exponent. Flat at or above plateau; accelerates as stamina falls.",
+    "max_loss": {
+      "punch_impact": 0.55,
+      "punch_execution_speed": 0.70,
+      "kick_impact": 0.58,
+      "kick_execution_speed": 0.72,
+      "range_control": 0.65,
+      "guard_efficiency": 0.40,
+      "evasion_capability": 0.75,
+      "counter_conversion": 0.70,
+      "feint_execution": 0.55,
+      "feint_recognition": 0.45,
+      "takedown_capability": 0.70,
+      "takedown_defense": 0.60,
+      "clinch_control": 0.62,
+      "top_control": 0.58,
+      "bottom_escape": 0.72,
+      "submission_threat": 0.55,
+      "submission_defense": 0.42
+    }
+  },
+
+  "body_damage": {
+    "scale": 100,
+    "curve_exponent": 1.4,
+    "note": "factor = 1 - max_loss * (damage / scale)^curve_exponent. Left/right parts resolve to lead/rear through stance.",
+    "parts": {
+      "head": {
+        "feint_recognition": 0.35,
+        "counter_conversion": 0.30,
+        "evasion_capability": 0.25
+      },
+      "body": {
+        "clinch_control": 0.20,
+        "top_control": 0.20,
+        "bottom_escape": 0.25
+      },
+      "lead_arm": {
+        "guard_efficiency": 0.35,
+        "punch_execution_speed": 0.25
+      },
+      "rear_arm": {
+        "punch_impact": 0.35,
+        "guard_efficiency": 0.20
+      },
+      "lead_leg": {
+        "range_control": 0.40,
+        "evasion_capability": 0.30,
+        "kick_execution_speed": 0.25
+      },
+      "rear_leg": {
+        "kick_impact": 0.40,
+        "punch_impact": 0.25,
+        "takedown_capability": 0.30
+      }
+    }
+  },
+
+  "stamina_economy": {
+    "note": "Body damage and weight stress act on the stamina system itself, not on individual capabilities.",
+    "body_damage_recovery_penalty": 0.45,
+    "body_damage_drain_bonus": 0.35,
+    "weight_stress_max_stamina_penalty": 0.20,
+    "weight_stress_recovery_penalty": 0.30
+  },
+
+  "interval_recovery": {
+    "note": "Between-round recovery, referenced by docs/design/23_round_structure_and_judging.md. Never reaches full.",
+    "base_fraction": 0.35,
+    "cardio_weight": 0.50,
+    "recovery_debt_penalty": 0.30,
+    "cap_fraction": 0.85
+  },
+
+  "weight_stress": {
+    "global_derived_penalty": 0.10,
+    "durability_penalty": 0.25,
+    "note": "Weight stress mainly acts through the stamina economy and durability. The global penalty is deliberately small to avoid double counting."
+  },
+
+  "rule_familiarity": {
+    "global_derived_penalty": 0.15,
+    "note": "Low familiarity also degrades plan quality and action selection. That effect lives in the plan-execution layer, not here."
+  },
+
+  "effective_durability": {
+    "note": "Not one of the 17 Derived Capabilities. Produced by this layer and consumed by finish resolution.",
+    "base_parameter": "durability",
+    "head_wear_penalty": 0.40,
+    "head_damage_penalty": 0.35,
+    "stamina_max_loss": 0.45,
+    "weight_stress_penalty": 0.25
+  }
+}

@@ -369,7 +369,19 @@ Base + Body 조합으로 계산.
 System 존재와 주요 영향은 공개하되 정확한 내부값은 숨길 수 있다.
 
 ## Effective Performance
-Stamina, Damage, Injury, Weight, Range, Setup, Familiarity, Skill Card 등 현재 Context 반영.
+세부 기준: `docs/design/25_effective_performance.md`
+실물 Config: `config/effective_performance.json`
+
+Stamina, Damage, Injury, Weight, Familiarity, Skill Card 등 선수의 현재 상태를 반영.
+
+- **Derived별 민감도 계수**를 곱셈 적용한다. 단일 전역 계수를 쓰지 않는다. 지쳤을 때 회피가 먼저 사라지고 가드는 오래 버티는 차이가 카디오 압박형/방어형 캐릭터를 만든다.
+- 스태미너 곡선은 80 이상에서 완전히 평평하고 그 아래로 가속 하락한다. 계수는 "스태미너 0일 때의 최대 손실률"로 표현한다.
+- 부위 손상은 해당 부위가 실제로 쓰이는 능력만 깎는다. 좌우는 Stance를 통해 lead/rear로 해석한다.
+- Body 손상과 체중 스트레스는 개별 능력이 아니라 스태미너 경제(회복량·소모량·최대치)에 작용한다.
+- 라운드 인터벌 회복이 이 계층에서 정의되며 상한이 있어 완전 회복은 없다.
+- `Effective Durability`는 17개 Derived에 없으며 이 계층의 산출물이다. Head Wear가 여기서 전투 결과로 연결된다.
+- **거리와 Setup은 이 계층이 아니다.** 선수 상태가 아니라 순간 상황이므로 Action Result 계층에서 다룬다.
+- Effective는 Derived 원본을 변형하지 않는다. 캐시는 한 칸 안에서만 유효하다.
 
 ## Action Result
 실제 Action 시도/성공/실패/Impact/Position/Damage를 계산.
@@ -983,7 +995,27 @@ Definition Data와 Runtime State도 분리.
 
 ---
 
-# 35. Superseded Decisions
+# 35. 화면 표현과 플랫폼
+
+세부 기준: `docs/design/21b_mobile_pixel_combat.md`, `docs/design/21a_character_model_foundation.md`
+
+이 장은 시제품의 현재 상태를 기록한다. 최종 상용 플랫폼 확정이 아니다.
+
+- 실행 형태는 설치가 필요 없는 브라우저 정적 앱이며 **모바일 세로 화면**을 기준 레이아웃으로 한다.
+- 렌더링은 **Canvas 도트 스프라이트**(`dist/ring-pixel.js`)를 사용한다. `dist/ring.js`는 조건 없이 이것을 로드한다.
+- Three.js 입체 렌더러는 도트 전환으로 대체되었다. `ring-3d.js`, `fighter-model.js`, `character-head.js`와 `dist/vendor/three.*`(약 717KB)는 **현재 앱에서 도달 불가능**하며 테스트에서만 실행된다. 제거할지 되살릴지는 미결이다.
+- **WebGL 초기화 실패 시 Canvas로 전환하는 경로는 현재 존재하지 않는다.** 과거 문서의 해당 기술은 유효하지 않다.
+- 판정과 연출을 분리하는 원칙은 유지한다. 재생 속도·스킵·일시정지는 결과에 영향을 주지 않는다.
+- 캐릭터 외형은 링크 레퍼런스 기반 도트 시안이며 **사용자 최종 승인 상태가 아니다**. 외형 작업 기준은 `AGENTS.md`를 따른다.
+- 실기기 및 브라우저에서의 화면·성능 QA는 아직 수행하지 않았다.
+
+---
+
+# 36. Superseded Decisions
+
+## Design 20 → 21b: 렌더링
+Three.js 입체 렌더러와 WebGL 실패 시 기본 Canvas 전환 방식을 모바일 세로 도트 스프라이트 렌더러로 대체한다.
+`docs/design/20_fighter_visual_upgrade.md`는 History로 보존한다. 해당 문서의 렌더러 구성과 전환 동작은 현재 코드와 일치하지 않는다.
 
 ## 콤보형 턴제 전환
 기존 라운드 중심 제한 개입 및 별도 실시간 3D 전투 통합 방향을 콤보마다 계획하는 동시 실행 턴제로 대체한다.
@@ -1028,7 +1060,7 @@ Part 1 직접 가시 Fight Club은 1개.
 
 ---
 
-# 36. 문서 관리 규칙
+# 37. 문서 관리 규칙
 
 1. 본 파일이 **현재 결정 SSOT**다.
 2. `docs/interviews/`는 결정 당시 History를 보존한다.
@@ -1038,3 +1070,5 @@ Part 1 직접 가시 Fight Club은 1개.
 6. 모든 핵심 밸런스 값은 Data Parameter로 관리한다.
 7. 새 설계 반영 후 GitHub 파일 존재와 SSOT를 재검증한다.
 8. 현재 범위는 Part 1~2이며 Part 3는 Future Scope다.
+9. `docs/design/` 번호는 작성 순서 식별자다. 같은 시점에 갈라진 문서는 `21a` / `21b`처럼 접미 문자로 구분하고 뒤 번호를 밀지 않는다.
+10. 코드와 문서가 어긋나면 어느 쪽이 앞섰는지를 명시한다. 명세가 앞선 경우와 코드가 앞선 경우를 구분해 기록한다.
