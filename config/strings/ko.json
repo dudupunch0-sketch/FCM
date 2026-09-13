@@ -10,6 +10,8 @@
     "event.feint.success": "{fighter}: 페이크 성공 · 방어에 빈틈",
     "event.feint.ignored": "{fighter}: 페이크 무반응",
     "event.evade": "{fighter}: 회피 성공 · 카운터 기회",
+    "event.stance.orthodox": "{fighter}: 오소독스로 전환",
+    "event.stance.southpaw": "{fighter}: 사우스포로 전환",
     "event.ceiling": "{fighter}: 체력 한계 저하 · 회복 상한 {cap}",
     "event.status.stagger": "{fighter}: 휘청임",
     "event.status.groggy": "{fighter}: 그로기",

@@ -16,6 +16,7 @@ let INTERVAL = null;
 let SUBBEAT = null;
 let RANGE = null;
 let CEILING = null;
+let MATCHUP = null;
 let FIRST_STRIKE = null;
 let REVEAL = null;
 let ANGLE = null;
@@ -44,6 +45,7 @@ export function configureEngine(definitions) {
   PATTERNS = cfg.patterns;
   LOW_STAMINA = cfg.low_stamina_plan;
   CEILING = cfg.staminaCeiling ?? null;
+  MATCHUP = cfg.stanceMatchup ?? null;
   ROUNDS = cfg.rounds;
   STATUS = cfg.status;
   INTERVAL = cfg.intervalRecovery;
@@ -72,7 +74,7 @@ export function buildCombatant(spec){
 
 function effectiveOf(state){
   if(!DEFINITIONS||!state.stats)return null;
-  const condition=createCondition({stamina:state.stamina,stance:state.stats.body.stance,
+  const condition=createCondition({stamina:state.stamina,stance:state.stance,
     body_damage:{head:state.damage.head,body:state.damage.body,left_arm:state.damage.arms,right_arm:state.damage.arms}});
   return computeEffective(state.derived,condition,DEFINITIONS).effective;
 }
@@ -85,7 +87,7 @@ function ratio(effective,key){
   return 1+(value-1)*(spec.weight??1);
 }
 
-export function fighter(name,spec){return {name,stamina:100,staminaCap:RULES.maxStamina,damage:{head:0,body:0,arms:0},score:0,counterUntil:-1,openUntil:-1,statusUntil:-1,offAngleUntil:-1,status:'normal',evaded:false,ko:false,
+export function fighter(name,spec){return {name,stance:spec?.body?.stance??DEFAULTS.body.stance??'orthodox',stamina:100,staminaCap:RULES.maxStamina,damage:{head:0,body:0,arms:0},score:0,counterUntil:-1,openUntil:-1,statusUntil:-1,offAngleCards:0,status:'normal',evaded:false,ko:false,
   stats:(spec&&DEFINITIONS)?buildCombatant(spec):null,derived:null};}
 
 const round=x=>Math.round(x*10)/10;
@@ -114,7 +116,7 @@ function lowerCeiling(x,amount,events,actor){
 // A round boundary is real rest. Windows expire and stamina partially recovers, never fully.
 function endRound(f){
   for(const x of f){
-    x.counterUntil=-1;x.openUntil=-1;x.statusUntil=-1;x.offAngleUntil=-1;x.status='normal';
+    x.counterUntil=-1;x.openUntil=-1;x.statusUntil=-1;x.offAngleCards=0;x.status='normal';
     // The cap limits how far recovery can take you, it does not drag a healthier fighter down.
     const ceiling=x.staminaCap??RULES.maxStamina;
     const intervalCap=INTERVAL.cap*ceiling/RULES.maxStamina;
@@ -144,6 +146,27 @@ export function rangeFactor(gap,card){
 // The band boundaries themselves, for anything that needs to reason about distance in the
 // same terms the player is shown. Spec: docs/design/22_combat_range_model.md section 2.
 export function rangeBands(){required();return {...RANGE.bands};}
+
+// Which side of their own body a fighter throws a given hand from. Orthodox leads with the
+// left; southpaw mirrors it. The same mapping dist/fighter.js uses to resolve limb damage.
+export function sideOfHand(stance,hand){
+  const lead=stance==='southpaw'?'right':'left';
+  return hand==='rear'?(lead==='left'?'right':'left'):lead;
+}
+// Facing each other, my left is their right. A side step is declared as MY movement, because
+// that is what the fighter actually commits to; the opponent switching stance afterwards must
+// not reach back and turn me around.
+const facing=side=>side==='left'?'right':'left';
+
+// Open guard is two fighters in opposite stances. Their lead hands meet across the line and
+// lose their bite; the rear hands find a straight path home. It applies to both sides, so it
+// is not an edge for either of them — it changes which punch is worth throwing. Cost is left
+// alone, so a lead hand in open guard simply buys less impact for the same stamina.
+function matchupFactor(attacker,defender,hand){
+  if(!MATCHUP||!hand)return 1;
+  const guard=attacker.stance!==defender.stance?MATCHUP.openGuard:MATCHUP.closedGuard;
+  return guard?.[hand]??1;
+}
 
 export function bandOf(gap){
   const bands=Object.entries(RANGE.bands).sort((a,b)=>a[1]-b[1]);
@@ -325,6 +348,13 @@ export function resolveTurn(input,playerPlan,enemyPlan){
   for(let tick=0;tick<RULES.slots;tick++){
     const events=[],active=plans.map(plan=>plan.find(p=>tick>=p.start&&tick<p.start+CARDS[p.id].duration));
     const poses=active.map(p=>({id:p.id,phase:(tick-p.start),duration:CARDS[p.id].duration,failed:false}));
+    // Losing the angle is measured in the opponent's ACTIONS, not in slots. Someone turned away
+    // stays turned away for what they are already committed to and one more action, then they
+    // have squared back up on their own — nobody stands facing the wrong way for four slots.
+    // Counting slots charged a jab and a four-slot shell the same exposure, which is backwards:
+    // the long commitment is exactly the one that should cost more. This runs before any grant
+    // in the same tick, so a fresh grant restores the full window.
+    if(ANGLE)for(let i=0;i<2;i++)if(active[i].start===tick&&f[i].offAngleCards>0)f[i].offAngleCards--;
     for(let i=0;i<2;i++){
       const p=active[i],c=CARDS[p.id];
       if(p.start===tick){
@@ -344,10 +374,16 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       // you. The angle is only earned against an opponent committed to a guard, or to an
       // attack the step slips (handled where the evade resolves).
       if(ANGLE&&CARDS[p.id].grantsAngle&&!poses[i].failed&&CARDS[active[1-i].id].kind==='guard'&&!poses[1-i].failed){
-        f[1-i].offAngleUntil=Math.max(f[1-i].offAngleUntil,tick+ANGLE.slots);
+        f[1-i].offAngleCards=Math.max(f[1-i].offAngleCards,ANGLE.actions);
       }
       if(p.start===tick&&!poses[i].failed)match.gap=roundGap(clamp(match.gap+(c.rangeShift??0),RANGE.min,RANGE.max));
       if(c.kind==='rest'){f[i].stamina=round(clamp(f[i].stamina+RULES.restRecovery*(1-f[i].damage.body/200),0,f[i].staminaCap));events.push({type:'rest',actor:i});}
+      // Switching stance changes nothing about the card's own numbers and everything about what
+      // the fighter's hands mean afterwards: the lead hook now comes from the other side.
+      if(c.kind==='stance'&&p.start===tick&&!poses[i].failed){
+        f[i].stance=f[i].stance==='southpaw'?'orthodox':'southpaw';
+        events.push({type:'stance',actor:i,stance:f[i].stance});
+      }
     }
     for(let i=0;i<2;i++){
       const p=active[i],other=CARDS[active[1-i].id];
@@ -365,18 +401,27 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       const isOpen=before[j].openUntil>=tick;
       const impaired=before[j].status==='groggy'&&before[j].statusUntil>=tick;
       const defenderReady=ratio(effectiveOf(before[j]),'evasion')>=INFLUENCE.evasion.failThreshold;
-      const dodged=!poses[j].failed&&!isOpen&&!impaired&&defenderReady&&dc.kind==='evade'&&dc.dodges.includes(c.trajectory);
+      // A side step beats the hook thrown from the hand you stepped AWAY from; the one you
+      // stepped INTO wraps round with you and is not evaded at all. Choosing the side is the
+      // read the card asks for, so a side step is never a free answer to every hook.
+      // Expressed in physical sides, not in lead/rear: the opponent's left arm stays their left
+      // arm through a stance switch, so a step already committed keeps pointing where it was
+      // aimed. What a switch changes is which HAND now comes from that side, which is exactly
+      // what switching is for.
+      const steppedIntoHand=!!(dc.stepToward&&c.trajectory==='hook'
+        &&sideOfHand(before[i].stance,c.hand)===facing(dc.stepToward));
+      const dodged=!poses[j].failed&&!isOpen&&!impaired&&defenderReady&&dc.kind==='evade'&&dc.dodges.includes(c.trajectory)&&!steppedIntoHand;
       if(dodged){effects.push({type:'evade',actor:j,target:i});continue;}
       const guarding=!poses[j].failed&&!isOpen&&dc.kind==='guard'&&dc.protect===c.target;
       const blocked=guarding&&before[j].stamina>=RULES.guardDrain;
       const counter=before[i].counterUntil>=tick;
       const recovery=dc.kind==='attack'&&tick>active[j].start+dc.impact;
       const mismatch=dc.kind==='evade'&&!dodged;
-      // A hook wraps round into the side the fighter stepped toward, so it is not merely
-      // unevaded — it catches them turned away.
-      const steppedInto=ANGLE&&dc.grantsAngle&&!dodged&&c.trajectory==='hook';
-      const attackerOffAngle=ANGLE&&before[i].offAngleUntil>=tick;
-      const defenderOffAngle=ANGLE&&before[j].offAngleUntil>=tick;
+      // Punished only for the hand actually stepped into. A fighter who simply could not step
+      // — staggered, baited, out of position — takes the ordinary mistimed-evasion penalty.
+      const steppedInto=ANGLE&&dc.grantsAngle&&!dodged&&steppedIntoHand;
+      const attackerOffAngle=ANGLE&&before[i].offAngleCards>0;
+      const defenderOffAngle=ANGLE&&before[j].offAngleCards>0;
       const styleReach=styleOf(before[i],'reachBonus',0);
       const reach=rangeFactor(match.gap,styleReach?{...c,reachBonus:(c.reachBonus??0)+styleReach}:c);
       const band=bandOf(match.gap);
@@ -388,7 +433,7 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       // staminaFloor weakens what you throw; this deepens what you take. Both read absolute
       // stamina, so a ceiling that has fallen compounds through here without extra rules.
       const gassedTarget=1+(MODIFIERS.staminaVulnerability??0)*(1-clamp(before[j].stamina,0,RULES.maxStamina)/RULES.maxStamina);
-      let power=c.power*staminaFactor*gassedTarget*(counter?MODIFIERS.counter*styleOf(before[i],'counterMultiplier',1):1)*(isOpen||recovery||mismatch?MODIFIERS.exposed:1)*reach
+      let power=c.power*staminaFactor*gassedTarget*matchupFactor(before[i],before[j],c.hand)*(counter?MODIFIERS.counter*styleOf(before[i],'counterMultiplier',1):1)*(isOpen||recovery||mismatch?MODIFIERS.exposed:1)*reach
         *ratio(attackerEffective,'impact')*setup.factor*bandBoost*(attackerOffAngle?ANGLE.attackPenalty:1)*(defenderOffAngle?ANGLE.incomingBonus:1)*(steppedInto?ANGLE.hookPunish:1)*impactVariance(match,tick);
       if(blocked)power/=Math.max(ratio(defenderEffective,'guard'),0.2);
       // A long guard covers more time but is a coarser block, so it leaks more per hit.
@@ -416,7 +461,7 @@ export function resolveTurn(input,playerPlan,enemyPlan){
         f[e.actor].counterUntil=tick+RULES.counterWindow+styleOf(f[e.actor],'counterWindowBonus',0);f[e.actor].evaded=true;f[e.actor].score+=MODIFIERS.evadeScore;
         // An attack that the step slipped is commitment by definition, so the angle is earned.
         if(ANGLE&&CARDS[active[e.actor].id].grantsAngle){
-          f[e.target].offAngleUntil=Math.max(f[e.target].offAngleUntil,tick+ANGLE.slots);
+          f[e.target].offAngleCards=Math.max(f[e.target].offAngleCards,ANGLE.actions);
         }
         events.push({...e});continue;
       }
@@ -466,7 +511,7 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       endRound(f);
     } else {
       f.forEach(x=>{
-        x.counterUntil=carryTick(x.counterUntil);x.openUntil=carryTick(x.openUntil);x.offAngleUntil=carryTick(x.offAngleUntil);
+        x.counterUntil=carryTick(x.counterUntil);x.openUntil=carryTick(x.openUntil);
         x.statusUntil=carryTick(x.statusUntil);
         if(x.statusUntil<0)x.status='normal';
         x.stamina=round(clamp(x.stamina+RULES.betweenRecovery,0,x.staminaCap));

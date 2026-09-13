@@ -45,17 +45,20 @@ npm run calibrate:check
 
 ## 문서
 
+- **[개발 기록 색인](HISTORY.md)** — 날짜별 작업 기록은 [`dev/history/`](dev/history)
+- **[검증·보정 환경 지침](docs/guide/testing_and_calibration.md)** — 무엇을 바꿨을 때 무엇을 돌리나
 - [독립 캐릭터 모델 초안과 미리보기](assets/characters/rook/README.md)
 - [캐릭터 고정 레퍼런스: 야생의 숨결·왕국의 눈물 링크](docs/art/reference/link/README.md)
 - [현재 결정과 전체 게임 범위](docs/spec/current_decisions.md)
 - [콤보 전투와 정보 카드 설계](docs/design/18_combo_turn_combat_and_information_cards.md)
 - [플랫폼 선택, 구현 범위, 임시 판정 규칙과 한계](docs/design/19_combat_prototype_implementation.md)
-- [전투 거리 모델](docs/design/22_combat_range_model.md)
+- [전투 거리 모델](docs/design/22_combat_range_model.md) — 이동 카드, 사이드 스텝, 스탠스와 오픈 가드
+- [스태미너 소모와 회복 상한](docs/design/38_stamina_attrition.md)
 - [난이도](docs/design/33_difficulty.md)와 [자가 대전 균형 보정](docs/design/34_ai_equilibrium.md)
 - [라운드 구조와 판정 집계](docs/design/23_round_structure_and_judging.md)
 - [Base → Derived 매핑](docs/design/24_base_to_derived_mapping.md)과 [Effective Performance 계층](docs/design/25_effective_performance.md)
 
-거리 모델, 라운드 구조, 능력치 계산 계층, 정보 공개 예산, 자가 대전 AI는 구현되어 있습니다. MMA·그래플링 확장은 명세만 있고 미구현입니다.
+거리 모델, 라운드 구조, 능력치 계산 계층, 정보 공개 예산, 스태미너 소모, 스탠스와 오픈 가드, 자가 대전 AI는 구현되어 있습니다. MMA·그래플링 확장은 명세만 있고 미구현입니다.
 
 화면은 모바일 세로 레이아웃과 Canvas 도트 스프라이트를 사용합니다. 범위는 [모바일 도트 전투와 콤보 편집](docs/design/21b_mobile_pixel_combat.md)을 참고하세요.
 

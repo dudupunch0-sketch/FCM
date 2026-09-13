@@ -3,13 +3,13 @@
   "description": "Equilibrium over reactive policies. Regenerate with: node tools/calibrate.mjs policies",
   "spec_reference": "docs/design/34_ai_equilibrium.md",
   "generated": {
-    "policy_fingerprint": "c3a8c0ff",
+    "policy_fingerprint": "c980a05e",
     "seed": 20260101,
     "rounds": 18,
     "pool_size": 156,
     "game_value": 0,
-    "in_pool_exploitability": 0.0338,
-    "external_best_response_gain": 0.1774,
+    "in_pool_exploitability": 0.0304,
+    "external_best_response_gain": 0.1466,
     "note": "Strategies here are decision rules, not combos. card_usage is measured by replaying the mixture and counting what actually reached the timeline, which is the only way a conditional card can show its value."
   },
   "equilibrium_support": [
@@ -22,110 +22,19 @@
             "value": 33
           },
           {
-            "when": "gapAbove",
-            "role": "slip",
-            "value": 2.1
-          },
-          {
-            "when": "staminaBelow",
-            "role": "retreat",
-            "value": 90
-          }
-        ],
-        "fallback": "pressure"
-      },
-      "description": "맞았으면 power, 멀면 slip, 지치면 retreat / 그 외 pressure",
-      "weight": 0.14628
-    },
-    {
-      "policy": {
-        "rules": [
-          {
-            "when": "damageAbove",
-            "role": "pressure",
-            "value": 58
-          },
-          {
-            "when": "gapAbove",
-            "role": "pressure",
-            "value": 2.1
-          }
-        ],
-        "fallback": "retreat"
-      },
-      "description": "맞았으면 pressure, 멀면 pressure / 그 외 retreat",
-      "weight": 0.08097
-    },
-    {
-      "policy": {
-        "rules": [
-          {
-            "when": "gapBelow",
-            "role": "power",
-            "value": 0.5
-          },
-          {
-            "when": "damageAbove",
-            "role": "recover",
-            "value": 58
-          }
-        ],
-        "fallback": "pressure"
-      },
-      "description": "가까우면 power, 맞았으면 recover / 그 외 pressure",
-      "weight": 0.07464
-    },
-    {
-      "policy": {
-        "rules": [
-          {
-            "when": "damageAbove",
-            "role": "power",
-            "value": 33
-          },
-          {
-            "when": "gapAbove",
-            "role": "angle",
-            "value": 2.1
-          },
-          {
             "when": "staminaBelow",
             "role": "cover",
-            "value": 90
-          }
-        ],
-        "fallback": "pressure"
-      },
-      "description": "맞았으면 power, 멀면 angle, 지치면 cover / 그 외 pressure",
-      "weight": 0.07331
-    },
-    {
-      "policy": {
-        "rules": [
-          {
-            "when": "gapBelow",
-            "role": "power",
-            "value": 0.5
-          },
-          {
-            "when": "staminaBelow",
-            "role": "counter",
             "value": 90
           },
           {
             "when": "opponentRepeated",
             "role": "close"
-          },
-          {
-            "when": "gapAbove",
-            "role": "close",
-            "value": 2.1
           }
         ],
-        "fallback": "bodywork"
+        "fallback": "switchUp"
       },
-      "description": "가까우면 power, 지치면 counter, 상대 반복하면 close, 멀면 close / 그 외 bodywork",
-      "weight": 0.06531
+      "description": "맞았으면 power, 지치면 cover, 상대 반복하면 close / 그 외 switchUp",
+      "weight": 0.11096
     },
     {
       "policy": {
@@ -136,9 +45,60 @@
             "value": 33
           },
           {
+            "when": "staminaBelow",
+            "role": "counter",
+            "value": 90
+          }
+        ],
+        "fallback": "pressure"
+      },
+      "description": "맞았으면 power, 지치면 counter / 그 외 pressure",
+      "weight": 0.0933
+    },
+    {
+      "policy": {
+        "rules": [
+          {
             "when": "gapAbove",
-            "role": "power",
+            "role": "bodywork",
             "value": 2.1
+          },
+          {
+            "when": "opponentRepeated",
+            "role": "close"
+          }
+        ],
+        "fallback": "bodywork"
+      },
+      "description": "멀면 bodywork, 상대 반복하면 close / 그 외 bodywork",
+      "weight": 0.08497
+    },
+    {
+      "policy": {
+        "rules": [
+          {
+            "when": "gapAbove",
+            "role": "shell",
+            "value": 2.1
+          },
+          {
+            "when": "damageAbove",
+            "role": "close",
+            "value": 33
+          }
+        ],
+        "fallback": "bodywork"
+      },
+      "description": "멀면 shell, 맞았으면 close / 그 외 bodywork",
+      "weight": 0.07997
+    },
+    {
+      "policy": {
+        "rules": [
+          {
+            "when": "damageAbove",
+            "role": "power",
+            "value": 33
           },
           {
             "when": "staminaBelow",
@@ -152,353 +112,364 @@
         ],
         "fallback": "pressure"
       },
-      "description": "맞았으면 power, 멀면 power, 지치면 retreat, 상대 반복하면 retreat / 그 외 pressure",
-      "weight": 0.06131
+      "description": "맞았으면 power, 지치면 retreat, 상대 반복하면 retreat / 그 외 pressure",
+      "weight": 0.06231
     },
     {
       "policy": {
         "rules": [
           {
             "when": "gapAbove",
-            "role": "pressure",
-            "value": 2.1
-          },
-          {
-            "when": "damageAbove",
-            "role": "close",
-            "value": 58
-          }
-        ],
-        "fallback": "bodywork"
-      },
-      "description": "멀면 pressure, 맞았으면 close / 그 외 bodywork",
-      "weight": 0.05332
-    },
-    {
-      "policy": {
-        "rules": [
-          {
-            "when": "gapBelow",
-            "role": "cover",
-            "value": 1.3
-          },
-          {
-            "when": "staminaBelow",
-            "role": "counter",
-            "value": 90
-          },
-          {
-            "when": "opponentRepeated",
-            "role": "shell"
-          }
-        ],
-        "fallback": "bodywork"
-      },
-      "description": "가까우면 cover, 지치면 counter, 상대 반복하면 shell / 그 외 bodywork",
-      "weight": 0.05232
-    },
-    {
-      "policy": {
-        "rules": [
-          {
-            "when": "damageAbove",
-            "role": "power",
-            "value": 33
-          },
-          {
-            "when": "gapAbove",
-            "role": "power",
-            "value": 2.1
-          },
-          {
-            "when": "staminaBelow",
-            "role": "retreat",
-            "value": 90
-          }
-        ],
-        "fallback": "pressure"
-      },
-      "description": "맞았으면 power, 멀면 power, 지치면 retreat / 그 외 pressure",
-      "weight": 0.04998
-    },
-    {
-      "policy": {
-        "rules": [
-          {
-            "when": "gapBelow",
-            "role": "power",
-            "value": 0.5
-          },
-          {
-            "when": "damageAbove",
-            "role": "recover",
-            "value": 58
-          },
-          {
-            "when": "staminaBelow",
-            "role": "retreat",
-            "value": 90
-          }
-        ],
-        "fallback": "pressure"
-      },
-      "description": "가까우면 power, 맞았으면 recover, 지치면 retreat / 그 외 pressure",
-      "weight": 0.03732
-    },
-    {
-      "policy": {
-        "rules": [
-          {
-            "when": "gapBelow",
-            "role": "cover",
-            "value": 1.3
-          },
-          {
-            "when": "staminaBelow",
-            "role": "counter",
-            "value": 90
-          },
-          {
-            "when": "opponentRepeated",
-            "role": "close"
-          },
-          {
-            "when": "gapAbove",
-            "role": "retreat",
-            "value": 2.1
-          }
-        ],
-        "fallback": "bodywork"
-      },
-      "description": "가까우면 cover, 지치면 counter, 상대 반복하면 close, 멀면 retreat / 그 외 bodywork",
-      "weight": 0.03466
-    },
-    {
-      "policy": {
-        "rules": [
-          {
-            "when": "damageAbove",
-            "role": "close",
-            "value": 58
-          },
-          {
-            "when": "gapAbove",
-            "role": "pressure",
-            "value": 2.1
-          }
-        ],
-        "fallback": "retreat"
-      },
-      "description": "맞았으면 close, 멀면 pressure / 그 외 retreat",
-      "weight": 0.03466
-    },
-    {
-      "policy": {
-        "rules": [
-          {
-            "when": "gapAbove",
-            "role": "retreat",
-            "value": 2.1
-          },
-          {
-            "when": "damageAbove",
-            "role": "close",
-            "value": 58
-          }
-        ],
-        "fallback": "bodywork"
-      },
-      "description": "멀면 retreat, 맞았으면 close / 그 외 bodywork",
-      "weight": 0.03332
-    },
-    {
-      "policy": {
-        "rules": [
-          {
-            "when": "gapBelow",
-            "role": "counter",
-            "value": 0.5
-          },
-          {
-            "when": "damageAbove",
-            "role": "close",
-            "value": 58
-          }
-        ],
-        "fallback": "bodywork"
-      },
-      "description": "가까우면 counter, 맞았으면 close / 그 외 bodywork",
-      "weight": 0.03232
-    },
-    {
-      "policy": {
-        "rules": [
-          {
-            "when": "opponentRepeated",
-            "role": "counter"
-          },
-          {
-            "when": "gapBelow",
-            "role": "retreat",
-            "value": 1.3
-          },
-          {
-            "when": "damageAbove",
-            "role": "pressure",
-            "value": 58
-          }
-        ],
-        "fallback": "power"
-      },
-      "description": "상대 반복하면 counter, 가까우면 retreat, 맞았으면 pressure / 그 외 power",
-      "weight": 0.02799
-    },
-    {
-      "policy": {
-        "rules": [
-          {
-            "when": "damageAbove",
-            "role": "recover",
-            "value": 58
-          },
-          {
-            "when": "gapAbove",
-            "role": "pressure",
-            "value": 2.1
-          }
-        ],
-        "fallback": "retreat"
-      },
-      "description": "맞았으면 recover, 멀면 pressure / 그 외 retreat",
-      "weight": 0.02566
-    },
-    {
-      "policy": {
-        "rules": [
-          {
-            "when": "gapBelow",
-            "role": "counter",
-            "value": 0.5
-          },
-          {
-            "when": "damageAbove",
-            "role": "recover",
-            "value": 58
-          }
-        ],
-        "fallback": "pressure"
-      },
-      "description": "가까우면 counter, 맞았으면 recover / 그 외 pressure",
-      "weight": 0.02066
-    },
-    {
-      "policy": {
-        "rules": [
-          {
-            "when": "damageAbove",
-            "role": "recover",
-            "value": 33
-          },
-          {
-            "when": "gapAbove",
-            "role": "power",
-            "value": 2.1
-          },
-          {
-            "when": "staminaBelow",
-            "role": "cover",
-            "value": 90
-          }
-        ],
-        "fallback": "pressure"
-      },
-      "description": "맞았으면 recover, 멀면 power, 지치면 cover / 그 외 pressure",
-      "weight": 0.01666
-    },
-    {
-      "policy": {
-        "rules": [
-          {
-            "when": "gapAbove",
-            "role": "pressure",
-            "value": 2.1
-          },
-          {
-            "when": "damageAbove",
-            "role": "close",
-            "value": 33
-          }
-        ],
-        "fallback": "bodywork"
-      },
-      "description": "멀면 pressure, 맞았으면 close / 그 외 bodywork",
-      "weight": 0.01233
-    },
-    {
-      "policy": {
-        "rules": [
-          {
-            "when": "gapAbove",
-            "role": "pressure",
+            "role": "shell",
             "value": 2.1
           },
           {
             "when": "damageAbove",
             "role": "close",
             "value": 83
+          }
+        ],
+        "fallback": "bodywork"
+      },
+      "description": "멀면 shell, 맞았으면 close / 그 외 bodywork",
+      "weight": 0.05631
+    },
+    {
+      "policy": {
+        "rules": [
+          {
+            "when": "gapBelow",
+            "role": "recover",
+            "value": 0.5
+          },
+          {
+            "when": "opponentRepeated",
+            "role": "switchUp"
+          }
+        ],
+        "fallback": "power"
+      },
+      "description": "가까우면 recover, 상대 반복하면 switchUp / 그 외 power",
+      "weight": 0.05132
+    },
+    {
+      "policy": {
+        "rules": [
+          {
+            "when": "damageAbove",
+            "role": "power",
+            "value": 58
+          },
+          {
+            "when": "staminaBelow",
+            "role": "cover",
+            "value": 90
+          }
+        ],
+        "fallback": "switchUp"
+      },
+      "description": "맞았으면 power, 지치면 cover / 그 외 switchUp",
+      "weight": 0.04998
+    },
+    {
+      "policy": {
+        "rules": [
+          {
+            "when": "damageAbove",
+            "role": "recover",
+            "value": 58
+          },
+          {
+            "when": "gapAbove",
+            "role": "recover",
+            "value": 2.1
+          },
+          {
+            "when": "opponentRepeated",
+            "role": "cover"
+          }
+        ],
+        "fallback": "switchUp"
+      },
+      "description": "맞았으면 recover, 멀면 recover, 상대 반복하면 cover / 그 외 switchUp",
+      "weight": 0.04499
+    },
+    {
+      "policy": {
+        "rules": [
+          {
+            "when": "gapAbove",
+            "role": "bodywork",
+            "value": 2.1
+          },
+          {
+            "when": "damageAbove",
+            "role": "shell",
+            "value": 33
+          }
+        ],
+        "fallback": "bodywork"
+      },
+      "description": "멀면 bodywork, 맞았으면 shell / 그 외 bodywork",
+      "weight": 0.04432
+    },
+    {
+      "policy": {
+        "rules": [
+          {
+            "when": "damageAbove",
+            "role": "pressure",
+            "value": 33
+          },
+          {
+            "when": "staminaBelow",
+            "role": "cover",
+            "value": 90
+          }
+        ],
+        "fallback": "switchUp"
+      },
+      "description": "맞았으면 pressure, 지치면 cover / 그 외 switchUp",
+      "weight": 0.04332
+    },
+    {
+      "policy": {
+        "rules": [
+          {
+            "when": "damageAbove",
+            "role": "recover",
+            "value": 58
+          },
+          {
+            "when": "opponentRepeated",
+            "role": "retreat"
+          },
+          {
+            "when": "staminaBelow",
+            "role": "close",
+            "value": 90
+          }
+        ],
+        "fallback": "switchUp"
+      },
+      "description": "맞았으면 recover, 상대 반복하면 retreat, 지치면 close / 그 외 switchUp",
+      "weight": 0.04165
+    },
+    {
+      "policy": {
+        "rules": [
+          {
+            "when": "damageAbove",
+            "role": "recover",
+            "value": 58
+          },
+          {
+            "when": "gapAbove",
+            "role": "bodywork",
+            "value": 2.1
+          }
+        ],
+        "fallback": "pressure"
+      },
+      "description": "맞았으면 recover, 멀면 bodywork / 그 외 pressure",
+      "weight": 0.03266
+    },
+    {
+      "policy": {
+        "rules": [
+          {
+            "when": "gapAbove",
+            "role": "bodywork",
+            "value": 2.1
+          },
+          {
+            "when": "damageAbove",
+            "role": "close",
+            "value": 58
+          }
+        ],
+        "fallback": "bodywork"
+      },
+      "description": "멀면 bodywork, 맞았으면 close / 그 외 bodywork",
+      "weight": 0.02999
+    },
+    {
+      "policy": {
+        "rules": [
+          {
+            "when": "gapAbove",
+            "role": "shell",
+            "value": 2.1
+          },
+          {
+            "when": "damageAbove",
+            "role": "close",
+            "value": 58
+          },
+          {
+            "when": "opponentRepeated",
+            "role": "pressure"
+          }
+        ],
+        "fallback": "bodywork"
+      },
+      "description": "멀면 shell, 맞았으면 close, 상대 반복하면 pressure / 그 외 bodywork",
+      "weight": 0.02832
+    },
+    {
+      "policy": {
+        "rules": [
+          {
+            "when": "damageAbove",
+            "role": "recover",
+            "value": 58
+          },
+          {
+            "when": "gapAbove",
+            "role": "recover",
+            "value": 2.1
           },
           {
             "when": "opponentRepeated",
             "role": "close"
           }
         ],
-        "fallback": "bodywork"
+        "fallback": "switchUp"
       },
-      "description": "멀면 pressure, 맞았으면 close, 상대 반복하면 close / 그 외 bodywork",
-      "weight": 0.01233
+      "description": "맞았으면 recover, 멀면 recover, 상대 반복하면 close / 그 외 switchUp",
+      "weight": 0.02433
     },
     {
       "policy": {
         "rules": [
           {
-            "when": "opponentRepeated",
-            "role": "counter"
+            "when": "damageAbove",
+            "role": "close",
+            "value": 33
           },
           {
             "when": "staminaBelow",
-            "role": "power",
+            "role": "cover",
             "value": 90
-          },
-          {
-            "when": "gapBelow",
-            "role": "pressure",
-            "value": 1.3
           }
         ],
-        "fallback": "close"
+        "fallback": "switchUp"
       },
-      "description": "상대 반복하면 counter, 지치면 power, 가까우면 pressure / 그 외 close",
-      "weight": 0.01233
+      "description": "맞았으면 close, 지치면 cover / 그 외 switchUp",
+      "weight": 0.02133
+    },
+    {
+      "policy": {
+        "rules": [
+          {
+            "when": "damageAbove",
+            "role": "power",
+            "value": 33
+          },
+          {
+            "when": "staminaBelow",
+            "role": "retreat",
+            "value": 90
+          }
+        ],
+        "fallback": "pressure"
+      },
+      "description": "맞았으면 power, 지치면 retreat / 그 외 pressure",
+      "weight": 0.02033
+    },
+    {
+      "policy": {
+        "rules": [
+          {
+            "when": "damageAbove",
+            "role": "switchUp",
+            "value": 33
+          },
+          {
+            "when": "staminaBelow",
+            "role": "retreat",
+            "value": 90
+          }
+        ],
+        "fallback": "power"
+      },
+      "description": "맞았으면 switchUp, 지치면 retreat / 그 외 power",
+      "weight": 0.01733
+    },
+    {
+      "policy": {
+        "rules": [
+          {
+            "when": "damageAbove",
+            "role": "shell",
+            "value": 33
+          },
+          {
+            "when": "gapAbove",
+            "role": "pressure",
+            "value": 2.1
+          }
+        ],
+        "fallback": "cover"
+      },
+      "description": "맞았으면 shell, 멀면 pressure / 그 외 cover",
+      "weight": 0.01433
+    },
+    {
+      "policy": {
+        "rules": [
+          {
+            "when": "damageAbove",
+            "role": "power",
+            "value": 33
+          },
+          {
+            "when": "staminaBelow",
+            "role": "cover",
+            "value": 90
+          }
+        ],
+        "fallback": "pressure"
+      },
+      "description": "맞았으면 power, 지치면 cover / 그 외 pressure",
+      "weight": 0.01433
+    },
+    {
+      "policy": {
+        "rules": [
+          {
+            "when": "gapAbove",
+            "role": "close",
+            "value": 2.1
+          },
+          {
+            "when": "opponentRepeated",
+            "role": "counter"
+          }
+        ],
+        "fallback": "bodywork"
+      },
+      "description": "멀면 close, 상대 반복하면 counter / 그 외 bodywork",
+      "weight": 0.011
     }
   ],
   "card_usage": {
-    "guard": 0.1659,
-    "rest": 0.162,
-    "body": 0.1541,
-    "jab": 0.0776,
-    "cross": 0.0746,
-    "hook": 0.0596,
-    "feint": 0.0525,
-    "heavy": 0.0525,
-    "flicker": 0.0523,
-    "stepin": 0.0327,
-    "advance": 0.0327,
-    "lowguard": 0.0305,
-    "backstep": 0.0262,
-    "sway": 0.0175,
-    "shell": 0.0058,
-    "weave": 0.0031,
-    "sidestep": 0.0006
+    "body": 0.2038,
+    "guard": 0.1786,
+    "rest": 0.121,
+    "cross": 0.0674,
+    "hook": 0.0598,
+    "jab": 0.0589,
+    "feint": 0.0474,
+    "heavy": 0.0474,
+    "lowguard": 0.0442,
+    "stepin": 0.0433,
+    "advance": 0.0433,
+    "switch": 0.0361,
+    "flicker": 0.0187,
+    "shell": 0.0132,
+    "backstep": 0.0094,
+    "sway": 0.0077
   },
   "unreachable_cards": []
 }

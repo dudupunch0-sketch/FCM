@@ -157,9 +157,9 @@ test('conditional cards reach the timeline once play is reactive', () => {
   const stepper = { rules: [
     { when: 'gapAbove', value: 1.6, role: 'close' },
     { when: 'gapBelow', value: 1.4, role: 'retreat' }
-  ], fallback: 'angle' };
+  ], fallback: 'angleLeft' };
   const usage = cardUsage([stepper], [1], { seeds: [1, 2], stats: MIRROR });
-  const moved = ['stepin', 'backstep', 'sidestep'].filter(id => usage[id] > 0);
+  const moved = ['stepin', 'backstep', 'sidestep_lead', 'sidestep_rear'].filter(id => usage[id] > 0);
   assert.ok(moved.length >= 2, `거리·각 카드가 타임라인에 오르지 않았습니다: ${JSON.stringify(usage)}`);
 });
 

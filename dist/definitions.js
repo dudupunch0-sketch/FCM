@@ -373,7 +373,7 @@ const validators = {
     }
     if (ceiling.min < rules.bodyKoStamina) fail(file, 'staminaCeiling.min', '바닥이 바디 KO 문턱보다 낮으면 소모만으로 KO가 확정됩니다');
     const cards = requireObject(file, 'cards', cfg.cards);
-    const kinds = new Set(['attack', 'guard', 'evade', 'feint', 'rest', 'move']);
+    const kinds = new Set(['attack', 'guard', 'evade', 'feint', 'rest', 'move', 'stance']);
     for (const id of dataKeys(cards)) {
       const card = cards[id];
       if (!kinds.has(card.kind)) fail(file, `cards.${id}.kind`, `알 수 없는 종류: ${card.kind}`);
@@ -383,6 +383,11 @@ const validators = {
         requireNumber(file, `cards.${id}.power`, card.power, { min: 0 });
         requireNumber(file, `cards.${id}.impact`, card.impact, { min: 0, max: card.duration - 1 });
         if (!card.target || !card.trajectory) fail(file, `cards.${id}`, '공격은 target과 trajectory가 필요합니다');
+        // Every punch is thrown by a hand. The hook needs it so a side step knows what it
+        // beats; all of them need it so the open-guard matchup has something to read.
+        if (!['lead', 'rear'].includes(card.hand)) {
+          fail(file, `cards.${id}.hand`, '공격은 어느 손으로 던지는지 선언해야 합니다: lead 또는 rear');
+        }
       }
       if (card.kind === 'guard' && !card.protect) fail(file, `cards.${id}.protect`, '가드는 보호 부위가 필요합니다');
       if (card.blockLeak !== undefined) requireNumber(file, `cards.${id}.blockLeak`, card.blockLeak, { min: 0, max: 1 });
@@ -437,8 +442,36 @@ const validators = {
       }
     }
     if (angled.length) {
+      // Stepping is a read on which hand is coming. A step that does not name a side would
+      // beat every hook, and a side with no hook to fear would be strictly safe: both would
+      // make the card an answer rather than a choice.
+      for (const id of angled) {
+        // Physical left/right, and the fighter's OWN movement. Naming the side in the
+        // opponent's lead/rear terms would let a mid-combo stance switch turn a step that was
+        // already committed, which is not something the opponent gets to do.
+        if (!['left', 'right'].includes(cards[id].stepToward)) {
+          fail(file, `cards.${id}.stepToward`, '각을 트는 회피는 어느 쪽으로 도는지 선언해야 합니다: left 또는 right');
+        }
+        for (const trajectory of ['straight', 'hook']) {
+          if (!(cards[id].dodges ?? []).includes(trajectory)) {
+            fail(file, `cards.${id}.dodges`, `각을 트는 회피는 ${trajectory}를 피할 수 있어야 합니다`);
+          }
+        }
+      }
+      // Which physical side a hook comes from depends on the thrower's stance, so the config
+      // can only guarantee the shape: both hands must throw hooks, and both directions must be
+      // available to step. Then whatever stance either fighter is in, each step has exactly one
+      // hook that answers it and one it beats.
+      const hookHands = new Set(dataKeys(cards).filter(id => cards[id].trajectory === 'hook').map(id => cards[id].hand));
+      for (const hand of ['lead', 'rear']) {
+        if (!hookHands.has(hand)) fail(file, 'cards', `${hand} 손 훅이 없어 한쪽 사이드 스텝이 위험 없이 안전해집니다`);
+      }
+      const sides = new Set(angled.map(id => cards[id].stepToward));
+      if (sides.size < 2) fail(file, 'cards', '사이드 스텝은 양쪽 방향이 모두 있어야 선택이 됩니다');
+
       const angle = requireObject(file, 'angle', cfg.angle);
-      requireNumber(file, 'angle.slots', angle.slots, { min: 1, max: rules.slots });
+      // Actions, not slots, and few of them: the opponent turns back on their own.
+      requireNumber(file, 'angle.actions', angle.actions, { min: 1, max: 2 });
       requireNumber(file, 'angle.attackPenalty', angle.attackPenalty, { min: 0, max: 1 });
       requireNumber(file, 'angle.incomingBonus', angle.incomingBonus, { min: 1 });
       requireNumber(file, 'angle.hookPunish', angle.hookPunish, { min: 1 });
@@ -447,6 +480,19 @@ const validators = {
       if (angle.requiresCommitment !== true) fail(file, 'angle.requiresCommitment', '무방비 상대에게 각도 이점을 주면 안 됩니다');
       if (angle.hookPunish <= 1) fail(file, 'angle.hookPunish', '스텝한 방향의 훅은 더 아프게 맞아야 합니다');
     }
+    // Open guard has a direction: leads lose, rears gain. Without that ordering the matchup is
+    // just a pair of numbers and stance stops meaning anything.
+    const matchup = requireObject(file, 'stanceMatchup', cfg.stanceMatchup);
+    for (const guard of ['openGuard', 'closedGuard']) {
+      const spec = requireObject(file, `stanceMatchup.${guard}`, matchup[guard]);
+      for (const hand of ['lead', 'rear']) requireNumber(file, `stanceMatchup.${guard}.${hand}`, spec[hand], { min: 0.5, max: 1.5 });
+    }
+    if (matchup.openGuard.lead >= 1) fail(file, 'stanceMatchup.openGuard.lead', '오픈 가드에서 앞손은 결정력이 떨어져야 합니다');
+    if (matchup.openGuard.rear <= 1) fail(file, 'stanceMatchup.openGuard.rear', '오픈 가드에서 뒷손은 결정력이 올라야 합니다');
+    if (matchup.closedGuard.lead !== 1 || matchup.closedGuard.rear !== 1) {
+      fail(file, 'stanceMatchup.closedGuard', '같은 스탠스는 기준이므로 보정이 없어야 합니다');
+    }
+
     const style = requireObject(file, 'style_cards', cfg.style_cards);
     requireNumber(file, 'style_cards.active_limit', style.active_limit, { min: 1 });
     const styleCards = requireObject(file, 'style_cards.cards', style.cards);

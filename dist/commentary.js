@@ -23,6 +23,8 @@ export function describeEvent(event, { fighters = [], cards = CARDS } = {}) {
       return t(event.success ? 'event.feint.success' : 'event.feint.ignored', { fighter });
     case 'evade':
       return t('event.evade', { fighter });
+    case 'stance':
+      return t(`event.stance.${event.stance}`, { fighter });
     case 'ceiling':
       return t('event.ceiling', { fighter, cap: event.cap });
     case 'status':

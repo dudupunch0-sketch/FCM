@@ -58,6 +58,7 @@
       "power": 8,
       "target": "head",
       "trajectory": "straight",
+      "hand": "lead",
       "description": "빠른 머리 공격. 빈틈을 찌르세요.",
       "subBeat": 0.35,
       "optimalRange": 2.2,
@@ -75,6 +76,7 @@
       "power": 15,
       "target": "head",
       "trajectory": "straight",
+      "hand": "rear",
       "description": "다음 박자에 타격. 회피 직후 카운터에 적합.",
       "subBeat": 0.5,
       "optimalRange": 1.8,
@@ -92,6 +94,7 @@
       "power": 16,
       "target": "head",
       "trajectory": "hook",
+      "hand": "lead",
       "description": "스웨이를 잡는 곡선 공격. 위빙에는 빗나갑니다.",
       "subBeat": 0.55,
       "optimalRange": 1.4,
@@ -109,6 +112,7 @@
       "power": 13,
       "target": "body",
       "trajectory": "body",
+      "hand": "lead",
       "description": "상단 가드와 머리 회피를 공략. 막히지 않는 대신 위력이 낮고 비쌉니다.",
       "subBeat": 0.55,
       "optimalRange": 1.2,
@@ -126,6 +130,7 @@
       "power": 24,
       "target": "head",
       "trajectory": "hook",
+      "hand": "rear",
       "description": "큰 머리 충격. 타격 뒤 회수 중에는 취약합니다.",
       "subBeat": 0.62,
       "optimalRange": 1.6,
@@ -218,6 +223,7 @@
       "power": 7,
       "target": "head",
       "trajectory": "straight",
+      "hand": "lead",
       "subBeat": 0.3,
       "optimalRange": 2.6,
       "rangeTolerance": 0.7,
@@ -235,6 +241,7 @@
       "power": 17,
       "target": "head",
       "trajectory": "hook",
+      "hand": "rear",
       "subBeat": 0.58,
       "optimalRange": 1.2,
       "rangeTolerance": 0.6,
@@ -260,18 +267,38 @@
       "rangeShift": -0.4,
       "description": "파고들어 간격을 좁힙니다. 공격도 방어도 하지 않습니다."
     },
-    "sidestep": {
-      "name": "사이드 스텝",
-      "short": "사이드",
+    "switch": {
+      "name": "스위치",
+      "short": "스위치",
+      "kind": "stance",
+      "duration": 1,
+      "cost": 5,
+      "rangeShift": 0.0,
+      "description": "스탠스를 바꿉니다. 앞손과 뒷손이 서로 바뀌므로 훅이 나오는 쪽도 반대가 됩니다."
+    },
+    "sidestep_left": {
+      "name": "사이드 스텝 · 왼쪽",
+      "short": "왼스텝",
       "kind": "evade",
       "duration": 2,
       "cost": 11,
-      "dodges": [
-        "straight"
-      ],
+      "dodges": ["straight", "hook"],
+      "stepToward": "left",
       "rangeShift": 0.05,
       "grantsAngle": true,
-      "description": "옆으로 빠져 각을 틉니다. 비싸지만 상대가 정면을 잃은 상태가 잠시 이어집니다."
+      "description": "왜쪽으로 돌아 각을 틀니다. 상대의 오른손 쪽으로 들어가므로, 그 손의 훅은 따라오고 반대손 훅은 지나갑니다."
+    },
+    "sidestep_right": {
+      "name": "사이드 스텝 · 오른쪽",
+      "short": "오른스텝",
+      "kind": "evade",
+      "duration": 2,
+      "cost": 11,
+      "dodges": ["straight", "hook"],
+      "stepToward": "right",
+      "rangeShift": 0.05,
+      "grantsAngle": true,
+      "description": "오른쪽으로 돌아 각을 틀니다. 상대의 왜손 쪽으로 들어가므로, 그 손의 훅은 따라오고 반대손 훅은 지나갑니다."
     }
   },
   "skills": {
@@ -597,12 +624,21 @@
       }
     }
   },
+  "stanceMatchup": {
+    "note": "Open guard is two fighters in opposite stances. Their lead hands meet across the line and lose their bite, while the rear hands find a straight path home. Closed guard leaves both alone. Spec: docs/design/22_combat_range_model.md.",
+    "openGuard": { "lead": 0.82, "rear": 1.18 },
+    "closedGuard": { "lead": 1.0, "rear": 1.0 },
+    "note_symmetry": "The modifier applies to both fighters, so open guard is not an edge for either of them: it changes which punch is worth throwing, not who wins. Cost is untouched, so a lead hand in open guard simply buys less impact for the same stamina.",
+    "note_counter": "Rear-hand counters compound: the counter multiplier and the open-guard bonus stack on the same punch, which is what makes the rear counter the exchange both fighters are really playing for."
+  },
   "angle": {
-    "slots": 4,
+    "actions": 2,
     "attackPenalty": 0.75,
     "incomingBonus": 1.2,
     "requiresCommitment": true,
     "hookPunish": 1.6,
-    "note": "Off-angle is a lasting positional state, unlike the one-shot counter window from sway and weave. It is only earned against an opponent who is committed to something — an attack that the step slipped, or a guard they are holding. Against someone simply breathing there is nothing to step around: they would just turn with you. And a hook follows you into the direction you stepped, so it is not evaded and lands harder than an ordinary mistimed evasion."
+    "note": "Off-angle is a lasting positional state, unlike the one-shot counter window from sway and weave. It is only earned against an opponent who is committed to something — an attack that the step slipped, or a guard they are holding. Against someone simply breathing there is nothing to step around: they would just turn with you. And a hook follows you into the direction you stepped, so it is not evaded and lands harder than an ordinary mistimed evasion.",
+    "note_hands": "Declared as the fighter's OWN movement in physical left/right, resolved against the thrower's live stance at impact. Lead/rear would have been wrong: it defines my step in the opponent's terms, so a mid-combo stance switch would reach back and turn me around. Their left arm stays their left arm; what switching changes is which hand now comes from that side. A side step beats the hook thrown from the hand you stepped AWAY from, and is punished by the one you stepped INTO. Choosing the side is the whole decision: the card is a read on which hand is coming, not a generic evasion. Straights miss either way, because stepping off the line is stepping off the line.",
+    "note_actions": "Measured in the opponent's actions, not slots. Nobody stands facing the wrong way for half a combo: they are exposed for what they are already committed to and one more action, then they square back up by themselves. Counting slots charged a one-slot jab and a four-slot shell the same exposure, which had it backwards — the long commitment is the one that should cost more."
   }
 }
