@@ -7,7 +7,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {definitions} from './helpers/engine-setup.mjs';
-import {CARDS, RULES, span, newMatch} from '../dist/engine.js';
+import {CARDS, RULES, span, newMatch, sideOfHand} from '../dist/engine.js';
 import {createRngSet} from '../dist/rng.js';
 import {ROLES, CONDITIONS, roleNames, observableView, choosePlan, firingRule, policyKey,
   describePolicy, samplePolicies, policyNeighbours, validateRole, thresholdsFor} from '../dist/policy.js';
@@ -211,4 +211,29 @@ test('grammar usage counts the rule that fired, not the rules written down', () 
   const forced = grammarUsage([always], [1], { seeds: [1], stats: MIRROR });
   assert.equal(forced.fallbackShare, 0);
   assert.ok(forced.byCondition.gapBelow > 0.99);
+});
+
+test('a policy reads which side the hooks come from, for free, out of history', () => {
+  // Past combos are free baseline information (doc 31), so a tendency costs nothing to read.
+  // An information card buys the same read for THIS turn instead of for a habit.
+  const match = newMatch('pressure', 3, { player: MIRROR, opponent: MIRROR });
+  assert.equal(match.fighters[1].stance, 'orthodox');
+  const leadHook = Object.keys(CARDS).find(id => CARDS[id].trajectory === 'hook' && CARDS[id].hand === 'lead');
+  const rearHook = Object.keys(CARDS).find(id => CARDS[id].trajectory === 'hook' && CARDS[id].hand === 'rear');
+  const sideOfLead = sideOfHand('orthodox', 'lead');
+  assert.equal(observableView(match, 0, [[leadHook], [leadHook]]).opponentHooksLeft, sideOfLead === 'left');
+  assert.equal(observableView(match, 0, [[rearHook], [rearHook]]).opponentHooksLeft, sideOfLead !== 'left');
+  // No hooks at all is not a read: a policy must not act as though it saw one.
+  assert.equal(observableView(match, 0, [['jab'], ['guard']]).opponentHooksLeft, false);
+});
+
+test('the hook read resolves through the opponent stance, not the card text', () => {
+  const southpaw = { base: Object.fromEntries(ALL_BASE_PARAMETERS.map(k => [k, 60])), body: { stance: 'southpaw' } };
+  const match = newMatch('pressure', 3, { player: MIRROR, opponent: southpaw });
+  const leadHook = Object.keys(CARDS).find(id => CARDS[id].trajectory === 'hook' && CARDS[id].hand === 'lead');
+  const history = [[leadHook], [leadHook]];
+  const orthodoxMatch = newMatch('pressure', 3, { player: MIRROR, opponent: MIRROR });
+  assert.notEqual(observableView(match, 0, history).opponentHooksLeft,
+    observableView(orthodoxMatch, 0, history).opponentHooksLeft,
+    '같은 카드 이력이 스탠스와 무관하게 같은 쪽으로 읽힙니다');
 });

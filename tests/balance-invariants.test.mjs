@@ -69,17 +69,26 @@ test('the calibrated tiers form a real difficulty gradient', async () => {
 });
 
 test('attacking one body part forever does not pay forever', () => {
-  // Score follows applied damage, so a saturated target stops rewarding further hits.
+  // Score follows applied damage, so a saturated target stops rewarding further hits. Read at
+  // saturation rather than after a fixed number of turns: how long saturation takes depends on
+  // the card's power, so a turn window silently stops testing the invariant when power changes.
   let m = newMatch('pressure', 3, { player: evenly(60), opponent: evenly(60) });
   const plan = makePlan(['body', 'body', 'body']);
   let previous = 0;
   const gains = [];
-  for (let i = 0; i < 6 && !m.finished; i++) {
+  let saturatedAt = -1;
+  for (let i = 0; i < RULES.maxTurns && !m.finished; i++) {
     m = resolveTurn(m, plan, makePlan([])).match;
     gains.push(m.fighters[0].score - previous);
     previous = m.fighters[0].score;
+    if (saturatedAt < 0 && m.fighters[1].damage.body >= RULES.maxPartDamage) saturatedAt = i;
   }
-  assert.ok(gains.at(-1) < gains[0] * 0.5, `포화된 부위가 계속 같은 점수를 줍니다: ${gains.join(', ')}`);
+  assert.ok(saturatedAt >= 0, `부위가 포화되지 않아 불변식을 재지 못했습니다: ${gains.join(', ')}`);
+  assert.ok(saturatedAt < gains.length - 1, '포화 이후 턴이 없어 확인할 수 없습니다');
+  for (const gain of gains.slice(saturatedAt + 1)) {
+    assert.equal(gain, 0, `포화된 부위가 계속 점수를 줍니다: ${gains.join(', ')}`);
+  }
+  assert.ok(gains[saturatedAt] < gains[0], '포화에 가까워져도 수익이 줄지 않습니다');
 });
 
 test('a long guard blocks more coarsely than a short one', () => {
@@ -134,4 +143,42 @@ test('body work is the attrition path: neglecting body defence costs you the abi
 test('head work still outscores body work, so body is not simply better', () => {
   const byTarget = definitions.configs.combat_prototype.modifiers.scoreByTarget;
   assert.ok(byTarget.body < byTarget.head, '몸통이 머리보다 높은 배점을 받습니다');
+});
+
+test('a body shot buys less impact than a head shot, because it buys other things too', () => {
+  // A body hit drains stamina, lowers the recovery ceiling, and therefore both weakens what the
+  // opponent throws and deepens what they take. Paying head-level impact on top of all that made
+  // a body-only plan beat every profile: at power 13 it was dominant whatever the KO threshold
+  // was set to, and only cutting the impact moved it.
+  const attacks = Object.entries(CARDS).filter(([, c]) => c.kind === 'attack');
+  const perSlot = c => c.power / c.duration;
+  const body = attacks.filter(([, c]) => c.target === 'body');
+  const head = attacks.filter(([, c]) => c.target === 'head');
+  assert.ok(body.length && head.length);
+  for (const [bodyId, bodyCard] of body) {
+    for (const [headId, headCard] of head) {
+      assert.ok(perSlot(bodyCard) < perSlot(headCard),
+        `${bodyId}이 ${headId}보다 칸당 위력이 높습니다: ${perSlot(bodyCard)} vs ${perSlot(headCard)}`);
+    }
+  }
+});
+
+test('the body finish is the long road, not the short one', () => {
+  // Head work finishes through the spike route far more often than by reaching koDamage, so the
+  // spike is what a body finish has to be farther than. The stamina half of the body gate adds
+  // no difficulty — body work is what produces the low stamina — so the damage number carries it.
+  const rules = definitions.configs.combat_prototype.rules;
+  assert.ok(rules.bodyKoDamage > rules.staggerDamage,
+    `몸통 피니시가 머리의 실질 문턱보다 가깝습니다: ${rules.bodyKoDamage} vs ${rules.staggerDamage}`);
+  assert.ok(rules.bodyKoDamage < rules.maxPartDamage, '몸통 피니시가 영원히 성립하지 않습니다');
+  // And it still has to be reachable, or body defence has nothing to defend against.
+  let m = newMatch('pressure', 3, { player: evenly(60), opponent: evenly(60) });
+  const plan = makePlan(['body', 'body', 'body']);
+  let finished = false;
+  for (let i = 0; i < RULES.maxTurns && !m.finished; i++) {
+    m = resolveTurn(m, plan, makePlan([])).match;
+    if (m.fighters[1].ko) finished = true;
+  }
+  assert.ok(m.fighters[1].damage.body >= rules.bodyKoDamage || finished,
+    '방치된 상대조차 몸통 피니시 문턱에 닿지 않습니다');
 });

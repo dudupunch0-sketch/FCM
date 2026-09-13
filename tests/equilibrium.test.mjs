@@ -7,7 +7,9 @@ import {definitions} from './helpers/engine-setup.mjs';
 import {CARDS, RULES, span} from '../dist/engine.js';
 import {createRngSet} from '../dist/rng.js';
 import {samplePlans, enumeratePlans, neighbours, normalisePlan, isLegalPlan, planKey} from '../dist/plan-space.js';
-import {duel, payoffMatrix, fictitiousPlay, exploitability, expectedValue, deviateMixture, supportOf, doubleOracle, clearDuelCache} from '../dist/equilibrium.js';
+import {duel, payoffMatrix, fictitiousPlay, exploitability, columnExploitability, expectedValue,
+  deviateMixture, supportOf, doubleOracle, clearDuelCache, isSymmetricMatchup,
+  CLOSED_GUARD, OPEN_GUARD} from '../dist/equilibrium.js';
 import {ALL_BASE_PARAMETERS} from '../dist/fighter-schema.js';
 
 const MIRROR = { base: Object.fromEntries(ALL_BASE_PARAMETERS.map(k => [k, 60])) };
@@ -179,4 +181,92 @@ test('a strategy referencing a deleted card is refused at load time', async () =
   assert.throws(() => configureStrategies({ tiers: { brutal: { mixture: [{ plan: ['telekinesis'], weight: 1 }] } } }, 'brutal'), /사라진 카드/);
   assert.throws(() => configureStrategies({ tiers: {} }, 'brutal'), /등급이 없습니다/);
   configureStrategies(null);
+});
+
+// ---------------------------------------------------------------------------------------
+// Stance matchups. Closed guard is the symmetric game every other test assumes; open guard is
+// genuinely asymmetric, because a side step is named by the stepper's own movement and facing
+// a southpaw is a different problem from facing an orthodox.
+
+const CLOSED = { ...OPTIONS, stances: CLOSED_GUARD };
+const OPEN = { ...OPTIONS, stances: OPEN_GUARD };
+const STEP = Object.keys(CARDS).find(id => CARDS[id].stepToward === 'left');
+
+test('a matchup is symmetric exactly when the stances match', () => {
+  assert.equal(isSymmetricMatchup(CLOSED_GUARD), true);
+  assert.equal(isSymmetricMatchup(OPEN_GUARD), false);
+  assert.equal(isSymmetricMatchup(['southpaw', 'southpaw']), true);
+  assert.equal(isSymmetricMatchup(null), true, '스탠스를 안 주면 기본은 대칭이어야 합니다');
+});
+
+test('closed guard keeps the antisymmetry every other measurement rests on', () => {
+  clearDuelCache();
+  const a = [STEP, 'cross'], b = ['hook', 'hook'];
+  assert.equal(duel(a, b, CLOSED) + duel(b, a, CLOSED), 0, '클로즈드 가드에서 반대칭이 깨졌습니다');
+  assert.equal(duel(a, a, CLOSED), 0, '같은 계획끼리 승부가 났습니다');
+});
+
+test('open guard is asymmetric, and the solver must not pretend otherwise', () => {
+  // The same side step is a good read from one corner and a bad one from the other, because
+  // the hand it walks into depends on the stance it is facing. Caching the swapped pairing as
+  // the negation would fabricate a result that was never played.
+  clearDuelCache();
+  const a = [STEP, 'cross'], b = ['hook', 'hook'];
+  const forward = duel(a, b, OPEN);
+  const swapped = duel(b, a, OPEN);
+  assert.notEqual(forward + swapped, 0, `오픈 가드가 대칭으로 취급됐습니다: ${forward} + ${swapped}`);
+});
+
+test('the payoff matrix drops the antisymmetry shortcut for an asymmetric matchup', () => {
+  clearDuelCache();
+  const pool = [[STEP, 'cross'], ['hook', 'hook'], ['heavy', 'rest'], ['jab', 'jab']];
+  const closed = payoffMatrix(pool, CLOSED, undefined);
+  for (let i = 0; i < pool.length; i++) {
+    for (let j = 0; j < pool.length; j++) assert.equal(closed[i][j] + closed[j][i], 0);
+  }
+  const open = payoffMatrix(pool, OPEN, undefined);
+  const forced = open.every((row, i) => row.every((v, j) => v + open[j][i] === 0));
+  assert.equal(forced, false, '비대칭 매치업인데 행렬이 반대칭으로 강제됐습니다');
+});
+
+test('both corners get their own exploitability once the game is asymmetric', () => {
+  clearDuelCache();
+  const pool = [[STEP, 'cross'], ['hook', 'hook'], ['heavy', 'rest'], ['jab', 'jab']];
+  const matrix = payoffMatrix(pool, OPEN, undefined);
+  const solution = fictitiousPlay(matrix, { iterations: 600 });
+  const row = exploitability(matrix, solution.opponent);
+  const column = columnExploitability(matrix, solution.strategy);
+  assert.ok(Number.isFinite(row) && Number.isFinite(column));
+  // In a symmetric game the two coincide; here they are separate measurements and both have
+  // to be reported, or half the answer is missing.
+  const symmetric = payoffMatrix(pool, CLOSED, undefined);
+  const mirror = fictitiousPlay(symmetric, { iterations: 600 });
+  assert.ok(Math.abs(exploitability(symmetric, mirror.opponent)
+    - columnExploitability(symmetric, mirror.strategy)) < 1e-9,
+    '대칭 게임에서 두 코너의 값이 달라졌습니다');
+});
+
+test('the game value stops being only a bug detector', () => {
+  // Closed guard: zero or something is broken. Open guard: it measures which corner the
+  // matchup favours, and a large drift is a balance finding rather than a crash.
+  clearDuelCache();
+  const pool = samplePlans(rng(), 8);
+  const closed = fictitiousPlay(payoffMatrix(pool, CLOSED, undefined), { iterations: 800 });
+  assert.ok(Math.abs(closed.value) < 1e-9, `클로즈드 가드 게임 값이 0이 아닙니다: ${closed.value}`);
+  const open = fictitiousPlay(payoffMatrix(pool, OPEN, undefined), { iterations: 800 });
+  assert.ok(Number.isFinite(open.value));
+});
+
+test('double oracle runs on an asymmetric matchup without assuming a shared mixture', () => {
+  clearDuelCache();
+  const stream = rng();
+  const result = doubleOracle(samplePlans(stream, 8), stream, {
+    rounds: 2, candidatesPerRound: 30, addPerRound: 2, options: OPEN
+  });
+  assert.ok(result.pool.length >= 8);
+  assert.equal(result.solution.strategy.length, result.pool.length);
+  assert.equal(result.solution.opponent.length, result.pool.length);
+  const sum = m => m.reduce((a, b) => a + b, 0);
+  assert.ok(Math.abs(sum(result.solution.strategy) - 1) < 1e-9);
+  assert.ok(Math.abs(sum(result.solution.opponent) - 1) < 1e-9);
 });

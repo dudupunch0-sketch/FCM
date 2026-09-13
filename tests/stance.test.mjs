@@ -7,7 +7,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {definitions} from './helpers/engine-setup.mjs';
-import {CARDS, newMatch, makePlan, resolveTurn, sideOfHand} from '../dist/engine.js';
+import {CARDS, SKILLS, newMatch, makePlan, resolveTurn, observe, sideOfHand} from '../dist/engine.js';
 import {ALL_BASE_PARAMETERS} from '../dist/fighter-schema.js';
 
 const cfg = definitions.configs.combat_prototype;
@@ -138,4 +138,47 @@ test('the matchup stays deterministic', () => {
     return out;
   };
   assert.deepEqual(trace(), trace());
+});
+
+test('the hand read names the side a hook will arrive from', () => {
+  // A side step is a read on which hand is coming. Without a way to make that read it is a
+  // coin flip priced like a commitment, which is why it left the equilibrium entirely.
+  assert.ok(SKILLS.hand, '손 읽기 카드가 없습니다');
+  const orthodox = newMatch('pressure', 5, { player: fighterAt('orthodox'), opponent: fighterAt('orthodox') });
+  const plan = makePlan(['hook', 'heavy']);
+  const cues = observe(plan, 'hand', orthodox);
+  assert.ok(cues.length >= 2, `훅 두 개를 예고하지 않았습니다: ${cues.length}`);
+  for (const cue of cues) {
+    assert.equal(cue.kind, 'cue', '손 읽기는 확정 공개가 아니라 예고입니다');
+    assert.ok(['left', 'right'].includes(cue.side));
+    assert.ok(cue.label.length > 0);
+  }
+  // hook is the lead hand, heavy the rear, so an orthodox opponent throws them from
+  // opposite sides. The card has to say which, not merely that a hook is coming.
+  assert.deepEqual([...cues].sort((a, b) => a.start - b.start).map(c => c.side), ['left', 'right']);
+});
+
+test('the hand read follows stance, so switching invalidates it', () => {
+  const southpaw = newMatch('pressure', 5, { player: fighterAt('orthodox'), opponent: fighterAt('southpaw') });
+  const orthodox = newMatch('pressure', 5, { player: fighterAt('orthodox'), opponent: fighterAt('orthodox') });
+  const plan = makePlan(['hook']);
+  assert.equal(observe(plan, 'hand', orthodox)[0].side, sideOfHand('orthodox', 'lead'));
+  assert.equal(observe(plan, 'hand', southpaw)[0].side, sideOfHand('southpaw', 'lead'));
+  assert.notEqual(observe(plan, 'hand', orthodox)[0].side, observe(plan, 'hand', southpaw)[0].side);
+});
+
+test('open guard makes the lead hook a cheaper mistake to step into', () => {
+  // The reason a side step should come alive in open guard: the lead hook is weakened, so the
+  // opponent throws it less AND it punishes a wrong step less. Both sides of the read improve
+  // at once, and nothing had to be written to say so — it falls out of the impact modifier.
+  const steppedInto = (theirs) => {
+    const match = newMatch('pressure', 5, { player: fighterAt('orthodox'), opponent: fighterAt(theirs) });
+    // Their lead hand comes from sideOfHand(theirs,'lead'); stepping toward it is the mistake.
+    const wrong = sideOfHand(theirs, 'lead') === 'left' ? 'sidestep_right' : 'sidestep_left';
+    const hit = hits(resolveTurn(match, makePlan([wrong]), makePlan(['hook']))).find(e => e.actor === 1);
+    assert.ok(hit && hit.steppedInto, `${wrong}이 앞손 훅에 응징되지 않았습니다`);
+    return hit.power;
+  };
+  assert.ok(steppedInto('southpaw') < steppedInto('orthodox'),
+    '오픈 가드에서 앞손 훅으로 인한 응징이 더 싸지지 않습니다');
 });

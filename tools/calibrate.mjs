@@ -10,6 +10,7 @@
 //   node tools/calibrate.mjs report                        inspect the current mixture
 //   node tools/calibrate.mjs policies [rounds] [poolSize]  solve over REACTIVE policies
 //   node tools/calibrate.mjs grammar                       which of the policy grammar is load-bearing
+//   node tools/calibrate.mjs matchup [rounds] [poolSize]   closed guard vs open guard, side by side
 //
 // `solve` works over fixed plans: one combo thrown every turn for the whole fight. That is
 // the wrong question for any card that exists to answer a read, so `policies` solves the
@@ -25,7 +26,8 @@ import { loadDefinitions } from '../dist/definitions.js';
 import { configureEngine, CARDS } from '../dist/engine.js';
 import { createRngSet } from '../dist/rng.js';
 import { samplePlans, planKey } from '../dist/plan-space.js';
-import { doubleOracle, payoffMatrix, fictitiousPlay, exploitability, supportOf, duel, duelPolicies, deviateMixture, clearDuelCache, clearPolicyDuelCache, cardUsage, grammarUsage, conditionBaseRates, POLICY_SPACE } from '../dist/equilibrium.js';
+import { doubleOracle, payoffMatrix, fictitiousPlay, exploitability, supportOf, duel, duelPolicies, deviateMixture, clearDuelCache, clearPolicyDuelCache, cardUsage, grammarUsage, conditionBaseRates, columnExploitability,
+  isSymmetricMatchup, CLOSED_GUARD, OPEN_GUARD, POLICY_SPACE } from '../dist/equilibrium.js';
 import { samplePolicies, policyKey, describePolicy, ROLES, CONDITIONS, thresholdsFor } from '../dist/policy.js';
 import { ALL_BASE_PARAMETERS } from '../dist/fighter-schema.js';
 
@@ -85,7 +87,7 @@ function policyFingerprint() { return fnv([...ruleParts(), POLICY_SOURCE].join('
 // In-pool exploitability understates convergence: it only looks at plans already known.
 // The honest measure is whether a fresh search can still find something that beats the
 // mixture, so both are reported and the second is what decides convergence.
-function externalBestResponse(pool, strategy, rng, { candidates = 400 } = {}) {
+function externalBestResponse(pool, strategy, rng, { candidates = 400, options = OPTIONS } = {}) {
   let best = 0, bestPlan = null;
   const known = new Set(pool.map(planKey));
   for (const candidate of samplePlans(rng, candidates)) {
@@ -93,7 +95,7 @@ function externalBestResponse(pool, strategy, rng, { candidates = 400 } = {}) {
     let value = 0;
     for (let j = 0; j < pool.length; j++) {
       if (!strategy[j]) continue;
-      value += strategy[j] * duel(candidate, pool[j], OPTIONS);
+      value += strategy[j] * duel(candidate, pool[j], options);
     }
     if (value > best) { best = value; bestPlan = candidate; }
   }
@@ -381,10 +383,77 @@ async function grammar() {
   console.log(`\n균형이 한 번도 고르지 않은 역할: ${unused.length ? unused.join(', ') : '없음'}`);
 }
 
+// Stance matchups. Every other mode solves orthodox against orthodox, so open guard — the one
+// matchup the stance system exists for — had never been solved at all.
+//
+// Open guard is genuinely ASYMMETRIC even though the impact modifier treats both fighters
+// alike, because a side step is named by the stepper's own movement: facing a southpaw and
+// facing an orthodox are different problems. So the game value stops being a bug detector and
+// becomes the measurement that matters — how much the matchup favours one corner.
+function planCardShare(pool, mixture) {
+  const counts = new Map();
+  let total = 0;
+  pool.forEach((plan, i) => {
+    const weight = mixture[i];
+    if (!weight) return;
+    for (const id of plan) {
+      counts.set(id, (counts.get(id) ?? 0) + weight);
+      total += weight;
+    }
+  });
+  return Object.fromEntries([...counts].sort((a, b) => b[1] - a[1]).map(([id, n]) => [id, n / (total || 1)]));
+}
+
+function solveMatchup(label, stances, rounds, poolSize, rng) {
+  clearDuelCache();
+  const options = { ...OPTIONS, stances };
+  const symmetric = isSymmetricMatchup(stances);
+  const started = Date.now();
+  console.log(`\n=== ${label} (${stances.join(' vs ')}) ${symmetric ? '대칭' : '비대칭'} ===`);
+  const result = doubleOracle(samplePlans(rng, poolSize), rng, {
+    rounds, candidatesPerRound: 220, addPerRound: 6, options,
+    onRound: h => console.log(`  round ${h.round}  pool ${String(h.poolSize).padStart(3)}  support ${String(h.support).padStart(2)}  최적대응 이득 ${h.gain.toFixed(3)}`)
+  });
+  const external = externalBestResponse(result.pool, result.solution.opponent, rng, { options });
+  const rowShare = planCardShare(result.pool, result.solution.strategy);
+  const colShare = planCardShare(result.pool, result.solution.opponent);
+  const value = result.solution.value;
+  console.log(`게임 값 ${value.toFixed(4)}${symmetric ? ' (0이어야 정상)' : `  ← ${stances[0]} 쪽 이득`}`);
+  console.log(`풀내 exploit  행 ${exploitability(result.matrix, result.solution.opponent).toFixed(4)}  열 ${columnExploitability(result.matrix, result.solution.strategy).toFixed(4)}`);
+  console.log(`외부 최적대응 이득 ${external.gain.toFixed(4)}${external.gain > CONVERGED_BELOW ? '  ⚠ 수렴 전' : '  (수렴)'}`);
+  console.log(`지지집합 ${supportOf(result.pool, result.solution.strategy).length}개, ${Date.now() - started}ms`);
+  return { label, stances, symmetric, value, external: external.gain, rowShare, colShare, pool: result.pool.length };
+}
+
+async function matchup(rounds = 8, poolSize = 28) {
+  const rng = createRngSet(SEED, definitions).stream('combat');
+  const closed = solveMatchup('클로즈드 가드', CLOSED_GUARD, rounds, poolSize, rng);
+  const open = solveMatchup('오픈 가드', OPEN_GUARD, rounds, poolSize, rng);
+
+  console.log('\n=== 카드 사용 비중 ===');
+  const ids = [...new Set([...Object.keys(closed.rowShare), ...Object.keys(open.rowShare), ...Object.keys(open.colShare)])];
+  console.log(`  ${'카드'.padEnd(16)}${'클로즈드'.padStart(9)}${'오픈(오소독스)'.padStart(15)}${'오픈(사우스포)'.padStart(15)}`);
+  const pct = v => `${((v ?? 0) * 100).toFixed(1)}%`.padStart(9);
+  for (const id of ids.sort((a, b) => (open.rowShare[b] ?? 0) - (open.rowShare[a] ?? 0))) {
+    console.log(`  ${id.padEnd(16)}${pct(closed.rowShare[id])}${pct(open.rowShare[id]).padStart(15)}${pct(open.colShare[id]).padStart(15)}`);
+  }
+
+  // The question this mode was built to answer.
+  const steps = Object.keys(CARDS).filter(id => CARDS[id].stepToward);
+  const share = (obj) => steps.reduce((n, id) => n + (obj[id] ?? 0), 0);
+  console.log(`\n사이드 스텝 비중  클로즈드 ${(share(closed.rowShare) * 100).toFixed(1)}%  |  오픈 ${(((share(open.rowShare) + share(open.colShare)) / 2) * 100).toFixed(1)}%`);
+  if (Math.abs(open.value) > 0.1) {
+    console.log(`\n⚠ 오픈 가드가 ${open.value > 0 ? OPEN_GUARD[0] : OPEN_GUARD[1]} 쪽에 ${Math.abs(open.value).toFixed(3)}만큼 기울어 있습니다.`);
+    console.log('  스탠스 자체가 유불리를 만들면 안 되므로, 사이드 스텝 외의 원인이 있는지 봐야 합니다.');
+  }
+  return { closed, open };
+}
+
 const [mode = 'report', ...rest] = process.argv.slice(2);
 if (mode === 'solve') await solve(Number(rest[0]) || 8, Number(rest[1]) || 28);
 else if (mode === 'policies') await solvePolicies(Number(rest[0]) || 8, Number(rest[1]) || 36);
 else if (mode === 'grammar') await grammar();
+else if (mode === 'matchup') await matchup(Number(rest[0]) || 8, Number(rest[1]) || 28);
 else if (mode === 'check') await check();
 else if (mode === 'report') await report();
 else { console.error(`알 수 없는 모드: ${mode}`); process.exitCode = 1; }

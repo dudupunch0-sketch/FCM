@@ -12,6 +12,33 @@ import { newMatch, makePlan, resolveTurn } from './engine.js';
 import { neighbours, planKey, samplePlans } from './plan-space.js';
 import { CONDITIONS, ROLES, behaviourKey, choosePlan, firingRule, observableView, policyNeighbours, roleNames, samplePolicies, thresholdsFor } from './policy.js';
 
+// A matchup is a pair of stances. Same stance is closed guard and the game stays symmetric;
+// opposite stances is open guard, and there the game is genuinely ASYMMETRIC — a side step is
+// named by my own movement, so facing an orthodox and facing a southpaw are different problems
+// even though the modifier itself treats both fighters alike. Nothing below may assume
+// antisymmetry unless the stances match.
+export const CLOSED_GUARD = Object.freeze(['orthodox', 'orthodox']);
+export const OPEN_GUARD = Object.freeze(['orthodox', 'southpaw']);
+
+export function isSymmetricMatchup(stances) {
+  return !stances || stances[0] === stances[1];
+}
+
+function sideStats(stats, stances, side) {
+  if (!stats) return undefined;
+  const stance = stances?.[side];
+  if (!stance) return stats;
+  return { ...stats, body: { ...(stats.body ?? {}), stance } };
+}
+
+function buildSides(stats, stances) {
+  return stats || stances
+    ? { player: sideStats(stats, stances, 0), opponent: sideStats(stats, stances, 1) }
+    : undefined;
+}
+
+const matchupKey = stances => (stances ? stances.join('>') : 'cc');
+
 // Double oracle rebuilds the matrix every round, so the same pairing is asked for repeatedly.
 // Results are deterministic, which makes them perfectly cacheable.
 const duelCache = new Map();
@@ -20,20 +47,24 @@ export function duelCacheSize() { return duelCache.size; }
 
 // Both fighters use identical stats so the payoff isolates strategy from ability.
 export function duel(planA, planB, options = {}) {
-  const { seeds = [1, 2, 3], stats = null, profile = 'pressure' } = options;
-  const key = `${planKey(planA)}#${planKey(planB)}#${profile}#${seeds.join(',')}#${stats ? stats.base.punch_technique : 'd'}`;
+  const { seeds = [1, 2, 3], stats = null, profile = 'pressure', stances = null } = options;
+  const tail = `${profile}#${seeds.join(',')}#${stats ? stats.base.punch_technique : 'd'}#${matchupKey(stances)}`;
+  const key = `${planKey(planA)}#${planKey(planB)}#${tail}`;
   const cached = duelCache.get(key);
   if (cached !== undefined) return cached;
-  const value = computeDuel(planA, planB, { seeds, stats, profile });
+  const value = computeDuel(planA, planB, { seeds, stats, profile, stances });
   duelCache.set(key, value);
-  duelCache.set(`${planKey(planB)}#${planKey(planA)}#${profile}#${seeds.join(',')}#${stats ? stats.base.punch_technique : 'd'}`, -value);
+  // The swapped pairing is only the negation when both corners are the same problem. In open
+  // guard swapping the plans also swaps which stance is answering which, so it is a different
+  // fight and caching it as -value would quietly fabricate a result.
+  if (isSymmetricMatchup(stances)) duelCache.set(`${planKey(planB)}#${planKey(planA)}#${tail}`, -value);
   return value;
 }
 
-function computeDuel(planA, planB, { seeds, stats, profile }) {
+function computeDuel(planA, planB, { seeds, stats, profile, stances = null }) {
   let score = 0;
   for (const seed of seeds) {
-    let match = newMatch(profile, seed, stats ? { player: stats, opponent: stats } : undefined);
+    let match = newMatch(profile, seed, buildSides(stats, stances));
     const a = makePlan(planA), b = makePlan(planB);
     while (!match.finished) match = resolveTurn(match, a, b).match;
     score += match.winner === 0 ? 1 : match.winner === 1 ? -1 : 0;
@@ -46,13 +77,22 @@ function computeDuel(planA, planB, { seeds, stats, profile }) {
 export function payoffMatrix(pool, options = {}, space = PLAN_SPACE) {
   const n = pool.length;
   const matrix = Array.from({ length: n }, () => new Float64Array(n));
-  for (let i = 0; i < n; i++) {
-    for (let j = i; j < n; j++) {
-      if (i === j) { matrix[i][j] = 0; continue; }
-      const value = space.duel(pool[i], pool[j], options);
-      matrix[i][j] = value;
-      matrix[j][i] = -value;
+  // In a symmetric matchup the upper triangle decides everything and computing only half both
+  // halves the work and makes the antisymmetry exact. An asymmetric matchup has no such
+  // shortcut: every cell is its own fight, including the diagonal, where the same plan played
+  // from the two corners is not a draw.
+  if (isSymmetricMatchup(options.stances)) {
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        const value = space.duel(pool[i], pool[j], options);
+        matrix[i][j] = value;
+        matrix[j][i] = -value;
+      }
     }
+    return matrix;
+  }
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) matrix[i][j] = space.duel(pool[i], pool[j], options);
   }
   return matrix;
 }
@@ -119,6 +159,19 @@ export function exploitability(matrix, mixture) {
   return best;
 }
 
+// The column player's side of the same measure. In a symmetric game it equals the row value;
+// in an asymmetric one the two corners can be exploitable by different amounts, and reporting
+// only the row's would hide half the answer.
+export function columnExploitability(matrix, rowMix) {
+  let best = -Infinity;
+  for (let j = 0; j < matrix.length; j++) {
+    let value = 0;
+    for (let i = 0; i < matrix.length; i++) value -= rowMix[i] * matrix[i][j];
+    if (value > best) best = value;
+  }
+  return best;
+}
+
 // Double oracle. Solve on the current pool, hunt for a plan that beats the solution, add it,
 // repeat. Terminates when nothing in the search neighbourhood beats the mixture, which is a
 // far stronger statement than "we tried a lot of plans".
@@ -154,12 +207,25 @@ export function doubleOracle(seedPool, rng, { rounds = 6, candidatesPerRound = 2
     // game is strongly cyclic, so each new plan beats the current mixture and is then beaten
     // in turn, leaving the support small and fully exploitable. Taking the top K widens the
     // pool fast enough for a stable mixture to form.
+    // Scored against the OPPONENT's mixture, which is the same thing as the row mixture only
+    // when the game is symmetric. In open guard the two corners answer different problems, so
+    // a candidate is worth adding if it beats either of them.
+    const symmetric = isSymmetricMatchup(options.stances);
     const scored = [];
     for (const candidate of candidates) {
-      let value = 0;
+      let asRow = 0;
       for (let j = 0; j < pool.length; j++) {
-        if (!solution.strategy[j]) continue;
-        value += solution.strategy[j] * space.duel(candidate, pool[j], options);
+        if (!solution.opponent[j]) continue;
+        asRow += solution.opponent[j] * space.duel(candidate, pool[j], options);
+      }
+      let value = asRow;
+      if (!symmetric) {
+        let asColumn = 0;
+        for (let i = 0; i < pool.length; i++) {
+          if (!solution.strategy[i]) continue;
+          asColumn -= solution.strategy[i] * space.duel(pool[i], candidate, options);
+        }
+        value = Math.max(asRow, asColumn);
       }
       if (value > 0) scored.push({ candidate, value });
     }
@@ -214,22 +280,22 @@ const policyDuelCache = new Map();
 export function clearPolicyDuelCache() { policyDuelCache.clear(); }
 
 export function duelPolicies(policyA, policyB, options = {}) {
-  const { seeds = [1, 2, 3], stats = null, profile = 'pressure' } = options;
-  const tail = `${profile}#${seeds.join(',')}#${stats ? stats.base.punch_technique : 'd'}`;
+  const { seeds = [1, 2, 3], stats = null, profile = 'pressure', stances = null } = options;
+  const tail = `${profile}#${seeds.join(',')}#${stats ? stats.base.punch_technique : 'd'}#${matchupKey(stances)}`;
   // Keyed by behaviour, so two differently written but identical policies share a cache entry.
   const key = `${behaviourKey(policyA)}#${behaviourKey(policyB)}#${tail}`;
   const cached = policyDuelCache.get(key);
   if (cached !== undefined) return cached;
-  const value = computePolicyDuel(policyA, policyB, { seeds, stats, profile });
+  const value = computePolicyDuel(policyA, policyB, { seeds, stats, profile, stances });
   policyDuelCache.set(key, value);
-  policyDuelCache.set(`${behaviourKey(policyB)}#${behaviourKey(policyA)}#${tail}`, -value);
+  if (isSymmetricMatchup(stances)) policyDuelCache.set(`${behaviourKey(policyB)}#${behaviourKey(policyA)}#${tail}`, -value);
   return value;
 }
 
 // Both sides read the same pre-resolution snapshot, so neither can see what the other has
 // committed to this turn. That is the reveal rule of doc 18, enforced by construction.
-export function playPolicies(policyA, policyB, { seed = 1, stats = null, profile = 'pressure' } = {}) {
-  let match = newMatch(profile, seed, stats ? { player: stats, opponent: stats } : undefined);
+export function playPolicies(policyA, policyB, { seed = 1, stats = null, profile = 'pressure', stances = null } = {}) {
+  let match = newMatch(profile, seed, buildSides(stats, stances));
   const thrown = [[], []];
   while (!match.finished) {
     const chosen = [
@@ -243,10 +309,10 @@ export function playPolicies(policyA, policyB, { seed = 1, stats = null, profile
   return { match, thrown };
 }
 
-function computePolicyDuel(policyA, policyB, { seeds, stats, profile }) {
+function computePolicyDuel(policyA, policyB, { seeds, stats, profile, stances = null }) {
   let score = 0;
   for (const seed of seeds) {
-    const { match } = playPolicies(policyA, policyB, { seed, stats, profile });
+    const { match } = playPolicies(policyA, policyB, { seed, stats, profile, stances });
     score += match.winner === 0 ? 1 : match.winner === 1 ? -1 : 0;
   }
   return score / seeds.length;
@@ -274,7 +340,7 @@ export const POLICY_SPACE = Object.freeze({
 // What a mixture of policies actually throws. A policy's value cannot be read off its rules:
 // a rule that never fires costs nothing and does nothing. Replaying the mixture and counting
 // the cards that reach the timeline is the only honest answer to "is this card used".
-export function cardUsage(pool, strategy, { seeds = [1, 2, 3], stats = null, profile = 'pressure', threshold = 0.005 } = {}) {
+export function cardUsage(pool, strategy, { seeds = [1, 2, 3], stats = null, profile = 'pressure', stances = null, threshold = 0.005, side = 0 } = {}) {
   const counts = new Map();
   let total = 0;
   const active = pool.map((policy, i) => ({ policy, weight: strategy[i] })).filter(e => e.weight > threshold);
@@ -283,8 +349,8 @@ export function cardUsage(pool, strategy, { seeds = [1, 2, 3], stats = null, pro
     for (const b of active) {
       const share = (a.weight / mass) * (b.weight / mass);
       for (const seed of seeds) {
-        const { thrown } = playPolicies(a.policy, b.policy, { seed, stats, profile });
-        for (const plan of thrown[0]) {
+        const { thrown } = playPolicies(a.policy, b.policy, { seed, stats, profile, stances });
+        for (const plan of thrown[side]) {
           for (const id of plan) {
             counts.set(id, (counts.get(id) ?? 0) + share);
             total += share;
@@ -301,7 +367,7 @@ export function cardUsage(pool, strategy, { seeds = [1, 2, 3], stats = null, pro
 // How much of the grammar is actually load-bearing. A policy can carry four rules and still
 // behave like a constant: what matters is which rule decided each turn, and how many distinct
 // combos the policy ended up throwing. Measured the same way card usage is — by replay.
-export function grammarUsage(pool, strategy, { seeds = [1, 2, 3], stats = null, profile = 'pressure', threshold = 0.005 } = {}) {
+export function grammarUsage(pool, strategy, { seeds = [1, 2, 3], stats = null, profile = 'pressure', stances = null, threshold = 0.005 } = {}) {
   const active = pool.map((policy, i) => ({ policy, weight: strategy[i] })).filter(e => e.weight > threshold);
   const mass = active.reduce((n, e) => n + e.weight, 0) || 1;
   const byCondition = new Map();
@@ -311,7 +377,7 @@ export function grammarUsage(pool, strategy, { seeds = [1, 2, 3], stats = null, 
     for (const b of active) {
       const share = (a.weight / mass) * (b.weight / mass);
       for (const seed of seeds) {
-        let match = newMatch(profile, seed, stats ? { player: stats, opponent: stats } : undefined);
+        let match = newMatch(profile, seed, buildSides(stats, stances));
         const thrown = [[], []];
         while (!match.finished) {
           const view = observableView(match, 0, thrown[1]);
@@ -348,7 +414,7 @@ export function grammarUsage(pool, strategy, { seeds = [1, 2, 3], stats = null, 
 // never true is a rule slot nobody can use, and one that is almost always true is the
 // fallback wearing a disguise. Both inflate the search space without adding strategies, which
 // is why double oracle struggled before the first grammar was measured.
-export function conditionBaseRates({ seeds = [1, 2, 3], stats = null, profile = 'pressure' } = {}) {
+export function conditionBaseRates({ seeds = [1, 2, 3], stats = null, profile = 'pressure', stances = null } = {}) {
   const roles = roleNames();
   const probes = [];
   for (const when of CONDITIONS) {
@@ -362,7 +428,7 @@ export function conditionBaseRates({ seeds = [1, 2, 3], stats = null, profile = 
   for (const a of roles) {
     for (const b of roles) {
       for (const seed of seeds) {
-        let match = newMatch(profile, seed, stats ? { player: stats, opponent: stats } : undefined);
+        let match = newMatch(profile, seed, buildSides(stats, stances));
         const thrown = [[], []];
         while (!match.finished) {
           const view = observableView(match, 0, thrown[1]);

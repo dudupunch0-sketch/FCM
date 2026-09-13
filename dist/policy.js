@@ -10,7 +10,7 @@
 // reveal step, so a policy that could read the current enemy plan would be cheating; it sees
 // its own condition, the distance, and the opponent's PAST combos, which are always visible.
 
-import { CARDS, RULES, span, rangeBands } from './engine.js';
+import { CARDS, RULES, span, rangeBands, sideOfHand } from './engine.js';
 
 // Named roles rather than raw card lists: a policy is a set of intentions, and the cards that
 // express each intention can be retuned without rewriting every policy.
@@ -39,7 +39,7 @@ export const ROLES = Object.freeze({
 // full for half of all decisions, and groggy was true 1.8% of the time. Those rules were
 // written down and never played. Measured base rates drive what is here now.
 export const CONDITIONS = Object.freeze([
-  'gapAbove', 'gapBelow', 'staminaBelow', 'damageAbove', 'opponentRepeated'
+  'gapAbove', 'gapBelow', 'staminaBelow', 'damageAbove', 'opponentRepeated', 'opponentHooksLeft'
 ]);
 
 // Deliberately absent: the counter window, the angle, and the opponent's stagger. All three
@@ -78,6 +78,24 @@ export function validateRole(plan) {
 // Reading "did they repeat" needs two past turns, and the match itself keeps only the last
 // one, so the caller carries the history. Falling back to match.lastPlans keeps the view
 // usable for a single-turn caller, which then simply cannot see repetition.
+// Which side the opponent's hooks have been arriving from, resolved through the stance they
+// are in now. Past combos are free baseline information (doc 31), so reading a tendency costs
+// nothing; an information card buys the same read for THIS turn instead of a habit.
+//
+// Expressed as a side rather than as a hand, because a side is what a step can act on. My left
+// step walks toward their right, so it is safe exactly when their hooks come from their left.
+function hookSide(plans, stance) {
+  let left = 0, right = 0;
+  for (const plan of plans) {
+    for (const id of plan) {
+      const card = CARDS[id];
+      if (card?.trajectory !== 'hook') continue;
+      if (sideOfHand(stance, card.hand) === 'left') left++; else right++;
+    }
+  }
+  return left > right;
+}
+
 export function observableView(match, side, opponentHistory = null) {
   const self = match.fighters[side];
   const other = match.fighters[1 - side];
@@ -95,7 +113,10 @@ export function observableView(match, side, opponentHistory = null) {
     opponentStatus: other.status,
     // Past combos only. Doc 18 makes these visible without any information card.
     opponentLastPlan: previous,
-    opponentRepeatedOpening: Boolean(previous && before && previous[0] === before[0])
+    opponentRepeatedOpening: Boolean(previous && before && previous[0] === before[0]),
+    // Stance is visible — which foot is forward is not a secret — so reading it is free.
+    opponentStance: other.stance,
+    opponentHooksLeft: hookSide(history, other.stance)
   });
 }
 
@@ -106,6 +127,7 @@ function matches(rule, view) {
     case 'staminaBelow': return view.stamina < rule.value;
     case 'damageAbove': return view.headDamage > rule.value;
     case 'opponentRepeated': return view.opponentRepeatedOpening;
+    case 'opponentHooksLeft': return Boolean(view.opponentHooksLeft);
     default: throw Error(`알 수 없는 조건: ${rule.when}`);
   }
 }
@@ -177,7 +199,8 @@ export function behaviourKey(policy) {
 
 const PHRASES = Object.freeze({
   gapAbove: '멀면', gapBelow: '가까우면', staminaBelow: '지치면',
-  damageAbove: '맞았으면', opponentRepeated: '상대 반복하면'
+  damageAbove: '맞았으면', opponentRepeated: '상대 반복하면',
+  opponentHooksLeft: '상대 훅이 왼쪽이면'
 });
 
 export function describePolicy(policy) {

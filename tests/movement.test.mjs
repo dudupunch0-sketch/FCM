@@ -235,3 +235,44 @@ test('a long commitment spends the whole angle on one action', () => {
     '긴 동작이 짧은 동작보다 오래 노출되지 않습니다');
   assert.ok(cards(long).size > 0 && cards(short).size > 0);
 });
+
+test('stepping around a guard finds the opening, which is what the angle is for', () => {
+  // High risk, high reward: the card costs more than any other evasion, a wrong read is
+  // punished at hookPunish, and the window is two actions. The payoff has to be decisive when
+  // the read lands, or the card is only ever a worse sway. Before the guard leak it was a flat
+  // damage multiplier and a shelled opponent blocked every punch anyway.
+  const flurry = makePlan(['cross', 'hook', 'cross']);
+  const turtling = makePlan(['shell', 'guard', 'guard']);
+  const through = (angled) => {
+    const m = start(9);
+    if (angled) m.fighters[1].offAngleCards = cfg.angle.actions;
+    const r = resolveTurn(m, flurry, turtling);
+    return r.frames.flatMap(f => f.events)
+      .filter(e => (e.type === 'hit' || e.type === 'block') && e.actor === 0)
+      .reduce((n, e) => n + e.power, 0);
+  };
+  assert.ok(cfg.angle.guardLeak > 1, '각을 잃은 가드가 더 새지 않습니다');
+  assert.ok(through(true) > through(false) * 1.5,
+    `각을 잡고도 가드를 못 뚫습니다: ${through(true).toFixed(1)} vs ${through(false).toFixed(1)}`);
+});
+
+test('a leaking guard still beats no guard at all', () => {
+  // The reward must not become "the guard stops existing". Blocking is a worse trade off angle,
+  // never a pointless one, or the answer to a side step is to stop guarding.
+  const worst = Math.max(...Object.values(CARDS).filter(c => c.kind === 'guard')
+    .map(c => c.blockLeak ?? definitions.configs.combat_prototype.modifiers.blockLeak));
+  assert.ok(worst * cfg.angle.guardLeak < 1,
+    `각을 잃으면 막는 것이 무의미해집니다: ${(worst * cfg.angle.guardLeak).toFixed(2)}`);
+  const m = start(9);
+  m.fighters[1].offAngleCards = cfg.angle.actions;
+  const power = (theirs) => {
+    const r = resolveTurn(m, makePlan(['cross']), makePlan(theirs));
+    const e = r.frames.flatMap(f => f.events).find(x => x.actor === 0 && (x.type === 'hit' || x.type === 'block'));
+    assert.ok(e, '타격이 없습니다');
+    return e.power;
+  };
+  // A one-slot guard is not active when a two-slot cross lands, so the comparison needs a
+  // guard that actually covers the impact.
+  assert.ok(power(['shell']) < power(['rest']),
+    `각을 잃은 상태에서 가드가 무방비보다 낫지 않습니다: ${power(['shell'])} vs ${power(['rest'])}`);
+});

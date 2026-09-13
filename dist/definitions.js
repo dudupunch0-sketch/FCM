@@ -362,6 +362,17 @@ const validators = {
 
     // The ceiling only falls, so its floor and its losses decide whether attrition is a slope
     // or a cliff. Spec: docs/design/38_stamina_attrition.md.
+    // Head work finishes through the spike route far more often than by reaching koDamage, so
+    // that is the threshold a body finish has to be farther than. The stamina half of the body
+    // gate does not add difficulty — body work is what produces the low stamina — so this
+    // number carries the whole weight of keeping body the long road.
+    if (rules.bodyKoDamage <= rules.staggerDamage) {
+      fail(file, 'rules.bodyKoDamage', '몸통 피니시가 머리의 실질 문턱보다 가까우면 최단 경로가 됩니다');
+    }
+    if (rules.bodyKoDamage >= rules.maxPartDamage) {
+      fail(file, 'rules.bodyKoDamage', '부위 손상 상한 이상이면 몸통 피니시가 영원히 성립하지 않습니다');
+    }
+
     const ceiling = requireObject(file, 'staminaCeiling', cfg.staminaCeiling);
     requireNumber(file, 'staminaCeiling.min', ceiling.min, { min: 1, max: rules.maxStamina });
     requireNumber(file, 'staminaCeiling.lowThreshold', ceiling.lowThreshold, { min: 0, max: 1 });
@@ -479,6 +490,15 @@ const validators = {
       // with you, so stepping around them gains nothing.
       if (angle.requiresCommitment !== true) fail(file, 'angle.requiresCommitment', '무방비 상대에게 각도 이점을 주면 안 됩니다');
       if (angle.hookPunish <= 1) fail(file, 'angle.hookPunish', '스텝한 방향의 훅은 더 아프게 맞아야 합니다');
+      // Losing the angle has to make the guard worse, and never so much worse that blocking
+      // becomes pointless: a blocked punch must still land for less than an unblocked one.
+      requireNumber(file, 'angle.guardLeak', angle.guardLeak, { min: 1 });
+      if (angle.guardLeak <= 1) fail(file, 'angle.guardLeak', '각을 잃은 가드는 더 새야 합니다');
+      const worst = Math.max(...dataKeys(cards).filter(id => cards[id].kind === 'guard')
+        .map(id => cards[id].blockLeak ?? cfg.modifiers.blockLeak));
+      if (worst * angle.guardLeak >= 1) {
+        fail(file, 'angle.guardLeak', `각을 잃으면 막는 것이 무의미해집니다: ${(worst * angle.guardLeak).toFixed(2)}`);
+      }
     }
     // Open guard has a direction: leads lose, rears gain. Without that ordering the matchup is
     // just a pair of numbers and stance stops meaning anything.
@@ -517,6 +537,12 @@ const validators = {
     }
     const skills = requireObject(file, 'skills', cfg.skills);
     for (const id of dataKeys(skills)) requireNumber(file, `skills.${id}.specificity`, skills[id].specificity, { min: 0 });
+    // Reveal priority is resolved by specificity first. Two cards sharing a value would leave
+    // the order to a later tiebreak, which is exactly the reproducibility hole doc 31 forbids.
+    const specificities = dataKeys(skills).map(id => skills[id].specificity);
+    if (new Set(specificities).size !== specificities.length) {
+      fail(file, 'skills', '정보 카드의 specificity가 겹치면 공개 순서가 임의로 결정됩니다');
+    }
     const reveal = requireObject(file, 'reveal', cfg.reveal);
     requireNumber(file, 'reveal.activeLimit', reveal.activeLimit, { min: 1 });
     requireNumber(file, 'reveal.perTurnTotal', reveal.perTurnTotal, { min: 1 });

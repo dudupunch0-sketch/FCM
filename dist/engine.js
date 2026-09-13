@@ -299,6 +299,14 @@ function candidates(plan,skill,match){
     }
   }
   if(skill==='guard')for(const p of plan.filter(p=>CARDS[p.id].kind==='guard').slice(0,2))for(let i=p.start;i<p.start+CARDS[p.id].duration;i++)out.push({start:i,kind:'zone',label:'가드 구간'});
+  // Which side a hook will arrive from. A side step is a read on exactly this, and without a
+  // way to make the read it is a coin flip priced like a commitment. Resolved through the
+  // thrower's live stance, so switching stance invalidates the read the same way it
+  // invalidates everything else built on which hand is where.
+  if(skill==='hand')for(const p of plan.filter(p=>CARDS[p.id].trajectory==='hook').slice(0,2)){
+    const side=sideOfHand(match.fighters[1].stance,CARDS[p.id].hand);
+    out.push({start:Math.min(RULES.slots-1,p.start+CARDS[p.id].impact),kind:'cue',side,label:side==='left'?'좌측 훅':'우측 훅'});
+  }
   if(skill==='pattern'&&match.lastPlans)for(const p of plan.filter(p=>match.lastPlans[1].some(old=>old.start===p.start&&old.id===p.id)).slice(0,2))out.push(exact(p));
   if(skill==='counter'&&match.lastEvaded[0]){const p=plan.find(p=>CARDS[p.id].kind==='attack');if(p)out.push(exact(p));}
   return out;
@@ -439,7 +447,12 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       // A long guard covers more time but is a coarser block, so it leaks more per hit.
       // Without this the only question is whether the guard can be paid for, which makes
       // shelling either total immunity or instant death rather than a trade.
-      if(blocked)power*=(dc.blockLeak??MODIFIERS.blockLeak)*styleOf(before[j],'blockLeakMultiplier',1)+before[j].damage.arms/MODIFIERS.blockArmScaling;
+      // A guard covers a direction. Someone who has lost the angle is holding that guard
+      // where the punches are no longer coming from, so it leaks far more — this is what
+      // "stepping around a guard finds the opening" has to mean mechanically. Without it the
+      // angle was only a damage multiplier and a shelled opponent blocked every punch anyway.
+      const guardLeak=blocked&&defenderOffAngle?(ANGLE?.guardLeak??1):1;
+      if(blocked)power*=((dc.blockLeak??MODIFIERS.blockLeak)*styleOf(before[j],'blockLeakMultiplier',1)*guardLeak)+before[j].damage.arms/MODIFIERS.blockArmScaling;
       if(impaired)power*=1+STATUS.groggyDefensePenalty;
       if(c.target==='head')power*=styleOf(before[j],'incomingHeadMultiplier',1);
       effects.push({type:blocked?'block':'hit',actor:i,target:j,power:round(power),targetPart:c.target,counter,guardBreak:guarding&&!blocked,setup:isOpen,offAngle:!!defenderOffAngle,steppedInto:!!steppedInto,read:setup.read,patternBreak:setup.broken,readConfidence:round(setup.confidence),recovery,at:impactPosition(c,before[i]),reach:round(reach)});
