@@ -45,6 +45,9 @@ npm run calibrate:check
 
 ## 문서
 
+- **[이어서 작업하기](dev/RESUME.md)** — 다른 기기에서 이어받을 때 먼저 읽는다
+- **[두 갈래 작업](dev/WORKSTREAMS.md)** — 전투·시스템과 애니메이션·표현의 경계
+- **[전투·시스템 백로그](dev/BACKLOG.md)** — 다음에 할 일
 - **[개발 기록 색인](HISTORY.md)** — 날짜별 작업 기록은 [`dev/history/`](dev/history)
 - **[검증·보정 환경 지침](docs/guide/testing_and_calibration.md)** — 무엇을 바꿨을 때 무엇을 돌리나
 - [독립 캐릭터 모델 초안과 미리보기](assets/characters/rook/README.md)

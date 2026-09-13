@@ -278,7 +278,7 @@
       "description": "스탠스를 바꿉니다. 앞손과 뒷손이 서로 바뀌므로 훅이 나오는 쪽도 반대가 됩니다."
     },
     "sidestep_left": {
-      "name": "사이드 스텝 · 왼쪽",
+      "name": "왼쪽 스텝",
       "short": "왼스텝",
       "kind": "evade",
       "duration": 2,
@@ -290,7 +290,7 @@
       "description": "왜쪽으로 돌아 각을 틀니다. 상대의 오른손 쪽으로 들어가므로, 그 손의 훅은 따라오고 반대손 훅은 지나갑니다."
     },
     "sidestep_right": {
-      "name": "사이드 스텝 · 오른쪽",
+      "name": "오른쪽 스텝",
       "short": "오른스텝",
       "kind": "evade",
       "duration": 2,

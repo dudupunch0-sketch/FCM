@@ -11,11 +11,36 @@ let match=newMatch(),enemyPlan=null,draft=[],skills=['first','none','none'],mode
 const keys=['1','2','3','4','5','6','7','8','9','0','-','='];
 const presets={counter:['sway','cross','weave','jab','rest','rest'],pressure:['jab','cross','jab','hook','rest','rest'],body:['feint','body','jab','body','rest','rest']};
 const dialogs=['menu','help','cardsInfo'];
+const DEFENCE_KINDS=['guard','evade'];
 const canEdit=()=>mode==='planning'&&!match.finished;
 function notice(text,warning=false){$('notice').textContent=text;$('notice').classList.toggle('warning',warning);}
-function hud(fighters){fighters.forEach((f,i)=>{$(i?'enemyHud':'playerHud').innerHTML=`<div class="fighter-name"><span>${f.name.split(' · ')[0]}</span><small>${t('ui.hud.stamina',{value:Math.round(f.stamina)})}</small></div><div class="stamina" role="meter" aria-label="${t('ui.hud.staminaMeter',{fighter:f.name})}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(f.stamina)}"><div style="width:${f.stamina}%"></div></div><div class="damage-line"><span>${t('ui.part.head')} <b>${Math.round(f.damage.head)}</b></span><span>${t('ui.part.body')} <b>${Math.round(f.damage.body)}</b></span><span>${t('ui.part.arms')} <b>${Math.round(f.damage.arms)}</b></span></div>`;});}
+// The recovery ceiling only falls, so the part of the bar past it can never be refilled. It
+// has to be visible: a player who cannot see why their stamina stopped coming back reads the
+// system as unfair rather than as attrition. Spec: docs/design/38 section 5.
+function hud(fighters){
+  fighters.forEach((f,i)=>{
+    const cap=Math.round(f.staminaCap??RULES.maxStamina),stamina=Math.round(f.stamina);
+    const worn=cap<RULES.maxStamina;
+    // The hatched tail is the stamina this fighter can no longer reach, so the bar itself
+    // carries the answer to "why did my recovery stop".
+    const lost=worn?`<i class="lost" style="left:${cap}%" aria-hidden="true"></i>`:'';
+    // The ceiling rides on the damage line, not the name line: two fighters share a phone
+    // width and a fourth item up top pushes the name out.
+    const ceiling=worn?`<span class="ceiling">${t('ui.hud.ceiling',{value:cap})}</span>`:'';
+    $(i?'enemyHud':'playerHud').innerHTML=`<div class="fighter-name"><span class="who">${f.name.split(' · ')[0]}</span><small class="stance">${t(f.stance==='southpaw'?'ui.stance.southpaw':'ui.stance.orthodox')}</small><small>${t('ui.hud.stamina',{value:stamina})}</small></div><div class="stamina" role="meter" aria-label="${t('ui.hud.staminaMeter',{fighter:f.name})}${worn?` · ${t('ui.hud.ceilingMeter',{fighter:f.name,value:cap})}`:''}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${stamina}">${lost}<i style="width:${f.stamina}%"></i></div><div class="damage-line"><span>${t('ui.part.head')} <b>${Math.round(f.damage.head)}</b></span><span>${t('ui.part.body')} <b>${Math.round(f.damage.body)}</b></span><span>${t('ui.part.arms')} <b>${Math.round(f.damage.arms)}</b></span>${ceiling}</div>`;
+  });
+  // Open guard is a relationship between the two fighters, not a property of either, so it
+  // belongs between them rather than in a corner.
+  const open=fighters[0].stance!==fighters[1].stance;
+  $('guardState').textContent=t(open?'ui.guard.open':'ui.guard.closed');
+  $('guardState').classList.toggle('open',open);
+  $('guardState').title=t(open?'ui.guard.openHint':'ui.guard.closedHint');
+}
 function renderIntel(reveals=[]){
-  $('intel').innerHTML=Array.from({length:RULES.slots},(_,i)=>{const r=reveals.find(r=>r.start===i),label=r?(r.id?CARDS[r.id].short:r.kind==='cue'?t('ui.02'):r.kind==='zone'?t('ui.01'):r.label):'?';return `<div class="slot ${r?.kind??''}" data-beat="${i}" aria-label="${t('ui.beat',{n:i+1})} ${r?(r.kind==='cue'?t('ui.37'):t('ui.44'))+r.label:t('ui.16')}"><span class="${r?'intel-label':'unknown'}">${label}</span></div>`;}).join('');
+  // A cue that names a side carries structured data, so the wording stays in the string table
+  // rather than being passed through from the engine.
+  const cueLabel=r=>r.side?t(r.side==='left'?'ui.cue.left':'ui.cue.right'):t('ui.02');
+  $('intel').innerHTML=Array.from({length:RULES.slots},(_,i)=>{const r=reveals.find(r=>r.start===i),label=r?(r.id?CARDS[r.id].short:r.kind==='cue'?cueLabel(r):r.kind==='zone'?t('ui.01'):r.label):'?';return `<div class="slot ${r?.kind??''}" data-beat="${i}" aria-label="${t('ui.beat',{n:i+1})} ${r?(r.kind==='cue'?t('ui.37'):t('ui.44'))+r.label:t('ui.16')}"><span class="${r?'intel-label':'unknown'}">${label}</span></div>`;}).join('');
 }
 const skillIds=['skill','skill2','skill3'];
 const activeSkills=()=>[...new Set(skills.filter(id=>id&&id!=='none'))];
@@ -27,7 +52,10 @@ function updateIntel(){
   $('intelHint').textContent=detail+t('ui.intelHint.suffix');
 }
 function renderDeck(){
-  const entries=Object.entries(CARDS).filter(([,c])=>category==='attack'?c.kind==='attack':category==='defense'?['guard','evade'].includes(c.kind):['feint','rest'].includes(c.kind));
+  // Tactics is defined by exclusion on purpose. Listing its kinds meant that adding `move` and
+  // `stance` cards silently dropped three cards out of the deck entirely — they existed, the
+  // solver used them, and no player could ever pick one. A catch-all cannot lose a card.
+  const entries=Object.entries(CARDS).filter(([,c])=>category==='attack'?c.kind==='attack':category==='defense'?DEFENCE_KINDS.includes(c.kind):!['attack',...DEFENCE_KINDS].includes(c.kind));
   const used=span(draft)-(selected>=0?CARDS[draft[selected]].duration:0);
   $('deck').innerHTML=entries.map(([id,c])=>`<button class="card ${c.kind}" data-card="${id}" ${!canEdit()||used+c.duration>RULES.slots?'disabled':''} aria-label="${selected>=0?t('ui.06'):''}${c.name}, ${t('ui.slots',{n:c.duration})}, ${t('ui.cost',{n:c.cost})}. ${c.description}"><strong>${c.name}</strong><span class="card-meta"><span>${t('ui.slots',{n:c.duration})}</span><span>${c.kind==='rest'?t('ui.09'):t('ui.08')+c.cost}</span></span></button>`).join('');
 }

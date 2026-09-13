@@ -3,7 +3,7 @@
   "description": "Equilibrium over reactive policies. Regenerate with: node tools/calibrate.mjs policies",
   "spec_reference": "docs/design/34_ai_equilibrium.md",
   "generated": {
-    "policy_fingerprint": "46b1daca",
+    "policy_fingerprint": "b6beccbc",
     "seed": 20260101,
     "rounds": 18,
     "pool_size": 152,

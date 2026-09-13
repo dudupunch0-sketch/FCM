@@ -1,5 +1,8 @@
 # FCM 개발 기록 색인
 
+> **다른 기기에서 이어받는다면 [`dev/RESUME.md`](dev/RESUME.md)를 먼저 읽는다.**
+> 작업은 두 갈래로 나뉜다 — [`dev/WORKSTREAMS.md`](dev/WORKSTREAMS.md).
+> 전투·시스템 할 일은 [`dev/BACKLOG.md`](dev/BACKLOG.md).
 > 날짜별 작업 기록은 [`dev/history/`](dev/history)에 있다.
 > 이 파일은 색인이며, 상세 내용은 각 날짜 파일에 있다.
 >

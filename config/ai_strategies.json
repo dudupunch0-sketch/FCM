@@ -3,7 +3,7 @@
   "description": "Equilibrium AI mixtures solved by self-play. Regenerate with: node tools/calibrate.mjs solve",
   "spec_reference": "docs/design/34_ai_equilibrium.md",
   "generated": {
-    "rules_fingerprint": "b38b8f1b",
+    "rules_fingerprint": "78242c1d",
     "seed": 20260101,
     "rounds": 8,
     "pool_size": 76,

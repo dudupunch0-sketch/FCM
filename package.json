@@ -7,7 +7,7 @@
     "pretest": "node tools/sync_config.mjs",
     "test": "node --test tests/*.test.mjs",
     "prestart": "node tools/sync_config.mjs",
-    "start": "python3 -m http.server 8000 --directory dist",
+    "start": "node tools/serve.mjs",
     "calibrate": "node tools/calibrate.mjs solve",
     "calibrate:check": "node tools/calibrate.mjs check",
     "calibrate:report": "node tools/calibrate.mjs report",

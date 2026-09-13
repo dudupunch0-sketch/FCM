@@ -77,8 +77,19 @@ function ruleParts() {
     JSON.stringify(cfg.rules), JSON.stringify(cfg.modifiers), JSON.stringify(cfg.status),
     JSON.stringify(cfg.rounds), JSON.stringify(cfg.subBeat), JSON.stringify(cfg.range),
     JSON.stringify(cfg.firstStrike), JSON.stringify(cfg.intervalRecovery),
-    ...Object.keys(cfg.cards).sort().map(id => `${id}:${JSON.stringify(cfg.cards[id])}`)
+    ...Object.keys(cfg.cards).sort().map(id => `${id}:${JSON.stringify(ruleFields(cfg.cards[id]))}`)
   ];
+}
+
+// A card's name is not a rule. Hashing the whole card object meant that renaming a card, or
+// rewording its description, invalidated every solved mixture and demanded a fifteen-minute
+// recalculation for a change that cannot move a single plan's value. Presentation is excluded
+// on the same principle that keeps it out of the engine.
+const PRESENTATION = new Set(['name', 'short', 'description']);
+function ruleFields(card) {
+  return Object.fromEntries(Object.entries(card)
+    .filter(([key]) => !PRESENTATION.has(key) && !key.startsWith('note'))
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
 }
 
 function rulesFingerprint() { return fnv(ruleParts().join('|')); }

@@ -26,7 +26,7 @@ async function harness(){
  const document={getElementById:id=>{assert.ok(ids.has(id),'missing HTML element: '+id);return ids.get(id);},querySelectorAll:q=>q==='[data-category]'?categories:q==='[data-close]'?closes:q==='#timeline .slot'?ids.get('timeline').children:[],createElement:()=>new Element(),addEventListener:(e,fn)=>events[e]=fn,activeElement:new Element()};
  const source=(await readFile(new URL('../dist/app.js',import.meta.url),'utf8')).replace(/^import .*;\r?\n/gm,'');
  const deps={...engine,...planner,advancePlayback,describeEvent,stageMessage,t,document,createRing:async()=>({render(){},reduced:false}),requestAnimationFrame:f=>raf=f,window:{}};
- const factory=new (Object.getPrototypeOf(async function(){}).constructor)('deps',`const {${Object.keys(deps).join(',')}}=deps;\n${source}\nreturn {add,execute,finishPlayback,beginPlayback,edit,getState:()=>structuredClone({match,enemyPlan,draft,mode,play,last}),setSelected:i=>selected=i};`);
+ const factory=new (Object.getPrototypeOf(async function(){}).constructor)('deps',`const {${Object.keys(deps).join(',')}}=deps;\n${source}\nreturn {add,execute,finishPlayback,beginPlayback,edit,getState:()=>structuredClone({match,enemyPlan,draft,mode,play,last}),setSelected:i=>selected=i,setCategory:c=>{category=c;renderDeck();}};`);
  const api=await factory(deps);return {...api,ids,events,step:t=>raf(t)};
 }
 test('normal completion returns directly to planning, keeps draft, and hides unearned next-turn intel',async()=>{
@@ -47,4 +47,22 @@ test('three information slots exist, default to one card, and feed observe as a 
  assert.match(h.ids.get('skill').innerHTML,/option value="first"/);
  assert.match(h.ids.get('skill2').innerHTML,/option value="none" selected/);
  assert.ok(h.ids.get('skillTag').textContent.length>0);
+});
+
+test('every card is reachable from exactly one deck category',async()=>{
+ // Categories used to name their kinds, so adding `move` and `stance` cards dropped backstep,
+ // stepin and switch out of the deck: the engine had them, the solver used them, and no player
+ // could pick one. This is the guard against that happening again.
+ const h=await harness();
+ const seen=new Map();
+ for(const category of ['attack','defense','tactic']){
+  h.setCategory(category);
+  for(const id of [...h.ids.get('deck').innerHTML.matchAll(/data-card="([^"]+)"/g)].map(m=>m[1])){
+   assert.ok(!seen.has(id),`${id}가 ${seen.get(id)}와 ${category} 양쪽에 있습니다`);
+   seen.set(id,category);
+  }
+ }
+ const missing=Object.keys(engine.CARDS).filter(id=>id!=='rest'&&!seen.has(id));
+ assert.deepEqual(missing,[],`어느 분류에도 없어 고를 수 없는 카드: ${missing.join(', ')}`);
+ assert.ok(seen.has('rest'),'호흡 카드가 덱에 없습니다');
 });
