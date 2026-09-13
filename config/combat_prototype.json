@@ -35,7 +35,17 @@
   "intervalRecovery": {
     "fraction": 0.35,
     "cap": 85,
-    "note": "Between-round recovery. Larger than betweenRecovery and capped below full, per docs/design/23 section 3."
+    "note": "Between-round recovery. Larger than betweenRecovery and capped below full, per docs/design/23 section 3. The cap is expressed against rules.maxStamina and scales down with a fighter's own ceiling."
+  },
+  "staminaCeiling": {
+    "note": "Stamina has a ceiling that only falls. Every recovery refills toward the ceiling and never past it, so being worn down is a permanent change to what a fighter can still do rather than a dip they breathe off. Spec: docs/design/38_stamina_attrition.md.",
+    "min": 46,
+    "lowThreshold": 0.4,
+    "attackLoss": 1.7,
+    "bodyHitLoss": 0.16,
+    "note_min": "A floor is required or the loop feeds itself: a lower ceiling means gassing sooner, which lowers it again. The floor keeps a worn fighter dangerous instead of helpless.",
+    "note_tuning": "bodyHitLoss barely moves the fixed-pattern table — 0.10 and 0.22 produce identical plan counts — because a fixed plan cannot exploit an opponent whose engine is shrinking. Its effect shows where it should: in the reactive-policy equilibrium, where lowguard went from never used to 13.7%.",
+    "note_threshold": "Fraction of the fighter's own ceiling, not of rules.maxStamina. Someone already worn down is working while gassed at a lower absolute number, which is what being worn down means."
   },
   "cards": {
     "jab": {
@@ -511,6 +521,8 @@
     "counter": 1.6,
     "exposed": 1.18,
     "staminaFloor": 0.5,
+    "staminaVulnerability": 0.15,
+    "note_vulnerability": "A gassed fighter absorbs worse: less braced, slower to roll with it. staminaFloor weakens what you throw; this deepens what you take. Both read absolute stamina, so a fallen ceiling compounds through this automatically. Measured: at 0.30 two further plans died (flicker, patient) because everything ends before it can be answered; 0.15 keeps the same plan count as with the mechanic switched off.",
     "note": "Head work is the damage and KO path; body work is the attrition path. A body shot takes stamina, so an opponent who neglects body defence gradually cannot act: costs go unpaid, actions fail, guards break. This was briefly tuned down to 0.35 while chasing a body plan that won every fight, but that turned out to be the saturated-part scoring bug, and the lower value had quietly cost body work its identity.",
     "blockLeak": 0.18,
     "blockArmScaling": 500,

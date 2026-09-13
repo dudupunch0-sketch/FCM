@@ -15,6 +15,7 @@ let STATUS = null;
 let INTERVAL = null;
 let SUBBEAT = null;
 let RANGE = null;
+let CEILING = null;
 let FIRST_STRIKE = null;
 let REVEAL = null;
 let ANGLE = null;
@@ -42,6 +43,7 @@ export function configureEngine(definitions) {
   PROFILES = Object.freeze(cfg.profiles);
   PATTERNS = cfg.patterns;
   LOW_STAMINA = cfg.low_stamina_plan;
+  CEILING = cfg.staminaCeiling ?? null;
   ROUNDS = cfg.rounds;
   STATUS = cfg.status;
   INTERVAL = cfg.intervalRecovery;
@@ -83,7 +85,7 @@ function ratio(effective,key){
   return 1+(value-1)*(spec.weight??1);
 }
 
-export function fighter(name,spec){return {name,stamina:100,damage:{head:0,body:0,arms:0},score:0,counterUntil:-1,openUntil:-1,statusUntil:-1,offAngleUntil:-1,status:'normal',evaded:false,ko:false,
+export function fighter(name,spec){return {name,stamina:100,staminaCap:RULES.maxStamina,damage:{head:0,body:0,arms:0},score:0,counterUntil:-1,openUntil:-1,statusUntil:-1,offAngleUntil:-1,status:'normal',evaded:false,ko:false,
   stats:(spec&&DEFINITIONS)?buildCombatant(spec):null,derived:null};}
 
 const round=x=>Math.round(x*10)/10;
@@ -96,13 +98,28 @@ const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 // a window opened at slot 7 continues into the next combo. Spec: docs/design/30 section 2.
 const carryTick=v=>v>=RULES.slots?v-RULES.slots:-1;
 
+// The ceiling only ever falls, and every recovery clamps to it. Attrition is therefore a
+// permanent change to what a fighter can still do, not a dip they breathe off between rounds.
+// A floor is required or the loop feeds itself: a lower ceiling means gassing sooner, which
+// lowers it again. Spec: docs/design/38_stamina_attrition.md.
+function lowerCeiling(x,amount,events,actor){
+  if(!CEILING||!(amount>0))return;
+  const before=x.staminaCap;
+  x.staminaCap=round(Math.max(CEILING.min,x.staminaCap-amount));
+  if(x.staminaCap>=before)return;
+  x.stamina=round(Math.min(x.stamina,x.staminaCap));
+  if(events)events.push({type:'ceiling',actor,cap:x.staminaCap,lost:round(before-x.staminaCap)});
+}
+
 // A round boundary is real rest. Windows expire and stamina partially recovers, never fully.
 function endRound(f){
   for(const x of f){
     x.counterUntil=-1;x.openUntil=-1;x.statusUntil=-1;x.offAngleUntil=-1;x.status='normal';
     // The cap limits how far recovery can take you, it does not drag a healthier fighter down.
-    const recovered=x.stamina+RULES.maxStamina*INTERVAL.fraction*(1-x.damage.body/200);
-    x.stamina=round(clamp(Math.max(x.stamina,Math.min(recovered,INTERVAL.cap)),0,RULES.maxStamina));
+    const ceiling=x.staminaCap??RULES.maxStamina;
+    const intervalCap=INTERVAL.cap*ceiling/RULES.maxStamina;
+    const recovered=x.stamina+ceiling*INTERVAL.fraction*(1-x.damage.body/200);
+    x.stamina=round(clamp(Math.max(x.stamina,Math.min(recovered,intervalCap)),0,ceiling));
   }
 }
 
@@ -188,10 +205,15 @@ export function validatePlan(plan){
 }
 // Randomness creates variation, not causation: it perturbs impact magnitude only, never
 // hit/miss, block, evasion, finish or the winner. Derived from the match seed so it replays.
-function impactVariance(match,tick,actor){
+// Deliberately NOT keyed by actor. Two impacts landing in the same slot are the same moment
+// of the same fight and share its variation. Keying by actor gave the two corners different
+// rolls, so a mirror match was never exactly even and "the game value is zero" held only
+// because payoffMatrix negates the upper triangle — the check could not have caught a real
+// left/right asymmetry. Sharing the roll makes that antisymmetry true rather than enforced.
+function impactVariance(match,tick){
   if(!VARIANCE)return 1;
-  const roll=random(match.seed*7919+match.turn*131+tick*17+actor)();
-  const second=random(match.seed*104729+match.turn*31+tick*7+actor*3)();
+  const roll=random(match.seed*7919+match.turn*131+tick*17)();
+  const second=random(match.seed*104729+match.turn*31+tick*7)();
   return 1+(roll+second-1)*VARIANCE;
 }
 
@@ -308,8 +330,13 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       if(p.start===tick){
         if(f[i].stamina<c.cost){failed[i].add(p.start);events.push({type:'exhausted',actor:i,card:p.id});}
         else{
+          // Working while gassed costs more than the stamina it takes: it lowers what you can
+          // ever recover to. Read before the cost is paid — the fighter was already gassed when
+          // they committed to the card.
+          const gassed=CEILING&&c.kind==='attack'&&f[i].stamina<f[i].staminaCap*CEILING.lowThreshold;
           const closing=(c.rangeShift??0)<0?styleOf(f[i],'closingCostMultiplier',1):1;
           f[i].stamina=round(f[i].stamina-c.cost*closing);
+          if(gassed)lowerCeiling(f[i],CEILING.attackLoss,events,i);
         }
       }
       poses[i].failed=failed[i].has(p.start);
@@ -320,7 +347,7 @@ export function resolveTurn(input,playerPlan,enemyPlan){
         f[1-i].offAngleUntil=Math.max(f[1-i].offAngleUntil,tick+ANGLE.slots);
       }
       if(p.start===tick&&!poses[i].failed)match.gap=roundGap(clamp(match.gap+(c.rangeShift??0),RANGE.min,RANGE.max));
-      if(c.kind==='rest'){f[i].stamina=round(clamp(f[i].stamina+RULES.restRecovery*(1-f[i].damage.body/200),0,100));events.push({type:'rest',actor:i});}
+      if(c.kind==='rest'){f[i].stamina=round(clamp(f[i].stamina+RULES.restRecovery*(1-f[i].damage.body/200),0,f[i].staminaCap));events.push({type:'rest',actor:i});}
     }
     for(let i=0;i<2;i++){
       const p=active[i],other=CARDS[active[1-i].id];
@@ -357,9 +384,12 @@ export function resolveTurn(input,playerPlan,enemyPlan){
         :band==='outside'?styleOf(before[i],'outsideImpactMultiplier',1):1;
       const attackerEffective=effectiveOf(before[i]),defenderEffective=effectiveOf(before[j]);
       const setup=memory?setupModifier(memory,j,active[i].start,p.id,before[j].stats?before[j].stats.base.fight_iq:60):{factor:1,read:false,broken:false,confidence:0};
-      const staminaFactor=MODIFIERS.staminaFloor+(1-MODIFIERS.staminaFloor)*before[i].stamina/100;
-      let power=c.power*staminaFactor*(counter?MODIFIERS.counter*styleOf(before[i],'counterMultiplier',1):1)*(isOpen||recovery||mismatch?MODIFIERS.exposed:1)*reach
-        *ratio(attackerEffective,'impact')*setup.factor*bandBoost*(attackerOffAngle?ANGLE.attackPenalty:1)*(defenderOffAngle?ANGLE.incomingBonus:1)*(steppedInto?ANGLE.hookPunish:1)*impactVariance(match,tick,i);
+      const staminaFactor=MODIFIERS.staminaFloor+(1-MODIFIERS.staminaFloor)*before[i].stamina/RULES.maxStamina;
+      // staminaFloor weakens what you throw; this deepens what you take. Both read absolute
+      // stamina, so a ceiling that has fallen compounds through here without extra rules.
+      const gassedTarget=1+(MODIFIERS.staminaVulnerability??0)*(1-clamp(before[j].stamina,0,RULES.maxStamina)/RULES.maxStamina);
+      let power=c.power*staminaFactor*gassedTarget*(counter?MODIFIERS.counter*styleOf(before[i],'counterMultiplier',1):1)*(isOpen||recovery||mismatch?MODIFIERS.exposed:1)*reach
+        *ratio(attackerEffective,'impact')*setup.factor*bandBoost*(attackerOffAngle?ANGLE.attackPenalty:1)*(defenderOffAngle?ANGLE.incomingBonus:1)*(steppedInto?ANGLE.hookPunish:1)*impactVariance(match,tick);
       if(blocked)power/=Math.max(ratio(defenderEffective,'guard'),0.2);
       // A long guard covers more time but is a coarser block, so it leaks more per hit.
       // Without this the only question is whether the guard can be paid for, which makes
@@ -398,7 +428,10 @@ export function resolveTurn(input,playerPlan,enemyPlan){
       d.damage[e.targetPart]=round(clamp(beforeDamage+e.power,0,RULES.maxPartDamage));
       const applied=round(d.damage[e.targetPart]-beforeDamage);
       if(e.type==='block'){d.stamina=round(Math.max(0,d.stamina-RULES.guardDrain));d.damage.arms=round(clamp(d.damage.arms+applied*MODIFIERS.armDamageRatio*styleOf(d,'armDamageMultiplier',1),0,100));d.score+=MODIFIERS.blockScore;}
-      else{f[e.actor].score+=applied*(MODIFIERS.scoreByTarget[e.targetPart]??1);if(e.targetPart==='body')d.stamina=round(Math.max(0,d.stamina-applied*MODIFIERS.bodyStaminaDrain*styleOf(f[e.actor],'bodyStaminaDrainMultiplier',1)));}
+      else{f[e.actor].score+=applied*(MODIFIERS.scoreByTarget[e.targetPart]??1);if(e.targetPart==='body'){d.stamina=round(Math.max(0,d.stamina-applied*MODIFIERS.bodyStaminaDrain*styleOf(f[e.actor],'bodyStaminaDrainMultiplier',1)));
+        // Body damage takes the ceiling with it, so neglecting body defence is not a debt you
+        // can breathe off between rounds.
+        if(CEILING)lowerCeiling(d,applied*CEILING.bodyHitLoss,events,e.target);}}
       if(e.counter)f[e.actor].counterUntil=-1;
       if(e.setup)d.openUntil=-1;
       struckAt[e.target]=e.at;
@@ -436,7 +469,7 @@ export function resolveTurn(input,playerPlan,enemyPlan){
         x.counterUntil=carryTick(x.counterUntil);x.openUntil=carryTick(x.openUntil);x.offAngleUntil=carryTick(x.offAngleUntil);
         x.statusUntil=carryTick(x.statusUntil);
         if(x.statusUntil<0)x.status='normal';
-        x.stamina=round(clamp(x.stamina+RULES.betweenRecovery,0,RULES.maxStamina));
+        x.stamina=round(clamp(x.stamina+RULES.betweenRecovery,0,x.staminaCap));
       });
     }
   }

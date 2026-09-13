@@ -359,6 +359,19 @@ const validators = {
     requireNumber(file, 'intervalRecovery.fraction', interval.fraction, { min: 0, max: 1 });
     requireNumber(file, 'intervalRecovery.cap', interval.cap, { min: 1, max: rules.maxStamina });
     if (interval.cap >= rules.maxStamina) fail(file, 'intervalRecovery.cap', '완전 회복은 허용되지 않습니다');
+
+    // The ceiling only falls, so its floor and its losses decide whether attrition is a slope
+    // or a cliff. Spec: docs/design/38_stamina_attrition.md.
+    const ceiling = requireObject(file, 'staminaCeiling', cfg.staminaCeiling);
+    requireNumber(file, 'staminaCeiling.min', ceiling.min, { min: 1, max: rules.maxStamina });
+    requireNumber(file, 'staminaCeiling.lowThreshold', ceiling.lowThreshold, { min: 0, max: 1 });
+    requireNumber(file, 'staminaCeiling.attackLoss', ceiling.attackLoss, { min: 0 });
+    requireNumber(file, 'staminaCeiling.bodyHitLoss', ceiling.bodyHitLoss, { min: 0 });
+    if (ceiling.min >= rules.maxStamina) fail(file, 'staminaCeiling.min', '바닥이 시작 상한과 같으면 소모가 일어나지 않습니다');
+    if (ceiling.min <= interval.cap * ceiling.min / rules.maxStamina) {
+      // Always true by construction; the real guard is that a worn fighter can still act.
+    }
+    if (ceiling.min < rules.bodyKoStamina) fail(file, 'staminaCeiling.min', '바닥이 바디 KO 문턱보다 낮으면 소모만으로 KO가 확정됩니다');
     const cards = requireObject(file, 'cards', cfg.cards);
     const kinds = new Set(['attack', 'guard', 'evade', 'feint', 'rest', 'move']);
     for (const id of dataKeys(cards)) {

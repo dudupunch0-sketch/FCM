@@ -23,6 +23,8 @@ export function describeEvent(event, { fighters = [], cards = CARDS } = {}) {
       return t(event.success ? 'event.feint.success' : 'event.feint.ignored', { fighter });
     case 'evade':
       return t('event.evade', { fighter });
+    case 'ceiling':
+      return t('event.ceiling', { fighter, cap: event.cap });
     case 'status':
       return t(`event.status.${event.level}`, { fighter: fighters[event.actor]?.name ?? '' });
     case 'hit':

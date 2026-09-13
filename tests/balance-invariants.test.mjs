@@ -3,7 +3,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {definitions} from './helpers/engine-setup.mjs';
-import {CARDS, newMatch, makePlan, opponentPlan, resolveTurn} from '../dist/engine.js';
+import {CARDS, RULES, newMatch, makePlan, opponentPlan, resolveTurn} from '../dist/engine.js';
 import {createRngSet} from '../dist/rng.js';
 import {createWorld, simulateWeek} from '../dist/world.js';
 import {ALL_BASE_PARAMETERS} from '../dist/fighter-schema.js';
@@ -114,13 +114,21 @@ test('body work is the attrition path: neglecting body defence costs you the abi
       failures += r.frames.flatMap(f => f.events).filter(e => e.type === 'exhausted' && e.actor === 1).length;
       m = r.match;
     }
-    return { stamina: m.fighters[1].stamina, failures };
+    return { stamina: m.fighters[1].stamina, cap: m.fighters[1].staminaCap, failures };
   };
   const ignored = drain(['shell', 'shell']);
-  const guarded = drain(['lowguard', 'guard', 'guard']);
+  // Body guard means guarding the body. The previous plan spent two of its four covered slots
+  // on a head guard, so body shots kept landing and it measured half-guarding, not guarding.
+  const guarded = drain(['lowguard', 'lowguard']);
   assert.ok(ignored.stamina < guarded.stamina - 20,
     `바디를 무시해도 스태미너가 버팁니다: ${ignored.stamina} vs ${guarded.stamina}`);
   assert.ok(guarded.stamina > 60, `바디 가드가 소모를 막지 못합니다: ${guarded.stamina}`);
+  // The ceiling is the part that does not come back. Six turns is a short window, so the gap
+  // is modest by design; what matters is that it opens at all and favours the guard.
+  assert.ok(ignored.cap < guarded.cap - 5,
+    `바디를 무시해도 회복 상한이 남아 있습니다: ${ignored.cap} vs ${guarded.cap}`);
+  assert.ok(ignored.cap < RULES.maxStamina - 15,
+    `상한이 의미 있게 깎이지 않았습니다: ${ignored.cap}`);
 });
 
 test('head work still outscores body work, so body is not simply better', () => {
