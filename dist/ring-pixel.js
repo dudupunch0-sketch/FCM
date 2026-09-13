@@ -9,7 +9,7 @@ export class PixelRing{
       const target=e.type==='evade'?e.actor:e.target??e.actor,pose=frame.poses[target];
       const m=sampleMotion(pose,.5,0,target,frame.events,frame.fighters[target]?.ko,this.reduced);
       const sprite=pixelFrame(pose,.5,frame.events,target,frame.fighters[target]?.ko);
-      const point=this.contactPoint(target,sprite,e.targetPart,m);
+      const point=this.contactPoint(target,sprite,e.targetPart,m,pose,.5);
       this.effects.push({...e,...point,at,strong:e.type==='hit'&&(e.counter||e.power>=16)});
     }
   }
@@ -42,7 +42,7 @@ export class PixelRing{
       c.fillStyle='#0b182480';c.fillRect(base-48,276,96,5);
       if(this.ready){
         // Feet remain anchored. Whole-sprite vertical bob made the fighters float.
-        this.drawFighter(i,spriteIndex,m);
+        this.drawFighter(i,spriteIndex,m,pose,p);
       }else{c.fillStyle='#c1d2d9';c.font='14px system-ui';c.textAlign='center';c.fillText('선수 이미지 로드 실패',base,190);}
     }
     c.restore();

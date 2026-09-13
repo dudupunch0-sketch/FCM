@@ -1,0 +1,174 @@
+{
+  "characterId": "fcm-cel-boxer",
+  "engine": "component-row",
+  "game_input": "sprite-sheet-alpha.png",
+  "degraded_static_fallback": false,
+  "curation_applied": false,
+  "frame_variant": "pixel",
+  "sprite_sheet_alpha": "sprite-sheet-alpha.png",
+  "sprite_sheet_alpha_report": "sprite-sheet-alpha.report.json",
+  "base_image": "base-source.png",
+  "cell": {
+    "shape": "rect",
+    "width": 576,
+    "height": 768,
+    "safe_margin_x": 24,
+    "safe_margin_y": 24
+  },
+  "chroma_key": {
+    "name": "green",
+    "hex": "#00FF00",
+    "rgb": [
+      0,
+      255,
+      0
+    ],
+    "selection": "manual"
+  },
+  "animation": {
+    "cellWidth": 576,
+    "cellHeight": 768,
+    "columns": 6,
+    "rows": {
+      "hook": {
+        "row": 0,
+        "frames": 4,
+        "fps": 8,
+        "durations_ms": [
+          125,
+          125,
+          125,
+          125
+        ],
+        "loop": false,
+        "frame_variant": "pixel"
+      },
+      "guard": {
+        "row": 1,
+        "frames": 4,
+        "fps": 8,
+        "durations_ms": [
+          125,
+          125,
+          125,
+          125
+        ],
+        "loop": false,
+        "frame_variant": "pixel"
+      },
+      "weave": {
+        "row": 2,
+        "frames": 6,
+        "fps": 8,
+        "durations_ms": [
+          125,
+          125,
+          125,
+          125,
+          125,
+          125
+        ],
+        "loop": false,
+        "frame_variant": "pixel"
+      }
+    }
+  },
+  "frame_layout": {
+    "sheetWidth": 3456,
+    "sheetHeight": 2304,
+    "cellWidth": 576,
+    "cellHeight": 768,
+    "rows": {
+      "hook": [
+        {
+          "x": 0,
+          "y": 0,
+          "w": 576,
+          "h": 768
+        },
+        {
+          "x": 576,
+          "y": 0,
+          "w": 576,
+          "h": 768
+        },
+        {
+          "x": 1152,
+          "y": 0,
+          "w": 576,
+          "h": 768
+        },
+        {
+          "x": 1728,
+          "y": 0,
+          "w": 576,
+          "h": 768
+        }
+      ],
+      "guard": [
+        {
+          "x": 0,
+          "y": 768,
+          "w": 576,
+          "h": 768
+        },
+        {
+          "x": 576,
+          "y": 768,
+          "w": 576,
+          "h": 768
+        },
+        {
+          "x": 1152,
+          "y": 768,
+          "w": 576,
+          "h": 768
+        },
+        {
+          "x": 1728,
+          "y": 768,
+          "w": 576,
+          "h": 768
+        }
+      ],
+      "weave": [
+        {
+          "x": 0,
+          "y": 1536,
+          "w": 576,
+          "h": 768
+        },
+        {
+          "x": 576,
+          "y": 1536,
+          "w": 576,
+          "h": 768
+        },
+        {
+          "x": 1152,
+          "y": 1536,
+          "w": 576,
+          "h": 768
+        },
+        {
+          "x": 1728,
+          "y": 1536,
+          "w": 576,
+          "h": 768
+        },
+        {
+          "x": 2304,
+          "y": 1536,
+          "w": 576,
+          "h": 768
+        },
+        {
+          "x": 2880,
+          "y": 1536,
+          "w": 576,
+          "h": 768
+        }
+      ]
+    }
+  }
+}

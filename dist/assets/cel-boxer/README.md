@@ -1,5 +1,7 @@
 # 사용자 제공 2D 캐릭터 원본
 
+후속 프레임: `animation/`에 상단 가드·위빙과 훅 검토 후보를 보관한다. 훅은 접촉 위치 문제로 게임에서 비활성화했다. 최신 상태는 `docs/design/24_2d_animation_handoff.md` 참고.
+
 guard.png: codex-clipboard-0e2e34a4-aee9-4b04-841e-248dfe118758.png
 straight.png: codex-clipboard-33b199ea-5566-4203-a10d-9780737d3744.png
 

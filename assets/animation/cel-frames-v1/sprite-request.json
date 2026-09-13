@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "kind": "sprite-gen-request",
+  "engine": "component-row",
+  "character": {
+    "id": "fcm-cel-boxer",
+    "description": "",
+    "base_image": "base-source.png"
+  },
+  "cell": {
+    "shape": "rect",
+    "width": 576,
+    "height": 768,
+    "safe_margin_x": 24,
+    "safe_margin_y": 24
+  },
+  "chroma_key": {
+    "name": "green",
+    "hex": "#00FF00",
+    "rgb": [
+      0,
+      255,
+      0
+    ],
+    "selection": "manual"
+  },
+  "states": {
+    "hook": {
+      "frames": 4,
+      "fps": 8,
+      "loop": false,
+      "action": "Four poses of a compact boxing hook aimed at an opponent on the RIGHT, in the same side/three-quarter camera as the anchor. 1 original guard. 2 coil torso and lift elbow. 3 CONTACT: the punching glove must be the RIGHTMOST point of the character at the opponent face height, well ahead of his own nose. Keep the elbow bent roughly 90 degrees. Foreshorten the UPPER ARM toward camera, while the FOREARM travels horizontally toward SCREEN RIGHT. Show a clear elbow corner BELOW the punching glove. Do not point the fist toward the camera or cross the fist over own chest. This is a short bent-elbow hook, not a fully extended straight. Opposite glove stays at chin. Rotate hips and shoulder naturally without changing foot positions. 4 recover original guard. Same identity, outfit, camera, anatomy, full-body scale. No extra limbs or effects."
+    },
+    "guard": {
+      "frames": 4,
+      "fps": 8,
+      "loop": false,
+      "action": "Close a high boxing guard: normal guard, both gloves rise to temples and elbows close toward ribs, hold tight high guard with chin tucked, return to normal guard. Same right-facing three-quarter camera and fixed full-body scale in every frame. Natural connected anatomy."
+    },
+    "weave": {
+      "frames": 6,
+      "fps": 8,
+      "loop": false,
+      "action": "Six distinct phases of one U-shaped boxing weave with fixed foot positions: 1 upright normal guard, 2 knees bending and head down-back, 3 deep crouch head back, 4 deep crouch head moves forward under imaginary hook, 5 knees partially extend while head rises forward, 6 return to original normal guard. No jump directly from deep crouch to upright. Actual knee and hip bending, not body shrinking. Same figure size, same face, same right-facing three-quarter camera. Every frame full body with both feet."
+    }
+  },
+  "style": "Hand-drawn 2D cel illustration matching the anchor exactly. Clean outlines, natural adult anatomy, flat colors and two-tone shadows. Not pixel art, not 3D.",
+  "motion_phase_guides": false,
+  "layout": "taxonomy/v1",
+  "fit": {
+    "resample": "lanczos",
+    "align_x": "foot-centroid",
+    "align_y": "bottom",
+    "pixel_unfake": false
+  }
+}

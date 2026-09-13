@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FCM · 2D 동작 검수</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#101923;color:#edf3ed;font:16px system-ui}main{max-width:900px;margin:auto;padding:24px}header{display:flex;justify-content:space-between;align-items:center}h1{font-size:24px}a{color:#d6f477}p{color:#adbdc7;line-height:1.6}canvas{display:block;width:100%;aspect-ratio:2;background:#142431;border:1px solid #405663;border-radius:4px}nav{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0}button{font:inherit;color:inherit;background:#22313c;border:1px solid #53646e;padding:12px 20px;border-radius:4px;cursor:pointer}button[aria-pressed=true]{background:#d6f477;color:#142018}label{display:block;margin:20px 0}input{width:100%;accent-color:#d6f477}output{font-variant-numeric:tabular-nums}small{color:#adbdc7}
+</style>
+<main><header><h1>2D 동작 검수</h1><a href="/?art=cel">게임에서 보기</a></header>
+<p>훅의 굽힌 팔, 얼굴을 닫는 가드, 무릎과 골반을 낮추는 위빙을 확인하세요.</p>
+<nav aria-label="검수 동작"><button data-action="hook" aria-pressed="true">훅</button><button data-action="guard" aria-pressed="false">상단 가드</button><button data-action="weave" aria-pressed="false">위빙</button></nav>
+<canvas id="study" width="640" height="320" role="img" aria-label="두 복서의 동작 비교"></canvas>
+<label>동작 진행 <output id="position">0%</output><input id="progress" aria-label="동작 진행" type="range" min="0" max="100" step="1" value="0"></label>
+<button id="play">재생</button> <button id="contact">중심 자세</button>
+<p id="description">훅 검토 중: 상대와 접촉 위치가 어긋나 게임 적용 보류.</p>
+<small>동작 검수 화면. 전투 결과를 계산하지 않습니다.</small></main>
+<script type="module" src="./animation-study.js"></script></html>
