@@ -75,6 +75,55 @@ tests/motion.test.mjs
 
 ---
 
+# 2-1. 설계 문서 번호 대역
+
+| 대역 | 소유 |
+|---|---|
+| 12 ~ 19 | 분기 이전의 공통 역사. 건드리지 않는다 |
+| 20, 21a, 21b | 애니메이션·표현 (분기 이전에 매겨진 번호) |
+| **22 ~ 38** | **전투·시스템** |
+| **39 이상** | **애니메이션·표현** |
+
+새 설계 문서는 **자기 대역의 다음 빈 번호**를 쓴다.
+
+## 왜 대역을 나누나 — 이미 두 번 부딪혔다
+
+번호는 다른 문서가 이곳을 가리키는 **주소**다. 같은 번호에 다른 문서가 있으면
+참조가 지저분해지는 정도가 아니라 **가리키는 대상이 모호해진다.**
+
+- 1차: 한 갈래 안에서 21번이 둘이 됐다 → `80d1f1c`에서 `21a`/`21b`로 갈랐다
+- 2차: 두 갈래가 병렬로 돌면서 **22~25번을 양쪽이 각자 가져갔다**
+
+2차가 더 나쁘다. **파일 이름이 다르므로 git이 충돌로 잡지 않는다.**
+병합하면 조용히 22번 문서가 두 개가 되고, 아무도 알려주지 않는다.
+
+그래서 `tests/docs.test.mjs`가 번호 중복을 검사한다. 병합 직후 이 테스트가 실패하면
+정상이며, **그때가 이름을 고칠 시점이다.**
+
+## 미해결 — 애니메이션 문서 4개의 번호
+
+`origin/codex/2d-animation` 브랜치가 전투·시스템 대역을 쓰고 있다. 병합 전에 옮겨야 한다.
+
+| 현재 | 옮길 곳 | 부딪히는 상대 |
+|---|---|---|
+| `22_ui_motion_direction.md` | `39_ui_motion_direction.md` | `22_combat_range_model.md` |
+| `23_2d_character_direction.md` | `40_2d_character_direction.md` | `23_round_structure_and_judging.md` |
+| `24_2d_animation_handoff.md` | `41_2d_animation_handoff.md` | `24_base_to_derived_mapping.md` |
+| `25_motion_workbench.md` | `42_motion_workbench.md` | `25_effective_performance.md` |
+
+참조를 고쳐야 하는 곳은 두 군데다.
+
+```
+docs/spec/current_decisions.md        → 23번을 가리킨다
+dist/assets/cel-boxer/README.md       → 24번을 가리킨다
+```
+
+`21_character_model_foundation.md`와 `21_mobile_pixel_combat.md`는 손댈 필요가 없다.
+전투 갈래에서 이미 `21a`/`21b`로 갈라 놓았고, 애니메이션 갈래는 그 파일을 건드리지 않았으므로
+병합이 알아서 정리한다.
+
+---
+
 # 3. 애니메이션 쪽 첫 과제 — 카드 7장이 움직이지 않는다
 
 9월 12~13일에 카드가 12종에서 19종으로 늘었다. **모션은 따라오지 않았다.**
