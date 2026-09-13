@@ -5,6 +5,12 @@ import {readFile} from 'node:fs/promises';
 import * as engine from '../dist/engine.js';
 import {advancePlayback} from '../dist/motion.js';
 import * as planner from '../dist/planner.js';
+import {configureStrings,t} from '../dist/strings.js';
+import {describeEvent,stageMessage} from '../dist/commentary.js';
+import {readFile as readJson} from 'node:fs/promises';
+import './helpers/engine-setup.mjs';
+const strings=JSON.parse(await readJson(new URL('../config/strings/ko.json',import.meta.url),'utf8'));
+configureStrings(strings,strings);
 async function harness(){
  const html=await readFile(new URL('../dist/index.html',import.meta.url),'utf8');
  class Element{
@@ -18,9 +24,9 @@ async function harness(){
  const closes=['menu','help','cardsInfo'].map(c=>Object.assign(new Element(),{dataset:{close:c}}));
  const events={};let raf;
  const document={getElementById:id=>{assert.ok(ids.has(id),'missing HTML element: '+id);return ids.get(id);},querySelectorAll:q=>q==='[data-category]'?categories:q==='[data-close]'?closes:q==='#timeline .slot'?ids.get('timeline').children:[],createElement:()=>new Element(),addEventListener:(e,fn)=>events[e]=fn,activeElement:new Element()};
- const source=(await readFile(new URL('../dist/app.js',import.meta.url),'utf8')).replace(/^import .*;\n/gm,'');
- const deps={...engine,...planner,advancePlayback,document,createRing:async()=>({render(){},reduced:false}),requestAnimationFrame:f=>raf=f,window:{}};
- const factory=new (Object.getPrototypeOf(async function(){}).constructor)('deps',`const {${Object.keys(deps).join(',')}}=deps;\n${source}\nreturn {add,execute,finishPlayback,beginPlayback,edit,getState:()=>structuredClone({match,enemyPlan,draft,mode,play,last}),setSelected:i=>selected=i};`);
+ const source=(await readFile(new URL('../dist/app.js',import.meta.url),'utf8')).replace(/^import .*;\r?\n/gm,'');
+ const deps={...engine,...planner,advancePlayback,describeEvent,stageMessage,t,document,createRing:async()=>({render(){},reduced:false}),requestAnimationFrame:f=>raf=f,window:{}};
+ const factory=new (Object.getPrototypeOf(async function(){}).constructor)('deps',`const {${Object.keys(deps).join(',')}}=deps;\n${source}\nreturn {add,execute,finishPlayback,beginPlayback,edit,getState:()=>structuredClone({match,enemyPlan,draft,mode,play,last}),setSelected:i=>selected=i,setCategory:c=>{category=c;renderDeck();}};`);
  const api=await factory(deps);return {...api,ids,events,step:t=>raf(t)};
 }
 test('normal completion returns directly to planning, keeps draft, and hides unearned next-turn intel',async()=>{
@@ -34,4 +40,29 @@ test('paused replay cannot edit, advance, or change the committed result; skip i
 });
 test('selected card replacement, undo, new match, and modal wiring work',async()=>{
  const h=await harness();h.add('jab');h.setSelected(0);h.add('sway');assert.deepEqual(h.getState().draft,['sway']);h.ids.get('undo').click();assert.deepEqual(h.getState().draft,['jab']);h.ids.get('menuButton').click();assert.equal(h.ids.get('menu').open,true);h.ids.get('start').click();assert.deepEqual(h.getState().draft,[]);assert.equal(h.getState().match.turn,1);assert.equal(h.ids.get('menu').open,false);
+});
+test('three information slots exist, default to one card, and feed observe as a set',async()=>{
+ const h=await harness();
+ for(const id of ['skill','skill2','skill3'])assert.ok(h.ids.has(id),'정보 카드 슬롯이 없습니다: '+id);
+ assert.match(h.ids.get('skill').innerHTML,/option value="first"/);
+ assert.match(h.ids.get('skill2').innerHTML,/option value="none" selected/);
+ assert.ok(h.ids.get('skillTag').textContent.length>0);
+});
+
+test('every card is reachable from exactly one deck category',async()=>{
+ // Categories used to name their kinds, so adding `move` and `stance` cards dropped backstep,
+ // stepin and switch out of the deck: the engine had them, the solver used them, and no player
+ // could pick one. This is the guard against that happening again.
+ const h=await harness();
+ const seen=new Map();
+ for(const category of ['attack','defense','tactic']){
+  h.setCategory(category);
+  for(const id of [...h.ids.get('deck').innerHTML.matchAll(/data-card="([^"]+)"/g)].map(m=>m[1])){
+   assert.ok(!seen.has(id),`${id}가 ${seen.get(id)}와 ${category} 양쪽에 있습니다`);
+   seen.set(id,category);
+  }
+ }
+ const missing=Object.keys(engine.CARDS).filter(id=>id!=='rest'&&!seen.has(id));
+ assert.deepEqual(missing,[],`어느 분류에도 없어 고를 수 없는 카드: ${missing.join(', ')}`);
+ assert.ok(seen.has('rest'),'호흡 카드가 덱에 없습니다');
 });

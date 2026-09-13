@@ -1,0 +1,70 @@
+{
+  "config_version": "0.1.0-draft",
+  "description": "Information reveal economy and timeline placement rules. Values are initial candidates, not balanced.",
+  "spec_reference": "docs/design/31_information_economy_and_placement.md",
+
+  "active_card_limit": {
+    "style": 5,
+    "information": 3,
+    "shared_pool": false,
+    "note": "Separate limits. Style cards keep the original five. Information cards get their own pool of three, so the per-turn reveal budget — not the card limit — is what caps disclosure.",
+    "note_tradeoff": "Separation accepts that an information card is effectively always equipped. In exchange the player's decision becomes 'which read do I want', which is a comparison between like things, instead of 'certainty or power', which is not.",
+    "merge_back_criteria": [
+      "information cards trivialise planning, making opponent reads unnecessary",
+      "one information card dominates the others so the choice is not real",
+      "style cards remain unused even with their own dedicated limit"
+    ],
+    "note_merge": "If any of the above holds, collapse back into a single shared pool. Recorded so the revert has a trigger rather than a vibe."
+  },
+
+  "reveal_budget": {
+    "note": "Total reveal per turn across ALL equipped cards. Stacking more information cards yields diminishing returns and can never reach full disclosure.",
+    "per_turn_total": 3,
+    "cost": { "exact": 2, "cue": 1 },
+    "max_exact_per_turn": 2,
+    "note_cap": "Even at maximum budget an 8-slot plan cannot be fully revealed. Partial knowledge is structural, not a tuning accident.",
+    "note_binding": "With an information limit of 3 the budget binds before the card limit does: three equipped cards cannot all fire at full precision in one turn. Extra cards therefore buy trigger coverage across situations, not more disclosure in any single turn. The budget must NOT scale with card count."
+  },
+
+  "resolution_order": {
+    "note": "Deterministic priority when several cards compete for the same budget. Required for reproducibility.",
+    "order": ["trigger_specificity", "card_level", "card_id"],
+    "duplicate_target_policy": "highest_precision_wins_once",
+    "note_duplicate": "Two cards revealing the same placement spend budget once, not twice."
+  },
+
+  "free_baseline": {
+    "note": "Available with zero information cards equipped. Still required after the limit split: a fighter who has unlocked no information card must remain playable, and the baseline is what an information card is measured against.",
+    "past_combo_history": true,
+    "repeated_habit_markers": true,
+    "observed_feint_history": true,
+    "history_window_turns": 6,
+    "fight_iq_scaling": {
+      "enabled": true,
+      "history_window_turns": { "min": 2, "max": 8 },
+      "habit_marker_precision": { "min": 0.3, "max": 0.9 },
+      "note": "Baseline quality scales with the fighter's Fight IQ, mirroring docs/design/28_fighter_plan_generation.md. A sharp fighter already reads well and gains less from the card; a dull one depends on it. Self-balancing without the card having to compete with style cards."
+    }
+  },
+
+  "card_growth": {
+    "note": "Levels improve precision and loosen trigger conditions. Levels never raise the per-turn budget ceiling, so growth cannot converge on full disclosure.",
+    "raises_budget": false,
+    "improves_precision": true,
+    "loosens_trigger_conditions": true,
+    "max_level": 5
+  },
+
+  "placement": {
+    "note": "Timeline editing rules, promoted from the prototype's temporary ruleset.",
+    "slots": 8,
+    "card_duration_range": [1, 4],
+    "empty_slot_action": "rest",
+    "allow_repeat_same_action": true,
+    "repeat_exposure_multiplier": 1.4,
+    "note_repeat": "Repetition is allowed but raises pattern exposure, so it is self-limiting rather than forbidden.",
+    "overflow_policy": "reject",
+    "insert_policy": "shift_later_actions",
+    "note_insert": "Inserting mid-plan pushes later actions back; if the plan would exceed 8 slots the insert is rejected rather than silently truncated."
+  }
+}

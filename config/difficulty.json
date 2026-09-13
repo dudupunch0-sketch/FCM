@@ -1,0 +1,68 @@
+{
+  "config_version": "0.1.0-draft",
+  "description": "Difficulty tiers. Unblocked once the baseline balance settled; before that there was no baseline to scale from.",
+  "spec_reference": "docs/design/33_difficulty.md",
+
+  "default_tier": "standard",
+
+  "principle": {
+    "adjusts": ["opponent_quality", "information_quality", "economy_pressure", "prospect_supply"],
+    "never_adjusts": ["combat_resolution", "randomness", "impact_formulas", "status_thresholds", "judging"],
+    "note": "Difficulty changes the world you face and how clearly you can see it. It never changes the dice or the fight maths, because the project's stated position is that randomness creates variation and not causation. Two fights with the same fighters, plans and seed must resolve identically on every tier, and a test enforces that."
+  },
+
+  "tiers": {
+    "apprentice": {
+      "name": "입문",
+      "description": "상대가 약하고 정보가 선명하며 자금에 여유가 있습니다. 시스템을 익히는 데 적합합니다.",
+      "opponent_level_offset": -8,
+      "opponent_level_spread": 0.85,
+      "champion_level_offset": -6,
+      "interpreter_skill_floor": 0.55,
+      "scouting_reach_multiplier": 1.3,
+      "evidence_strength_multiplier": 1.25,
+      "start_cash_multiplier": 1.5,
+      "overhead_multiplier": 0.75,
+      "prospect_intake_multiplier": 1.25
+    },
+    "standard": {
+      "name": "표준",
+      "description": "설계 기준값입니다. 밸런스 측정과 회귀 검증이 이 등급에서 이루어집니다.",
+      "opponent_level_offset": 0,
+      "opponent_level_spread": 1.0,
+      "champion_level_offset": 0,
+      "interpreter_skill_floor": 0.0,
+      "scouting_reach_multiplier": 1.0,
+      "evidence_strength_multiplier": 1.0,
+      "start_cash_multiplier": 1.0,
+      "overhead_multiplier": 1.0,
+      "prospect_intake_multiplier": 1.0
+    },
+    "contender": {
+      "name": "도전",
+      "description": "상대가 강하고 정보가 흐리며 운영이 빡빡합니다. 스카우트와 코치의 질이 드러납니다.",
+      "opponent_level_offset": 6,
+      "opponent_level_spread": 1.1,
+      "champion_level_offset": 4,
+      "interpreter_skill_floor": 0.0,
+      "scouting_reach_multiplier": 0.8,
+      "evidence_strength_multiplier": 0.8,
+      "start_cash_multiplier": 0.75,
+      "overhead_multiplier": 1.2,
+      "prospect_intake_multiplier": 0.85
+    },
+    "brutal": {
+      "name": "가혹",
+      "description": "정상급 상대가 흔하고 정보는 거의 믿을 수 없습니다. 유망주 공급도 적습니다.",
+      "opponent_level_offset": 11,
+      "opponent_level_spread": 1.15,
+      "champion_level_offset": 8,
+      "interpreter_skill_floor": 0.0,
+      "scouting_reach_multiplier": 0.62,
+      "evidence_strength_multiplier": 0.62,
+      "start_cash_multiplier": 0.55,
+      "overhead_multiplier": 1.4,
+      "prospect_intake_multiplier": 0.7
+    }
+  }
+}

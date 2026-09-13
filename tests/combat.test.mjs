@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {CARDS,SKILLS,newMatch,makePlan,validatePlan,opponentPlan,observe,resolveTurn} from '../dist/engine.js';
+import {CARDS,SKILLS,RULES,newMatch,makePlan,validatePlan,opponentPlan,observe,resolveTurn} from '../dist/engine.js';
+import './helpers/engine-setup.mjs';
 
 test('plan validation rejects unknown, overlapping and oversized actions',()=>{
   assert.throws(()=>makePlan(['nope']));assert.throws(()=>makePlan(['shell','shell','jab']));
@@ -44,12 +45,13 @@ test('exact reveal identifies feint; cue reveals no hidden action ID or span',()
 });
 test('pattern and counter information require actual previous evidence',()=>{
   const m=newMatch(),p=makePlan(['jab','cross']);assert.deepEqual(observe(p,'pattern',m),[]);assert.deepEqual(observe(p,'counter',m),[]);
-  m.lastPlans=[makePlan([]),p];assert.equal(observe(p,'pattern',m).length,2);
+  // Budget-limited: two exact reveals cost more than one turn's budget allows.
+  m.lastPlans=[makePlan([]),p];assert.equal(observe(p,'pattern',m).length,1);
   m.lastEvaded=[true,false];assert.equal(observe(p,'counter',m).length,1);
   const all=Object.keys(SKILLS).map(s=>observe(p,s,m));assert(all.length);
 });
 test('same-beat attacks apply simultaneously including double knockout',()=>{
-  const m=newMatch();m.fighters.forEach(f=>f.damage.head=89);
+  const m=newMatch();m.fighters.forEach(f=>f.damage.head=RULES.koDamage-1);
   const r=resolveTurn(m,makePlan(['jab']),makePlan(['jab']));assert(r.match.finished);assert.equal(r.match.winner,null);assert.equal(r.match.method,'동시 KO');assert.equal(r.frames.length,1);
 });
 test('stamina failure skips the action without negative resources',()=>{
@@ -67,7 +69,7 @@ test('all opponent profiles remain valid and matches terminate with bounded reso
     assert(m.method);
   }
 });
-test('rest-only match still ends by decision, counter does not leak across turns',()=>{
+test('rest-only match still ends by decision; a window that expires mid-combo does not carry',()=>{
   let m=newMatch();while(!m.finished)m=resolveTurn(m,makePlan([]),makePlan([])).match;
   assert.equal(m.method,'판정');assert.equal(m.winner,null);
   const r=resolveTurn(newMatch(),makePlan(['sway']),makePlan(['jab']));assert.equal(r.match.fighters[0].counterUntil,-1);

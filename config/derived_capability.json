@@ -1,0 +1,99 @@
+{
+  "config_version": "0.1.0-draft",
+  "description": "Base Parameter -> Derived Capability mapping. Weighted geometric mean. Values are initial candidates, not balanced.",
+  "spec_reference": "docs/design/24_base_to_derived_mapping.md",
+
+  "formula": {
+    "type": "weighted_geometric_mean",
+    "base_floor": 10,
+    "base_ceiling": 100,
+    "note": "raw = product(clamp(base_i, floor, ceiling) ^ weight_i), sum(weight_i) == 1.0"
+  },
+
+  "body_sources": {
+    "mass_ratio": {
+      "expression": "current_weight / division_reference_weight",
+      "clamp": [0.85, 1.15],
+      "note": "Same-division mass advantage. Cross-division comparison is handled by matchmaking, not here."
+    },
+    "height_ratio": {
+      "expression": "height / division_reference_height",
+      "clamp": [0.9, 1.1]
+    }
+  },
+
+  "capabilities": {
+    "punch_impact": {
+      "weights": { "punch_technique": 0.40, "strength": 0.30, "explosiveness": 0.30 },
+      "body_modifiers": [ { "source": "mass_ratio", "exponent": 0.25 } ]
+    },
+    "punch_execution_speed": {
+      "weights": { "explosiveness": 0.40, "punch_technique": 0.35, "agility": 0.25 },
+      "body_modifiers": []
+    },
+    "kick_impact": {
+      "weights": { "kick_technique": 0.40, "strength": 0.30, "explosiveness": 0.30 },
+      "body_modifiers": [
+        { "source": "mass_ratio", "exponent": 0.25 },
+        { "source": "height_ratio", "exponent": 0.10 }
+      ]
+    },
+    "kick_execution_speed": {
+      "weights": { "explosiveness": 0.35, "kick_technique": 0.35, "agility": 0.30 },
+      "body_modifiers": [ { "source": "height_ratio", "exponent": -0.10 } ]
+    },
+    "range_control": {
+      "weights": { "footwork_technique": 0.45, "agility": 0.30, "fight_iq": 0.25 },
+      "body_modifiers": [],
+      "note": "Reach is deliberately excluded. Reach already enters combat through effective_distance in the range model."
+    },
+    "guard_efficiency": {
+      "weights": { "guard_technique": 0.55, "durability": 0.25, "strength": 0.20 },
+      "body_modifiers": []
+    },
+    "evasion_capability": {
+      "weights": { "agility": 0.35, "reflex": 0.35, "guard_technique": 0.15, "footwork_technique": 0.15 },
+      "body_modifiers": []
+    },
+    "counter_conversion": {
+      "weights": { "reflex": 0.35, "fight_iq": 0.30, "punch_technique": 0.20, "explosiveness": 0.15 },
+      "body_modifiers": []
+    },
+    "feint_execution": {
+      "weights": { "fight_iq": 0.35, "punch_technique": 0.25, "footwork_technique": 0.20, "tactical_execution": 0.20 },
+      "body_modifiers": []
+    },
+    "feint_recognition": {
+      "weights": { "fight_iq": 0.45, "reflex": 0.35, "guard_technique": 0.20 },
+      "body_modifiers": []
+    },
+    "takedown_capability": {
+      "weights": { "takedown_technique": 0.45, "strength": 0.25, "explosiveness": 0.20, "agility": 0.10 },
+      "body_modifiers": []
+    },
+    "takedown_defense": {
+      "weights": { "takedown_defense_technique": 0.50, "strength": 0.20, "agility": 0.15, "reflex": 0.15 },
+      "body_modifiers": []
+    },
+    "clinch_control": {
+      "weights": { "clinch_technique": 0.45, "strength": 0.30, "durability": 0.15, "cardio": 0.10 },
+      "body_modifiers": [ { "source": "mass_ratio", "exponent": 0.20 } ]
+    },
+    "top_control": {
+      "weights": { "ground_top_technique": 0.50, "strength": 0.25, "cardio": 0.15, "durability": 0.10 },
+      "body_modifiers": [ { "source": "mass_ratio", "exponent": 0.15 } ]
+    },
+    "bottom_escape": {
+      "weights": { "ground_bottom_technique": 0.50, "agility": 0.20, "explosiveness": 0.15, "cardio": 0.15 },
+      "body_modifiers": []
+    },
+    "submission_threat": {
+      "weights": { "submission_technique": 0.50, "ground_top_technique": 0.20, "strength": 0.15, "fight_iq": 0.15 },
+      "body_modifiers": []
+    },
+    "submission_defense": {
+      "weights": { "submission_technique": 0.45, "fight_iq": 0.20, "ground_bottom_technique": 0.20, "durability": 0.15 },
+      "body_modifiers": []
+    }
+  }
+}

@@ -1,9 +1,10 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {createCharacterProfile,CHARACTER_PROFILES} from '../dist/character-profile.js';
-import {FighterModel} from '../dist/fighter-model.js';
+import {createCharacterProfile,CHARACTER_PROFILES} from '../archive/three-renderer/character-profile.js';
+import {FighterModel} from '../archive/three-renderer/fighter-model.js';
 import {sampleMotion} from '../dist/motion.js';
 import {CARDS} from '../dist/engine.js';
+import './helpers/engine-setup.mjs';
 
 test('profiles are immutable and reject invalid art dimensions and unknown fields',()=>{
  const a=createCharacterProfile(),b=createCharacterProfile({face:{jawWidth:.073}});

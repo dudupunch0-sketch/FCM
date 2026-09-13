@@ -1,0 +1,46 @@
+{
+  "config_version": "0.1.0-draft",
+  "description": "Save policy: what persists, version handling, RNG streams, event history retention.",
+  "spec_reference": "docs/design/32_save_versioning_and_determinism.md",
+
+  "persistence": {
+    "persisted": ["runtime_state", "knowledge_state", "event_history", "rng_stream_state", "save_version", "config_version"],
+    "never_persisted": ["definition_data", "derived_capability", "effective_performance", "combat_caches"],
+    "note": "Anything computable is recomputed on load from Definition Data. Persisting derived values would desynchronise saves from balance patches."
+  },
+
+  "versioning": {
+    "save_version_policy": "forward_migration_chain",
+    "config_version_policy": "load_with_warning",
+    "migration_path": "sequential_only",
+    "note_sequential": "v1 to v2 to v3. No direct v1 to v3 shortcut, so there is exactly one path to test.",
+    "missing_definition_policy": "detect_and_log",
+    "prefer_deprecate_over_delete": true
+  },
+
+  "rng_streams": {
+    "note": "Seed alone does not reproduce a run; consumption counters are saved per stream. Separate streams keep one system's changes from perturbing another's results.",
+    "streams": ["world_generation", "npc_simulation", "combat", "injury", "events"],
+    "persist_consumption_counters": true
+  },
+
+  "combat_save": {
+    "mode": "replay_from_snapshot",
+    "persisted": ["pre_fight_snapshot", "committed_plan_sequence", "combat_rng_stream_state"],
+    "note": "Combat is deterministic, so it is restored by replaying committed plans rather than storing full combat state. Shares the replay mechanism, and a restore mismatch is itself proof that determinism broke."
+  },
+
+  "event_history": {
+    "full_retention_weeks": 260,
+    "tier_c_summarise_after_weeks": 52,
+    "never_summarised": ["evidence_source_events", "contract", "title", "injury", "breakthrough", "retirement"],
+    "note": "Evidence source events must survive compaction; doc 29 allows re-interpreting past evidence with a better analyst, which is impossible if the source is gone."
+  },
+
+  "save_points": {
+    "primary_unit": "week_boundary",
+    "autosave_slots": 3,
+    "autosave_rotation": "cyclic",
+    "separate_manual_slots": true
+  }
+}

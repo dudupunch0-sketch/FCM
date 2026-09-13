@@ -7,8 +7,10 @@
 외부 패키지 설치가 필요 없는 정적 브라우저 앱입니다. 저장소 루트에서 실행합니다.
 
 ```bash
-python3 -m http.server 8000 --directory dist
+npm start
 ```
+
+`npm start`는 `config/`의 밸런스 데이터를 `dist/config/`로 동기화한 뒤 정적 서버를 띄웁니다.
 
 브라우저에서 `http://localhost:8000`을 엽니다. ES 모듈을 사용하므로 HTML 파일을 직접 더블 클릭하는 대신 HTTP 서버를 사용하세요.
 
@@ -21,17 +23,46 @@ python3 -m http.server 8000 --directory dist
 ## 검증
 
 ```bash
-node --test tests/*.test.mjs
+npm test
 ```
+
+`config/`가 밸런스 데이터의 단일 원본입니다. 전투 수치는 코드가 아니라 `config/combat_prototype.json`에 있고, 값을 바꾸면 코드 수정 없이 결과가 바뀝니다. 로더가 각 설계 문서의 검증 기준을 실행하므로 잘못된 값은 파일과 경로를 지목하며 거부됩니다.
+
+## AI 보정
+
+전투 AI는 자가 대전으로 푼 균형 혼합전략입니다. 밸런스나 전투 코드가 바뀌면 저장된 전략은
+다른 게임의 정답이 되므로, 아래로 다시 계산합니다.
+
+```bash
+npm run calibrate:check
+```
+
+지문이 어긋나면 `npm run calibrate`로 재계산합니다.
+
+**밸런스나 전투 코드를 건드린다면 [검증·보정 환경 지침](docs/guide/testing_and_calibration.md)을 먼저 읽으세요.**
+무엇을 바꿨을 때 무엇을 돌려야 하는지, 지표를 어떻게 읽는지, 이미 밟은 함정이 무엇인지 정리돼 있습니다.
+설계 근거는 [자가 대전 균형과 AI 난이도 보정](docs/design/34_ai_equilibrium.md)에 있습니다.
 
 ## 문서
 
+- **[이어서 작업하기](dev/RESUME.md)** — 다른 기기에서 이어받을 때 먼저 읽는다
+- **[두 갈래 작업](dev/WORKSTREAMS.md)** — 전투·시스템과 애니메이션·표현의 경계
+- **[전투·시스템 백로그](dev/BACKLOG.md)** — 다음에 할 일
+- **[개발 기록 색인](HISTORY.md)** — 날짜별 작업 기록은 [`dev/history/`](dev/history)
+- **[검증·보정 환경 지침](docs/guide/testing_and_calibration.md)** — 무엇을 바꿨을 때 무엇을 돌리나
 - [독립 캐릭터 모델 초안과 미리보기](assets/characters/rook/README.md)
 - [캐릭터 고정 레퍼런스: 야생의 숨결·왕국의 눈물 링크](docs/art/reference/link/README.md)
 - [현재 결정과 전체 게임 범위](docs/spec/current_decisions.md)
 - [콤보 전투와 정보 카드 설계](docs/design/18_combo_turn_combat_and_information_cards.md)
 - [플랫폼 선택, 구현 범위, 임시 판정 규칙과 한계](docs/design/19_combat_prototype_implementation.md)
+- [전투 거리 모델](docs/design/22_combat_range_model.md) — 이동 카드, 사이드 스텝, 스탠스와 오픈 가드
+- [스태미너 소모와 회복 상한](docs/design/38_stamina_attrition.md)
+- [난이도](docs/design/33_difficulty.md)와 [자가 대전 균형 보정](docs/design/34_ai_equilibrium.md)
+- [라운드 구조와 판정 집계](docs/design/23_round_structure_and_judging.md)
+- [Base → Derived 매핑](docs/design/24_base_to_derived_mapping.md)과 [Effective Performance 계층](docs/design/25_effective_performance.md)
 
-현재 시제품은 육성 시스템과 분리되어 있으며 상대 패턴 학습, 전체 선수 능력치 계산, MMA 확장은 아직 미구현입니다.
+거리 모델, 라운드 구조, 능력치 계산 계층, 정보 공개 예산, 스태미너 소모, 스탠스와 오픈 가드, 자가 대전 AI는 구현되어 있습니다. MMA·그래플링 확장은 명세만 있고 미구현입니다.
 
-입체 캐릭터와 관절 애니메이션의 구현 범위는 [모델·애니메이션 업그레이드](docs/design/20_fighter_visual_upgrade.md)를 참고하세요. WebGL 초기화가 불가능하면 기본 Canvas 화면으로 전환합니다.
+화면은 모바일 세로 레이아웃과 Canvas 도트 스프라이트를 사용합니다. 범위는 [모바일 도트 전투와 콤보 편집](docs/design/21b_mobile_pixel_combat.md)을 참고하세요.
+
+과거의 Three.js 입체 렌더러([모델·애니메이션 업그레이드](docs/design/20_fighter_visual_upgrade.md))는 도트 전환으로 대체되어 [`archive/three-renderer/`](archive/three-renderer/README.md)로 옮겼습니다. 배포 경로에 포함되지 않으며, WebGL 실패 시 Canvas로 전환하는 경로도 지금은 없습니다.

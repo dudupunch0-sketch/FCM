@@ -1,0 +1,653 @@
+{
+  "config_version": "0.1.0-draft",
+  "description": "Tuning layer for the boxing combo prototype. Temporary rules per docs/design/19_combat_prototype_implementation.md, not the final model. The full model lives in docs/design/22 through 32 and replaces this file as it lands.",
+  "spec_reference": "docs/design/19_combat_prototype_implementation.md",
+  "rules": {
+    "slots": 8,
+    "maxTurns": 12,
+    "maxStamina": 100,
+    "betweenRecovery": 6,
+    "restRecovery": 11,
+    "counterWindow": 2,
+    "guardDrain": 3,
+    "koDamage": 150,
+    "staggerDamage": 82,
+    "staggerImpact": 16,
+    "maxPartDamage": 165,
+    "bodyKoDamage": 140,
+    "bodyKoImpact": 9,
+    "bodyKoStamina": 35
+  },
+  "rounds": {
+    "count": 3,
+    "turnsPerRound": 4,
+    "note": "A round is a fixed number of combo turns per docs/design/23_round_structure_and_judging.md. count * turnsPerRound must equal rules.maxTurns."
+  },
+  "status": {
+    "note": "Prototype status model. The full model compares impact against effective_durability; here absolute damage stands in until fighter stats are wired into combat.",
+    "staggerRatio": 0.6,
+    "staggerRecoverySlots": 2,
+    "groggyRecoverySlots": 4,
+    "groggyDefensePenalty": 0.35,
+    "groggyPlanBias": true,
+    "note_body": "A body finish comes from accumulation, not an impact spike. Gating on the target being worn down as well as damaged avoids the all-or-nothing cliff that a pure impact threshold produced, and matches what body work actually does: drain first, finish second.",
+    "note_body_gate": "The stamina gate is weaker than it looks: body work is what produces the low stamina, so the conjunction is really one track and body work satisfies both halves by itself. bodyKoDamage carries the whole weight of making the body finish the long road, and it is measured against the head SPIKE route (staggerDamage + staggerImpact), not against koDamage — the spike is the route head work actually takes."
+  },
+  "intervalRecovery": {
+    "fraction": 0.35,
+    "cap": 85,
+    "note": "Between-round recovery. Larger than betweenRecovery and capped below full, per docs/design/23 section 3. The cap is expressed against rules.maxStamina and scales down with a fighter's own ceiling."
+  },
+  "staminaCeiling": {
+    "note": "Stamina has a ceiling that only falls. Every recovery refills toward the ceiling and never past it, so being worn down is a permanent change to what a fighter can still do rather than a dip they breathe off. Spec: docs/design/38_stamina_attrition.md.",
+    "min": 46,
+    "lowThreshold": 0.4,
+    "attackLoss": 1.7,
+    "bodyHitLoss": 0.16,
+    "note_min": "A floor is required or the loop feeds itself: a lower ceiling means gassing sooner, which lowers it again. The floor keeps a worn fighter dangerous instead of helpless.",
+    "note_tuning": "bodyHitLoss barely moves the fixed-pattern table — 0.10 and 0.22 produce identical plan counts — because a fixed plan cannot exploit an opponent whose engine is shrinking. Its effect shows where it should: in the reactive-policy equilibrium, where lowguard went from never used to 13.7%.",
+    "note_threshold": "Fraction of the fighter's own ceiling, not of rules.maxStamina. Someone already worn down is working while gassed at a lower absolute number, which is what being worn down means."
+  },
+  "cards": {
+    "jab": {
+      "name": "잽",
+      "short": "잽",
+      "kind": "attack",
+      "duration": 1,
+      "impact": 0,
+      "cost": 7,
+      "power": 8,
+      "target": "head",
+      "trajectory": "straight",
+      "hand": "lead",
+      "description": "빠른 머리 공격. 빈틈을 찌르세요.",
+      "subBeat": 0.35,
+      "optimalRange": 2.2,
+      "rangeTolerance": 0.5,
+      "rangeShift": 0.0,
+      "reachBonus": 0.0
+    },
+    "cross": {
+      "name": "크로스",
+      "short": "크로스",
+      "kind": "attack",
+      "duration": 2,
+      "impact": 1,
+      "cost": 13,
+      "power": 15,
+      "target": "head",
+      "trajectory": "straight",
+      "hand": "rear",
+      "description": "다음 박자에 타격. 회피 직후 카운터에 적합.",
+      "subBeat": 0.5,
+      "optimalRange": 1.8,
+      "rangeTolerance": 0.7,
+      "rangeShift": -0.1,
+      "reachBonus": 0.0
+    },
+    "hook": {
+      "name": "훅",
+      "short": "훅",
+      "kind": "attack",
+      "duration": 2,
+      "impact": 1,
+      "cost": 12,
+      "power": 16,
+      "target": "head",
+      "trajectory": "hook",
+      "hand": "lead",
+      "description": "스웨이를 잡는 곡선 공격. 위빙에는 빗나갑니다.",
+      "subBeat": 0.55,
+      "optimalRange": 1.4,
+      "rangeTolerance": 0.6,
+      "rangeShift": -0.15,
+      "reachBonus": 0.0
+    },
+    "body": {
+      "name": "바디 훅",
+      "short": "바디",
+      "kind": "attack",
+      "duration": 2,
+      "impact": 1,
+      "cost": 13,
+      "power": 11,
+      "target": "body",
+      "trajectory": "body",
+      "hand": "lead",
+      "description": "상단 가드와 머리 회피를 공략. 막히지 않는 대신 위력이 낮고 비쌉니다.",
+      "subBeat": 0.55,
+      "optimalRange": 1.2,
+      "rangeTolerance": 0.6,
+      "rangeShift": -0.2,
+      "reachBonus": 0.0
+    },
+    "heavy": {
+      "name": "오버핸드",
+      "short": "강타",
+      "kind": "attack",
+      "duration": 3,
+      "impact": 1,
+      "cost": 22,
+      "power": 24,
+      "target": "head",
+      "trajectory": "hook",
+      "hand": "rear",
+      "description": "큰 머리 충격. 타격 뒤 회수 중에는 취약합니다.",
+      "subBeat": 0.62,
+      "optimalRange": 1.6,
+      "rangeTolerance": 0.5,
+      "rangeShift": -0.1,
+      "reachBonus": 0.0
+    },
+    "guard": {
+      "name": "순간 가드",
+      "short": "가드",
+      "kind": "guard",
+      "duration": 1,
+      "cost": 2,
+      "protect": "head",
+      "description": "한 박자만 정확히 막습니다. 바디 공격은 막지 못합니다.",
+      "rangeShift": 0.0,
+      "blockLeak": 0.14
+    },
+    "shell": {
+      "name": "상단 가드",
+      "short": "상단 가드",
+      "kind": "guard",
+      "duration": 4,
+      "cost": 6,
+      "protect": "head",
+      "description": "오래 머리를 보호하지만 성기게 막혀 충격이 새고 팔에 손상이 쌓입니다.",
+      "rangeShift": 0.0,
+      "blockLeak": 0.28
+    },
+    "lowguard": {
+      "name": "바디 가드",
+      "short": "바디 가드",
+      "kind": "guard",
+      "duration": 2,
+      "cost": 2,
+      "protect": "body",
+      "description": "몸통 방어. 상대 머리 공격에는 노출됩니다.",
+      "rangeShift": 0.0,
+      "blockLeak": 0.2
+    },
+    "sway": {
+      "name": "스웨이",
+      "short": "스웨이",
+      "kind": "evade",
+      "duration": 1,
+      "cost": 3,
+      "dodges": [
+        "straight"
+      ],
+      "description": "직선 머리 공격 회피. 성공하면 짧은 카운터 기회.",
+      "rangeShift": 0.08
+    },
+    "weave": {
+      "name": "위빙",
+      "short": "위빙",
+      "kind": "evade",
+      "duration": 2,
+      "cost": 8,
+      "dodges": [
+        "hook"
+      ],
+      "description": "훅과 오버핸드 회피. 직선·몸통 공격에 주의.",
+      "rangeShift": -0.02
+    },
+    "feint": {
+      "name": "페이크",
+      "short": "페이크",
+      "kind": "feint",
+      "duration": 1,
+      "cost": 4,
+      "description": "상대가 방어 중이면 다음 공격에 빈틈을 만듭니다.",
+      "rangeShift": -0.02
+    },
+    "rest": {
+      "name": "호흡 정리",
+      "short": "호흡",
+      "kind": "rest",
+      "duration": 1,
+      "cost": 0,
+      "description": "스태미너 회복. 방어 효과는 없습니다.",
+      "rangeShift": 0.04
+    },
+    "flicker": {
+      "name": "플리커 잽",
+      "short": "플리커",
+      "kind": "attack",
+      "duration": 1,
+      "impact": 0,
+      "cost": 6,
+      "power": 7,
+      "target": "head",
+      "trajectory": "straight",
+      "hand": "lead",
+      "subBeat": 0.3,
+      "optimalRange": 2.6,
+      "rangeTolerance": 0.7,
+      "rangeShift": 0.0,
+      "reachBonus": 0.35,
+      "description": "더 먼 거리에서 닿는 가벼운 잽. 위력은 낮지만 싸고 거리를 유지합니다."
+    },
+    "advance": {
+      "name": "전진 훅",
+      "short": "전진훅",
+      "kind": "attack",
+      "duration": 2,
+      "impact": 1,
+      "cost": 16,
+      "power": 17,
+      "target": "head",
+      "trajectory": "hook",
+      "hand": "rear",
+      "subBeat": 0.58,
+      "optimalRange": 1.2,
+      "rangeTolerance": 0.6,
+      "rangeShift": -0.6,
+      "reachBonus": 0.0,
+      "description": "파고들며 치는 훅. 거리를 좁히지만 회수가 깁니다."
+    },
+    "backstep": {
+      "name": "백스텝",
+      "short": "백스텝",
+      "kind": "move",
+      "duration": 1,
+      "cost": 4,
+      "rangeShift": 0.4,
+      "description": "물러서며 간격을 벌립니다. 공격도 방어도 하지 않습니다."
+    },
+    "stepin": {
+      "name": "스텝 인",
+      "short": "스텝인",
+      "kind": "move",
+      "duration": 1,
+      "cost": 4,
+      "rangeShift": -0.4,
+      "description": "파고들어 간격을 좁힙니다. 공격도 방어도 하지 않습니다."
+    },
+    "switch": {
+      "name": "스위치",
+      "short": "스위치",
+      "kind": "stance",
+      "duration": 1,
+      "cost": 5,
+      "rangeShift": 0.0,
+      "description": "스탠스를 바꿉니다. 앞손과 뒷손이 서로 바뀌므로 훅이 나오는 쪽도 반대가 됩니다."
+    },
+    "sidestep_left": {
+      "name": "왼쪽 스텝",
+      "short": "왼스텝",
+      "kind": "evade",
+      "duration": 2,
+      "cost": 11,
+      "dodges": ["straight", "hook"],
+      "stepToward": "left",
+      "rangeShift": 0.05,
+      "grantsAngle": true,
+      "description": "왜쪽으로 돌아 각을 틀니다. 상대의 오른손 쪽으로 들어가므로, 그 손의 훅은 따라오고 반대손 훅은 지나갑니다."
+    },
+    "sidestep_right": {
+      "name": "오른쪽 스텝",
+      "short": "오른스텝",
+      "kind": "evade",
+      "duration": 2,
+      "cost": 11,
+      "dodges": ["straight", "hook"],
+      "stepToward": "right",
+      "rangeShift": 0.05,
+      "grantsAngle": true,
+      "description": "오른쪽으로 돌아 각을 틀니다. 상대의 왜손 쪽으로 들어가므로, 그 손의 훅은 따라오고 반대손 훅은 지나갑니다."
+    }
+  },
+  "skills": {
+    "first": {
+      "name": "초반 간파",
+      "description": "첫 동작의 카드명과 시작 위치를 확정 공개합니다.",
+      "specificity": 5
+    },
+    "heavy": {
+      "name": "강타 감지",
+      "description": "강공격처럼 보이는 타격 박자를 예고합니다. 페이크에 속을 수 있습니다.",
+      "specificity": 1
+    },
+    "guard": {
+      "name": "수비 분석",
+      "description": "가드 구간만 확정 공개합니다. 보호 부위는 숨깁니다.",
+      "specificity": 2
+    },
+    "pattern": {
+      "name": "패턴 독해",
+      "description": "직전 콤보와 같은 위치에 반복되는 동작을 최대 두 개 공개합니다.",
+      "specificity": 3
+    },
+    "hand": {
+      "name": "손 읽기",
+      "description": "상대의 훅이 어느 쪽에서 감겨 들어오는지 예고합니다. 사이드 스텝의 방향을 고를 근거가 됩니다.",
+      "specificity": 6
+    },
+    "counter": {
+      "name": "카운터 본능",
+      "description": "직전 교환에서 실제 회피에 성공하면 다음 공격 하나를 공개합니다.",
+      "specificity": 4
+    },
+    "none": {
+      "name": "정보 카드 없음",
+      "description": "지난 콤보와 상대 습관만으로 예측합니다.",
+      "specificity": 0
+    }
+  },
+  "profiles": {
+    "pressure": {
+      "name": "빅터 · 압박형",
+      "trait": "잽으로 시작한 뒤 강하게 밀어붙입니다. 가끔 첫 동작을 바꿉니다."
+    },
+    "tricky": {
+      "name": "레온 · 교란형",
+      "trait": "페이크와 몸통 공격을 섞습니다. 상단 가드에만 의존하지 마세요."
+    },
+    "turtle": {
+      "name": "이반 · 수비형",
+      "trait": "긴 가드 뒤에 반격합니다. 페이크와 몸통 공격으로 틈을 만드세요."
+    }
+  },
+  "patterns": {
+    "note": "Fixed opponent plans. Replaced by the evaluation pipeline in docs/design/28_fighter_plan_generation.md once it lands.",
+    "pressure": [
+      [
+        "jab",
+        "cross",
+        "hook",
+        "jab",
+        "rest",
+        "rest"
+      ],
+      [
+        "jab",
+        "heavy",
+        "cross",
+        "rest",
+        "rest"
+      ],
+      [
+        "feint",
+        "cross",
+        "body",
+        "jab",
+        "rest",
+        "rest"
+      ],
+      [
+        "jab",
+        "jab",
+        "hook",
+        "body",
+        "rest",
+        "rest"
+      ]
+    ],
+    "tricky": [
+      [
+        "feint",
+        "body",
+        "hook",
+        "sway",
+        "rest",
+        "rest"
+      ],
+      [
+        "jab",
+        "weave",
+        "cross",
+        "body",
+        "rest"
+      ],
+      [
+        "body",
+        "feint",
+        "heavy",
+        "rest",
+        "rest"
+      ],
+      [
+        "feint",
+        "cross",
+        "body",
+        "sway",
+        "rest",
+        "rest"
+      ]
+    ],
+    "turtle": [
+      [
+        "shell",
+        "cross",
+        "rest",
+        "rest"
+      ],
+      [
+        "lowguard",
+        "hook",
+        "guard",
+        "cross",
+        "rest"
+      ],
+      [
+        "shell",
+        "body",
+        "rest",
+        "rest"
+      ],
+      [
+        "guard",
+        "weave",
+        "heavy",
+        "rest",
+        "rest"
+      ]
+    ]
+  },
+  "low_stamina_plan": {
+    "threshold": 30,
+    "actions": [
+      "guard",
+      "rest",
+      "rest",
+      "body",
+      "rest",
+      "rest",
+      "rest"
+    ],
+    "note": "Condition-driven recovery fallback, matching the survival_override idea in combat_ai.json."
+  },
+  "subBeat": {
+    "nominal": 0.5,
+    "tolerance": 0.08,
+    "note": "Impact position inside a slot. Priority is an outcome of timing, not a separate rule. Impacts within tolerance share a snapshot so a double KO stays reachable. Spec: docs/design/30 section 3."
+  },
+  "range": {
+    "initial": 2.0,
+    "min": 0.0,
+    "max": 3.0,
+    "falloffExponent": 1.5,
+    "maxFalloff": 0.6,
+    "bands": {
+      "clinch": 0.5,
+      "inside": 1.3,
+      "mid": 2.1,
+      "outside": 3.0
+    },
+    "note": "Single gap scalar moved by the cards themselves. Spec: docs/design/22_combat_range_model.md."
+  },
+  "firstStrike": {
+    "staggerWeakensLater": 0.7,
+    "groggyWeakensLater": 0.5,
+    "note": "A strictly earlier impact weakens the later one rather than erasing it. Only a KO cancels."
+  },
+  "reveal": {
+    "perTurnTotal": 3,
+    "cost": {
+      "exact": 2,
+      "zone": 1,
+      "cue": 1
+    },
+    "maxExactPerTurn": 2,
+    "activeLimit": 3,
+    "note": "Budget shared by every equipped information card. Extra cards buy trigger coverage across situations, never more disclosure in one turn. Spec: docs/design/31_information_economy_and_placement.md."
+  },
+  "fighterDefaults": {
+    "base": {
+      "strength": 60,
+      "explosiveness": 60,
+      "agility": 60,
+      "cardio": 60,
+      "durability": 60,
+      "reflex": 60,
+      "punch_technique": 60,
+      "guard_technique": 60,
+      "kick_technique": 60,
+      "footwork_technique": 60,
+      "takedown_technique": 60,
+      "takedown_defense_technique": 60,
+      "clinch_technique": 60,
+      "ground_bottom_technique": 60,
+      "ground_top_technique": 60,
+      "submission_technique": 60,
+      "fight_iq": 60,
+      "tactical_execution": 60
+    },
+    "body": {
+      "height": 180,
+      "reach": 183,
+      "natural_weight": 75,
+      "current_weight": 75,
+      "age": 24,
+      "stance": "orthodox"
+    },
+    "reference": 50,
+    "note": "Both sides start identical so wiring fighter stats into resolution changes nothing on its own. Per-profile stat tuning is a balance step, done in config, not a code change. reference is the Derived value that maps to a 1.0 multiplier."
+  },
+  "statInfluence": {
+    "impact": {
+      "capability": "punch_impact",
+      "weight": 1.0
+    },
+    "evasion": {
+      "capability": "evasion_capability",
+      "weight": 1.0,
+      "failThreshold": 0.75
+    },
+    "guard": {
+      "capability": "guard_efficiency",
+      "weight": 1.0
+    },
+    "subBeatShift": {
+      "capability": "punch_execution_speed",
+      "max": 0.3,
+      "weight": 1.0
+    },
+    "note": "How Effective Performance reaches Action Result. weight scales how far a capability ratio moves the outcome; failThreshold is the ratio below which a correctly chosen evasion can still fail."
+  },
+  "modifiers": {
+    "counter": 1.6,
+    "exposed": 1.18,
+    "staminaFloor": 0.5,
+    "staminaVulnerability": 0.15,
+    "note_vulnerability": "A gassed fighter absorbs worse: less braced, slower to roll with it. staminaFloor weakens what you throw; this deepens what you take. Both read absolute stamina, so a fallen ceiling compounds through this automatically. Measured: at 0.30 two further plans died (flicker, patient) because everything ends before it can be answered; 0.15 keeps the same plan count as with the mechanic switched off.",
+    "note": "Head work is the damage and KO path; body work is the attrition path. A body shot takes stamina, so an opponent who neglects body defence gradually cannot act: costs go unpaid, actions fail, guards break. This was briefly tuned down to 0.35 while chasing a body plan that won every fight, but that turned out to be the saturated-part scoring bug, and the lower value had quietly cost body work its identity.",
+    "blockLeak": 0.18,
+    "blockArmScaling": 500,
+    "armDamageRatio": 1.5,
+    "bodyStaminaDrain": 0.5,
+    "evadeScore": 2,
+    "blockScore": 1,
+    "scoreByTarget": {
+      "head": 1.0,
+      "body": 0.55
+    },
+    "note_score": "Judges reward clean head work over body work, which is why head scores higher. Body earns its place through the stamina it takes, not through points.",
+    "note_leak": "Per-card block leak. A long guard covers more time but blocks coarsely, so it leaks more per hit. Tuning cost alone produced a cliff: either the guard was affordable and total, or unaffordable and fatal.",
+    "note_body_power": "Measured at 40 fights per matchup: at power 13 a body-only plan beat all three profiles whatever bodyKoDamage was set to, so the threshold alone could not fix it. At 11 it drops to two profiles and the plan spread improves from 0/1/2/3 wins = 4/3/4/2 to 4/2/6/1. Body work stays the attrition path — accumulated body damage still makes the opponent unable to manage stamina, which is what raises the HEAD finish chance — it simply stops being the fastest finish on its own.",
+    "note_drain": "Tuning this is a narrow band. At 0.35 body work took nothing worth noticing; at 0.7 body plans took roughly half the equilibrium and killed four cards. 0.5 leaves an opponent who ignores body defence visibly drained without making body the answer to everything."
+  },
+  "style_cards": {
+    "note": "Style Skill Cards: conditional passive traits, not timeline placements. Spec: docs/design/31_information_economy_and_placement.md. Each must express a different axis, or it is not a choice.",
+    "active_limit": 5,
+    "cards": {
+      "liver_hunter": {
+        "name": "리버 헌터",
+        "axis": "body",
+        "description": "몸통 공격이 상대 스태미너를 더 크게 깎습니다.",
+        "effects": {
+          "bodyStaminaDrainMultiplier": 1.6
+        }
+      },
+      "counter_puncher": {
+        "name": "카운터 펀처",
+        "axis": "counter",
+        "description": "회피 후 카운터 기회가 한 칸 길고 위력이 큽니다.",
+        "effects": {
+          "counterWindowBonus": 1,
+          "counterMultiplier": 1.25
+        }
+      },
+      "iron_chin": {
+        "name": "아이언 친",
+        "axis": "durability",
+        "description": "머리 충격을 견디는 힘이 큽니다. 그로기에 덜 빠집니다.",
+        "effects": {
+          "incomingHeadMultiplier": 0.82,
+          "staggerResistance": 1.3
+        }
+      },
+      "pressure_fighter": {
+        "name": "프레셔 파이터",
+        "axis": "range_close",
+        "description": "거리를 좁히는 동작이 쌉니다. 근거리에서 강합니다.",
+        "effects": {
+          "closingCostMultiplier": 0.7,
+          "insideImpactMultiplier": 1.15
+        }
+      },
+      "out_boxer": {
+        "name": "아웃 복서",
+        "axis": "range_far",
+        "description": "먼 거리에서 유효 리치가 늘어납니다.",
+        "effects": {
+          "reachBonus": 0.3,
+          "outsideImpactMultiplier": 1.12
+        }
+      },
+      "iron_guard": {
+        "name": "아이언 가드",
+        "axis": "guard",
+        "description": "막을 때 새는 충격이 적고 팔 손상이 덜합니다.",
+        "effects": {
+          "blockLeakMultiplier": 0.72,
+          "armDamageMultiplier": 0.7
+        }
+      }
+    }
+  },
+  "stanceMatchup": {
+    "note": "Open guard is two fighters in opposite stances. Their lead hands meet across the line and lose their bite, while the rear hands find a straight path home. Closed guard leaves both alone. Spec: docs/design/22_combat_range_model.md.",
+    "openGuard": { "lead": 0.82, "rear": 1.18 },
+    "closedGuard": { "lead": 1.0, "rear": 1.0 },
+    "note_symmetry": "The modifier applies to both fighters, so open guard is not an edge for either of them: it changes which punch is worth throwing, not who wins. Cost is untouched, so a lead hand in open guard simply buys less impact for the same stamina.",
+    "note_counter": "Rear-hand counters compound: the counter multiplier and the open-guard bonus stack on the same punch, which is what makes the rear counter the exchange both fighters are really playing for."
+  },
+  "angle": {
+    "actions": 2,
+    "attackPenalty": 0.75,
+    "incomingBonus": 1.2,
+    "requiresCommitment": true,
+    "hookPunish": 1.6,
+    "guardLeak": 2.0,
+    "note": "Off-angle is a lasting positional state, unlike the one-shot counter window from sway and weave. It is only earned against an opponent who is committed to something — an attack that the step slipped, or a guard they are holding. Against someone simply breathing there is nothing to step around: they would just turn with you. And a hook follows you into the direction you stepped, so it is not evaded and lands harder than an ordinary mistimed evasion.",
+    "note_hands": "Declared as the fighter's OWN movement in physical left/right, resolved against the thrower's live stance at impact. Lead/rear would have been wrong: it defines my step in the opponent's terms, so a mid-combo stance switch would reach back and turn me around. Their left arm stays their left arm; what switching changes is which hand now comes from that side. A side step beats the hook thrown from the hand you stepped AWAY from, and is punished by the one you stepped INTO. Choosing the side is the whole decision: the card is a read on which hand is coming, not a generic evasion. Straights miss either way, because stepping off the line is stepping off the line.",
+    "note_guard": "A guard covers a direction, so a fighter who has lost the angle is holding it where the punches are no longer coming from. Without this the angle was a flat damage multiplier and a shelled opponent still blocked every punch: stepping around a guard found nothing. Measured against a guarding opponent, the same three punches went from 10.0 to 21.9 total impact. Blocking still beats not blocking — the validator keeps the leakiest guard under 1.0 even multiplied by this.",
+    "note_actions": "Measured in the opponent's actions, not slots. Nobody stands facing the wrong way for half a combo: they are exposed for what they are already committed to and one more action, then they square back up by themselves. Counting slots charged a one-slot jab and a four-slot shell the same exposure, which had it backwards — the long commitment is the one that should cost more."
+  }
+}
